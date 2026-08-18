@@ -1,0 +1,137 @@
+export const defaultWords=[
+  {
+    "w": "consistent",
+    "stress": "con-SIS-tent",
+    "m": "สม่ำเสมอ / สอดคล้อง",
+    "e": "Consistent practice improves recall."
+  },
+  {
+    "w": "essential",
+    "stress": "es-SEN-tial",
+    "m": "สำคัญอย่างยิ่ง",
+    "e": "Review is essential for long-term memory."
+  },
+  {
+    "w": "maintain",
+    "stress": "main-TAIN",
+    "m": "รักษา / คงไว้",
+    "e": "Maintain a steady study routine."
+  },
+  {
+    "w": "infer",
+    "stress": "in-FER",
+    "m": "อนุมาน",
+    "e": "Infer the writer's attitude from context."
+  },
+  {
+    "w": "convey",
+    "stress": "con-VEY",
+    "m": "สื่อ / ถ่ายทอด",
+    "e": "The sentence conveys a clear opinion."
+  },
+  {
+    "w": "significant",
+    "stress": "sig-NIF-i-cant",
+    "m": "สำคัญ / มีนัยสำคัญ",
+    "e": "The change had a significant effect."
+  },
+  {
+    "w": "relevant",
+    "stress": "REL-e-vant",
+    "m": "เกี่ยวข้อง",
+    "e": "Choose only relevant evidence."
+  },
+  {
+    "w": "assume",
+    "stress": "as-SUME",
+    "m": "สมมติ / คาดเอา",
+    "e": "Do not assume the answer without evidence."
+  },
+  {
+    "w": "contrast",
+    "stress": "CON-trast",
+    "m": "เปรียบต่าง",
+    "e": "Contrast the two viewpoints."
+  },
+  {
+    "w": "indicate",
+    "stress": "IN-di-cate",
+    "m": "บ่งชี้",
+    "e": "The figures indicate a clear trend."
+  },
+  {
+    "w": "approach",
+    "stress": "ap-PROACH",
+    "m": "แนวทาง",
+    "e": "Try a different approach."
+  },
+  {
+    "w": "accurate",
+    "stress": "AC-cu-rate",
+    "m": "ถูกต้องแม่นยำ",
+    "e": "The summary must be accurate."
+  },
+  {
+    "w": "evidence",
+    "stress": "EV-i-dence",
+    "m": "หลักฐาน",
+    "e": "Find evidence in the text."
+  },
+  {
+    "w": "factor",
+    "stress": "FAC-tor",
+    "m": "ปัจจัย",
+    "e": "Cost is an important factor."
+  },
+  {
+    "w": "decline",
+    "stress": "de-CLINE",
+    "m": "ลดลง",
+    "e": "The number began to decline."
+  },
+  {
+    "w": "enhance",
+    "stress": "en-HANCE",
+    "m": "เพิ่ม / ทำให้ดีขึ้น",
+    "e": "Examples enhance understanding."
+  },
+  {
+    "w": "interpret",
+    "stress": "in-TER-pret",
+    "m": "ตีความ",
+    "e": "Interpret the chart carefully."
+  },
+  {
+    "w": "perspective",
+    "stress": "per-SPEC-tive",
+    "m": "มุมมอง",
+    "e": "The article presents another perspective."
+  },
+  {
+    "w": "efficient",
+    "stress": "ef-FI-cient",
+    "m": "มีประสิทธิภาพ",
+    "e": "Use an efficient study method."
+  },
+  {
+    "w": "feature",
+    "stress": "FEA-ture",
+    "m": "คุณสมบัติ / ลักษณะเด่น",
+    "e": "This feature helps learners review."
+  }
+];
+export const defaultReading=[{
+ id:"reading-1", title:"Flexible Work: Choosing the Right Routine", category:"General article", minutes:8,
+ text:"Many companies now let staff divide their time between home and the office. Supporters say flexible schedules can reduce travel time and make it easier to plan focused work. However, teams still need dependable communication and clear expectations. A mixed schedule may work well, but leaders should examine the needs of each team rather than assume one arrangement is best for everyone.",
+ questions:[{id:"r1",prompt:"What is the main idea?",choices:["One schedule is best for everyone.","Work arrangements should match team needs.","Office work should disappear.","Flexible schedules prevent communication."],answer:1}]
+}];
+export const defaultListening=[{
+ id:"listen-1",title:"Classroom Presentation",accent:"en-US",
+ script:"Student: Could I ask about tomorrow's presentation? Teacher: Sure. Each person should speak for at least one minute. Student: May we show a short chart? Teacher: Yes, if it helps explain your main point clearly.",
+ questions:[{id:"l1",prompt:"What does the teacher require?",choices:["One student should speak.","Each person should speak.","Visuals are forbidden.","A video is required."],answer:1}]
+}];
+export const defaultWriting=[{
+ id:"writing-1",title:"Vocabulary Review",type:"Text Completion",
+ prompt:"Learners who meet difficult words repeatedly are more likely to ___ them in a new context.",
+ choices:["retain","retains","retained","retention"],answer:0
+}];

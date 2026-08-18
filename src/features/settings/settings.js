@@ -1,0 +1,9 @@
+import { Header } from "../../components/ui.js";
+import { languages } from "../../lib/i18n.js";
+export function renderSettings(s){
+ return `${Header("SYSTEM","Settings","จัดการภาษา ธีม และเสียงจากที่เดียว","Settings")}<div class="settings-shell">
+ <section class="settings-card"><div class="settings-card-head"><div class="settings-head-icon language-icon">文</div><div><h2>ภาษา</h2><p>เลือกภาษาของส่วนติดต่อผู้ใช้</p></div></div><div class="language-picker">${languages.map(([id,name])=>`<button class="language-option ${s.lang===id?"selected":""}" data-lang="${id}"><span class="language-native">${name}</span><span class="language-check">${s.lang===id?"✓":""}</span></button>`).join("")}</div></section>
+ <section class="settings-card"><div class="settings-card-head"><div class="settings-head-icon theme-icon">◐</div><div><h2>ธีม</h2><p>เลือกโหมดที่สบายตา</p></div></div><div class="theme-choice-grid"><button class="theme-choice ${s.theme==="light"?"selected":""}" data-theme-choice="light"><span class="theme-preview light-preview"><i></i><i></i><i></i></span><span><b>สว่าง</b><small>Warm light appearance</small></span></button><button class="theme-choice ${s.theme==="dark"?"selected":""}" data-theme-choice="dark"><span class="theme-preview dark-preview"><i></i><i></i><i></i></span><span><b>มืด</b><small>Soft charcoal appearance</small></span></button></div></section>
+ <section class="settings-card"><div class="settings-card-head"><div class="settings-head-icon sound-icon">🔊</div><div><h2>เสียง</h2><p>เปิดหรือปิดเสียงตอบสนอง</p></div></div><div class="setting-row-clean"><div><b>เสียงเอฟเฟกต์</b><small>${s.sound?"เปิด":"ปิด"}</small></div><label class="switch"><input id="soundToggle" type="checkbox" ${s.sound?"checked":""}><span></span></label></div></section>
+ </div>`;
+}

@@ -1,0 +1,41 @@
+# Production Hardening Checklist
+
+- [ ] Run `001_full_production.sql`, then `002_production_hardening.sql`.
+- [ ] Test RLS using two normal user accounts.
+- [ ] Test Free private quota: Flashcard 3; Reading 1; Listening 1; Writing 1; Mock 1.
+- [ ] Confirm overflow Private content does NOT become Public without confirmation.
+- [ ] Confirm expired Pro never publishes existing Private content.
+- [ ] Confirm Listening/Writing/Mock Free usage = once/day and same session can resume.
+- [ ] Confirm Pro bypasses daily limit.
+- [ ] Stripe TEST mode: checkout, renew, cancel, payment failure.
+- [ ] Verify webhook signature rejection.
+- [ ] Replay same Stripe webhook and confirm no duplicate reward.
+- [ ] Referral: no reward at signup; first successful payment gives inviter +14 days / invitee +7 days once.
+- [ ] Test refund/dispute event logging.
+- [ ] Test Gift Code reuse/limit/expiry.
+- [ ] Test Community cannot read Private content.
+- [ ] Test account export.
+- [ ] Test account deletion request.
+- [ ] Configure Cloudflare WAF/rate limiting for `/api/*`.
+- [ ] Store secrets using Cloudflare Secrets.
+- [ ] Test CSP on production domain, Google OAuth and Stripe Checkout.
+- [ ] Establish and test database backup/restore.
+- [ ] Publish Terms, Privacy, Refund/Cancellation and Community Guidelines.
+
+- [ ] Run `003_refund_workflow.sql`.
+- [ ] Create a customer refund request and verify only the owner can see it.
+- [ ] Verify non-admin users cannot list/approve refund requests.
+- [ ] Approve a refund in Stripe TEST mode and verify webhook moves request to `refunded`.
+- [ ] Verify full refund + cancel option cancels the subscription.
+- [ ] Verify partial refund does not automatically cancel subscription.
+- [ ] Verify a fully refunded first qualifying payment revokes both referral bonus entitlements.
+- [ ] Verify duplicate refund webhook events do not double-process.
+- [ ] Publish a reviewed refund policy before live payments.
+
+- [ ] Run `004_audit_fixes.sql`.
+- [ ] Confirm a normal user cannot update `role`, `pro_lifetime`, `pro_bonus_until`, `xp` or `streak` directly.
+- [ ] Confirm Pro can start multiple Listening/Writing/Mock sessions on the same local day.
+- [ ] Force a webhook handler failure, retry the event, and confirm it processes on retry.
+- [ ] Confirm Flashcard XP is awarded only once per word even after browser manipulation/reload.
+- [ ] Test daily reset in at least Asia/Bangkok and UTC timezones.
+- [ ] Test Community content containing HTML-like text and confirm it is rendered as text, not executable markup.
