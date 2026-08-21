@@ -123,10 +123,10 @@ export async function loadCommunity(query="",type="vocab"){
     if(query)q=q.ilike("name",`%${query}%`);
     const {data,error}=await q;
     if(error)throw error;
-    return (data||[]).map(x=>({
+    return withCommunityMetrics((data||[]).map(x=>({
       id:x.id,type:"vocab",title:x.name,creator:x.profiles?.username||"member",
       count:x.vocab_words?.length||0,visibility:"public"
-    }));
+    })),"vocab");
   }
   let q=supabase.from("practice_sets")
     .select("id,title,kind,user_id,visibility,profiles!practice_sets_user_id_fkey(username)")
@@ -134,9 +134,42 @@ export async function loadCommunity(query="",type="vocab"){
   if(query)q=q.ilike("title",`%${query}%`);
   const {data,error}=await q;
   if(error)throw error;
-  return (data||[]).map(x=>({
+  return withCommunityMetrics((data||[]).map(x=>({
     id:x.id,type:"skill",kind:x.kind,title:x.title,creator:x.profiles?.username||"member",count:1,visibility:"public"
-  }));
+  })),"skill");
+}
+
+async function withCommunityMetrics(items,type){
+  if(!items.length)return items;
+  const ids=items.map(x=>x.id);
+  const [{data:likes},{data:reviews},{data:imports},{data:userData}]=await Promise.all([
+    supabase.from("content_likes").select("user_id,content_id").eq("content_type",type).in("content_id",ids),
+    supabase.from("content_reviews").select("user_id,content_id,rating").eq("content_type",type).eq("status","visible").in("content_id",ids),
+    supabase.from("content_imports").select("source_content_id").eq("content_type",type).in("source_content_id",ids),
+    supabase.auth.getUser()
+  ]);
+  const user=userData?.user;
+  return items.map(item=>{
+    const itemLikes=(likes||[]).filter(x=>x.content_id===item.id),itemReviews=(reviews||[]).filter(x=>x.content_id===item.id);
+    return {...item,likeCount:itemLikes.length,liked:!!user&&itemLikes.some(x=>x.user_id===user.id),ratingCount:itemReviews.length,rating:itemReviews.length?itemReviews.reduce((n,x)=>n+x.rating,0)/itemReviews.length:0,importCount:(imports||[]).filter(x=>x.source_content_id===item.id).length};
+  });
+}
+
+export async function toggleCommunityLike(user,item){
+  if(!user||!item)throw new Error("Login required");
+  const key={user_id:user.id,content_type:item.type,content_id:item.id};
+  if(item.liked){const {error}=await supabase.from("content_likes").delete().match(key);if(error)throw error;return false}
+  const {error}=await supabase.from("content_likes").insert(key);if(error)throw error;return true;
+}
+
+export async function saveCommunityReview(user,item,rating,body=""){
+  if(!user||!item)throw new Error("Login required");
+  const {error}=await supabase.from("content_reviews").upsert({user_id:user.id,content_type:item.type,content_id:item.id,rating,body,updated_at:new Date().toISOString()},{onConflict:"user_id,content_type,content_id"});if(error)throw error;
+}
+
+export async function reportCommunityContent(user,item,reason){
+  if(!item)throw new Error("Content not found");
+  const {error}=await supabase.from("content_reports").insert({reporter_user_id:user?.id||null,content_type:item.type,content_id:item.id,reason});if(error)throw error;
 }
 
 export async function importCommunityItem(user,item){
@@ -158,15 +191,18 @@ export async function importCommunityItem(user,item){
       })));
       if(we)throw we;
     }
+    await supabase.from("content_imports").upsert({user_id:user.id,content_type:"vocab",source_content_id:item.id,imported_content_id:newId},{onConflict:"user_id,content_type,source_content_id"});
     return;
   }
   const {data:set,error}=await supabase.from("practice_sets").select("*").eq("id",item.id).eq("visibility","public").single();
   if(error)throw error;
+  const importedId=`${set.kind}-${crypto.randomUUID()}`;
   const {error:ie}=await supabase.from("practice_sets").insert({
-    id:`${set.kind}-${crypto.randomUUID()}`,user_id:user.id,kind:set.kind,
+    id:importedId,user_id:user.id,kind:set.kind,
     title:`${set.title} · @${item.creator}`,visibility:"private",payload:set.payload
   });
   if(ie)throw ie;
+  await supabase.from("content_imports").upsert({user_id:user.id,content_type:"skill",source_content_id:item.id,imported_content_id:importedId},{onConflict:"user_id,content_type,source_content_id"});
 }
 
 export async function uploadAvatar(user,file){

@@ -2,20 +2,20 @@ import { store } from "../lib/store.js";
 import { tr } from "../lib/i18n.js";
 import { speak,todayKey,escapeHtml } from "../lib/utils.js";
 import { backendEnabled,getSession,signInGoogle,signOut,onAuthChange } from "../lib/auth.js";
-import { loadCloudState,pushCloudState,loadCommunity,importCommunityItem,uploadAvatar } from "../lib/cloud.js";
+import { loadCloudState,pushCloudState,loadCommunity,importCommunityItem,uploadAvatar,toggleCommunityLike,saveCommunityReview,reportCommunityContent } from "../lib/cloud.js";
 import { api } from "../lib/api.js";
 import { canPrivateLocally,startDailyFeature } from "../lib/policy.js";
 import { supabase } from "../lib/supabase.js";
 import { renderHome } from "../features/home/home.js";
 import { renderDecks,renderStudy,masteredWords } from "../features/flashcards/flashcards.js";
-import { renderList,renderReading,renderListening,renderWriting } from "../features/practice/practice.js";
+import { renderList,renderReading,renderListening,renderWriting,renderMock,renderPracticeResult } from "../features/practice/practice.js";
 import { renderCommunity } from "../features/community/community.js";
 import { renderSettings } from "../features/settings/settings.js";
 import { renderProfile } from "../features/profile/profile.js";
 import { modal } from "../components/modal.js";
 
 export async function createApp(root){
- let route="home",study=null,selected=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,hydrating=false;
+ let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
  let pendingPublicSave=null;const activeUsageSessions={};
  let currentUser=null;
 
@@ -33,14 +33,14 @@ export async function createApp(root){
  }
  function layout(content){
   const s=store.get();
-  return `<div class="app-root"><div class="app-shell"><aside class="app-sidebar">
+  return `<div class="app-root"><header class="mobile-top"><div class="mobile-brand"><span>J</span><div><b>Jumsup</b><small>English Practice</small></div></div><button class="mobile-profile" data-nav="profile">◎</button></header><div class="app-shell"><aside class="app-sidebar">
    <div class="brand"><div class="brand-mark">J</div><div><strong>Jumsup</strong><small>English Practice</small></div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,4).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"practice")}</p><div class="nav-grid">${nav().slice(4,8).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(8,10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"system")}</p><div class="nav-grid">${nav().slice(10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="sidebar-bottom">${accountMini(s)}</div>
-  </aside><main class="app-content">${s.syncing?`<div class="sync-chip">Syncing…</div>`:""}${content}</main></div>${modalHtml}</div>`;
+  </aside><main class="app-content">${s.syncing?`<div class="sync-chip">Syncing…</div>`:""}${content}</main></div><nav class="bottom-nav"><button class="${route==="home"?"active":""}" data-nav="home"><span>⌂</span>Home</button><button class="${route.startsWith("reading")?"active":""}" data-nav="reading"><span>R</span>Reading</button><button class="${route.startsWith("listening")?"active":""}" data-nav="listening"><span>L</span>Listening</button><button class="${route.startsWith("writing")?"active":""}" data-nav="writing"><span>W</span>Writing</button><button class="${route.startsWith("mock")?"active":""}" data-nav="mock"><span>M</span>Mock</button></nav>${modalHtml}</div>`;
  }
 
  function render(){
@@ -58,11 +58,13 @@ export async function createApp(root){
   else if(route==="reading-play")html=renderReading(selected);
   else if(route==="listening-play")html=renderListening(selected);
   else if(route==="writing-play")html=renderWriting(selected);
+  else if(route==="mock-play")html=renderMock(selected);
+  else if(route==="practice-result")html=renderPracticeResult(selected,practiceAttempt);
   else if(route==="community")html=renderCommunity(s,communityQuery,communityTab);
   else if(route==="profile")html=renderProfile(s);
   else if(route==="settings")html=renderSettings(s);
   else html=renderHome(s);
-  root.innerHTML=layout(html);bind();
+  root.innerHTML=layout(html);bind();startExamTimer();
  }
 
  function toast(message){
@@ -89,11 +91,19 @@ export async function createApp(root){
  }
 
  async function refreshCommunity(){
-  if(!currentUser||!backendEnabled){store.set({community:[]});return}
+  if(!currentUser||!backendEnabled){store.set({community:buildDemoCommunity(store.get())});return}
   try{
    const items=await loadCommunity(communityQuery,communityTab);
    store.set({community:items});
   }catch(e){console.error(e)}
+ }
+
+ function buildDemoCommunity(s){
+  const likes=s.communityLikes||{},reviews=s.communityReviews||{},imports=s.communityImportCounts||{};
+  const decorate=x=>{const review=reviews[x.id],rating=review?.rating||x.rating||0,ratingCount=review?1:(x.ratingCount||0);return {...x,liked:!!likes[x.id],likeCount:(x.likeCount||0)+(likes[x.id]?1:0),importCount:(x.importCount||0)+(imports[x.id]||0),rating,ratingCount}};
+  const vocab=(s.decks||[]).slice(0,2).map((x,i)=>decorate({id:x.id,type:"vocab",title:x.name,creator:i?"Jumsup Tutor":"Jumsup Official",count:x.words?.length||0,official:!i,likeCount:18-i*5,importCount:42-i*11,rating:4.7-i*.2,ratingCount:12-i*3,createdAt:"2026-08-20"}));
+  const skill=[...(s.reading||[]).map(x=>({...x,kind:"reading"})),...(s.listening||[]).map(x=>({...x,kind:"listening"})),...(s.writing||[]).map(x=>({...x,kind:"writing"})),...(s.mocks||[]).map(x=>({...x,kind:"mock"}))].filter(x=>x.creator==="Jumsup Official").map((x,i)=>decorate({id:x.id,type:"skill",kind:x.kind,title:x.title,creator:x.creator,count:x.itemCount||x.questions?.length||1,official:true,sourceKind:x.kind,likeCount:24-i*2,importCount:61-i*7,rating:Math.max(4.2,4.9-i*.12),ratingCount:18-i,createdAt:"2026-08-21"}));
+  return [...vocab,...skill];
  }
 
  function scheduleSync(){
@@ -113,8 +123,18 @@ export async function createApp(root){
   root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>store.set({lang:el.dataset.lang}));
   root.querySelectorAll("[data-theme-choice]").forEach(el=>el.onclick=()=>store.set({theme:el.dataset.themeChoice}));
   const st=root.querySelector("#soundToggle");if(st)st.onchange=()=>store.set({sound:st.checked});
+  const communitySort=root.querySelector("#communitySort");if(communitySort)communitySort.onchange=()=>store.set({communitySort:communitySort.value});
   root.querySelectorAll("[data-community-tab]").forEach(el=>el.onclick=async()=>{communityTab=el.dataset.communityTab;await refreshCommunity();render()});
-  root.querySelectorAll(".choice").forEach(el=>el.onclick=()=>el.classList.add(Number(el.dataset.answer)===Number(el.dataset.correct)?"correct":"wrong"));
+  root.querySelectorAll(".choice").forEach(el=>el.onclick=()=>{
+   const host=el.closest(".question");
+   host.querySelectorAll(".choice").forEach(x=>x.classList.remove("selected","correct","wrong"));
+   el.classList.add("selected",Number(el.dataset.answer)===Number(el.dataset.correct)?"correct":"wrong");
+   host.dataset.answered="true";if(practiceAttempt)practiceAttempt.answers[el.dataset.question]=Number(el.dataset.answer);
+   const answered=root.querySelectorAll('.question[data-answered="true"]').length,total=root.querySelectorAll(".question").length,count=root.querySelector("#answeredCount");
+   if(count)count.textContent=`${answered}/${total}${route==="mock-play"?" ตัวอย่าง":""}`;
+   const number=Number((host.id.match(/(\d+)$/)||[])[1]);if(number)root.querySelector(`[data-jump="mock-${number}"]`)?.classList.add("done");
+  });
+  root.querySelectorAll("[data-jump]").forEach(el=>el.onclick=()=>document.getElementById(el.dataset.jump)?.scrollIntoView({behavior:"smooth",block:"start"}));
   root.querySelectorAll(".read-word").forEach(el=>el.onclick=()=>openWord(el.dataset.word));
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
   bindSwipe();
@@ -151,16 +171,29 @@ export async function createApp(root){
       try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id});activeUsageSessions[kind]=usage.existing_session_key||sessionKey}
       catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return toast("วันนี้ใช้สิทธิ์ "+kind+" ฟรีไปแล้ว");throw err}
     }
-    route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"home";render()
+    practiceKind=kind;const questions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);practiceAttempt={answers:{},questions,startedAt:Date.now()};
+    route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"mock-play";render()
    }
-   if(a==="speak-script")speak(el.dataset.script);
+   if(a==="speak-script")speak(el.dataset.script,root.querySelector("#listenAccent")?.value||"en-US",root.querySelector("#listenRate")?.value||.9);
+   if(a==="pause-speech")speechSynthesis?.pause();
+   if(a==="resume-speech")speechSynthesis?.resume();
    if(a==="stop-speech")speechSynthesis?.cancel();
+   if(a==="submit-practice"){if(!practiceAttempt)return;clearInterval(examTimer);examTimer=null;route="practice-result";return render()}
+   if(a==="retry-practice"){practiceAttempt={answers:{},questions:practiceAttempt.questions,startedAt:Date.now()};route=practiceKind==="reading"?"reading-play":practiceKind==="listening"?"listening-play":practiceKind==="writing"?"writing-play":"mock-play";return render()}
+   if(a==="back-practice-list"){route=practiceKind||"home";selected=null;practiceAttempt=null;return render()}
    if(a==="community-search"){communityQuery=root.querySelector("#communitySearch").value;await refreshCommunity();render()}
    if(a==="community-refresh"){await refreshCommunity();render()}
    if(a==="import-community"){
+    const item=s.community.find(x=>x.id===el.dataset.id);
+    if(!backendEnabled){localCommunityImport(item);return toast("นำเข้าเป็นสำเนาใหม่ในโหมดทดสอบแล้ว")}
     if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนนำเข้า Community");
-    const item=s.community.find(x=>x.id===el.dataset.id);await importCommunityItem(currentUser,item);await hydrateFromCloud(currentUser);return toast("นำเข้าเป็นสำเนาใหม่แล้ว");
+    await importCommunityItem(currentUser,item);await hydrateFromCloud(currentUser);return toast("นำเข้าเป็นสำเนาใหม่แล้ว");
    }
+   if(a==="like-community"){const id=el.dataset.id,item=s.community.find(x=>x.id===id);if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนกดถูกใจ");await toggleCommunityLike(currentUser,item)}else store.set({communityLikes:{...(s.communityLikes||{}),[id]:!s.communityLikes?.[id]}});await refreshCommunity();return}
+   if(a==="review-community")return openCommunityReview(el.dataset.id)
+   if(a==="save-community-review"){const id=el.dataset.id,rating=Number(root.querySelector("#reviewRating")?.value),body=root.querySelector("#reviewBody")?.value.trim()||"",item=s.community.find(x=>x.id===id);if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนให้คะแนน");await saveCommunityReview(currentUser,item,rating,body)}else store.set({communityReviews:{...(s.communityReviews||{}),[id]:{rating,body,createdAt:new Date().toISOString()}}});modalHtml="";await refreshCommunity();return toast("บันทึกคะแนนและรีวิวแล้ว")}
+   if(a==="report-community")return openCommunityReport(el.dataset.id)
+   if(a==="send-community-report"){const item=s.community.find(x=>x.id===el.dataset.id),reason=root.querySelector("#reportReason")?.value||"รายงานเนื้อหา";if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนรายงานเนื้อหา");await reportCommunityContent(currentUser,item,reason)}modalHtml="";return toast("ส่งรายงานให้ผู้ดูแลตรวจสอบแล้ว")}
    if(a==="close-modal"){modalHtml="";render()}
    if(a==="confirm-delete")confirmDelete(el.dataset.type,el.dataset.id)
    if(a==="save-deck")saveDeck(el.dataset.id||null)
@@ -179,6 +212,29 @@ export async function createApp(root){
    if(a==="claim-referral"){const code=root.querySelector("#referralCode")?.value;await api("/api/referral/claim",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("ใช้ Referral สำเร็จ")}
    if(a==="admin-create-gift"){const code=root.querySelector("#adminGiftCode")?.value,days=root.querySelector("#adminGiftDays")?.value;await api("/api/admin/gift-code",{method:"POST",body:JSON.stringify({code,days})});return toast("สร้าง Gift Code แล้ว")}
   }catch(err){console.error(err);toast(err.message||"เกิดข้อผิดพลาด")}
+ }
+
+ function localCommunityImport(item){
+  if(!item)return;
+  const id=`import-${crypto.randomUUID()}`;
+  store.update(s=>{
+   const counts={...(s.communityImportCounts||{}),[item.id]:(s.communityImportCounts?.[item.id]||0)+1};
+   if(item.type==="vocab"){
+    const source=s.decks.find(x=>x.id===item.id);if(!source)return {...s,communityImportCounts:counts};
+    return {...s,communityImportCounts:counts,decks:[...s.decks,{...structuredClone(source),id,name:`${source.name} · สำเนา`,visibility:"private",creator:"guest"}]};
+   }
+   const key=item.sourceKind==="mock"?"mocks":item.sourceKind,source=(s[key]||[]).find(x=>x.id===item.id);if(!source)return {...s,communityImportCounts:counts};
+   return {...s,communityImportCounts:counts,[key]:[...s[key],{...structuredClone(source),id:`${item.sourceKind}-${id}`,title:`${source.title} · สำเนา`,visibility:"private",creator:"guest"}]};
+  });
+ }
+
+ function openCommunityReview(id){
+  const previous=store.get().communityReviews?.[id];
+  modalHtml=modal("ให้คะแนนชุดฝึก",`<div class="modal-form"><label>คะแนน<select id="reviewRating"><option value="5" ${previous?.rating===5?"selected":""}>5 - ดีมาก</option><option value="4" ${previous?.rating===4?"selected":""}>4 - ดี</option><option value="3" ${previous?.rating===3?"selected":""}>3 - ปานกลาง</option><option value="2" ${previous?.rating===2?"selected":""}>2 - ควรปรับปรุง</option><option value="1" ${previous?.rating===1?"selected":""}>1 - มีปัญหา</option></select></label><label>รีวิว<textarea id="reviewBody" rows="4" maxlength="1000" placeholder="บอกสิ่งที่เป็นประโยชน์กับผู้เรียนคนอื่น">${escapeHtml(previous?.body||"")}</textarea></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-community-review" data-id="${id}">บันทึก</button>`);render()
+ }
+
+ function openCommunityReport(id){
+  modalHtml=modal("รายงานเนื้อหา",`<div class="modal-form"><label>เหตุผล<select id="reportReason"><option>ข้อมูลหรือเฉลยไม่ถูกต้อง</option><option>ละเมิดลิขสิทธิ์</option><option>Spam หรือโฆษณา</option><option>เนื้อหาไม่เหมาะสม</option></select></label><label>รายละเอียด<textarea rows="4" maxlength="1000" placeholder="อธิบายสิ่งที่พบ"></textarea></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-danger" data-action="send-community-report" data-id="${id}">ส่งรายงาน</button>`);render()
  }
 
  function openRefundRequest(){
@@ -218,12 +274,26 @@ export async function createApp(root){
  }
  function openPracticeModal(kind,id){
   const s=store.get(),arr=kind==="mock"?s.mocks:s[kind],x=id?arr.find(v=>v.id===id):null;
-  modalHtml=modal(x?"แก้ไขชุดฝึก":"สร้างชุดฝึก",`<div class="modal-form"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(x?.title||"")}"></label><label>การมองเห็น<select id="modalVisibility"><option value="private">ส่วนตัว</option><option value="public" ${x?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-practice" data-kind="${kind}" data-id="${id||""}">บันทึก</button>`);render()
+  const content=kind==="reading"?x?.text||"":kind==="listening"?x?.script||"":kind==="writing"?x?.passage||x?.prompt||"":"";
+  const questionData=kind==="mock"?(x?.sections||[]):(x?.questions||[]);
+  modalHtml=modal(x?"แก้ไขชุดฝึก":"สร้างชุดฝึก",`<div class="modal-form practice-editor"><div class="modal-two"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(x?.title||"")}"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${x?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${x?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div><div class="modal-two"><label>เวลา (นาที)<input id="practiceMinutes" type="number" min="1" max="240" value="${Number(x?.minutes||10)}"></label>${kind==="writing"?`<label>ประเภท<select id="practiceType"><option ${x?.type!=="Paragraph Organization"?"selected":""}>Text Completion</option><option ${x?.type==="Paragraph Organization"?"selected":""}>Paragraph Organization</option></select></label>`:`<label>หมวด/ประเภท<input id="practiceCategory" value="${escapeHtml(x?.category||x?.type||"")}"></label>`}</div>${kind!=="mock"?`<label>${kind==="reading"?"บทความ":kind==="listening"?"บทสนทนา / Transcript":"ข้อความหรือ Passage"}<textarea id="practiceContent" rows="7" placeholder="ใส่เนื้อหาที่ผู้เรียนจะใช้ตอบคำถาม">${escapeHtml(content)}</textarea></label>`:""}<label>${kind==="mock"?"Sections และข้อสอบ":"คำถาม"} (JSON)<textarea id="practiceQuestions" rows="12" spellcheck="false" placeholder='[{"prompt":"Question","choices":["A","B","C","D"],"answer":0}]'>${escapeHtml(JSON.stringify(questionData,null,2))}</textarea></label><div class="modal-note">answer ใช้เลข 0–3 ตามลำดับตัวเลือก หากเป็น Mock ให้ใช้โครงสร้าง sections ที่มี title, description, context และ questions</div></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-practice" data-kind="${kind}" data-id="${id||""}">บันทึก</button>`);render()
  }
  async function savePractice(kind,id){
   const title=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!title)return;
   const key=kind==="mock"?"mocks":kind,creator=store.get().profile?.username||"guest",newId=id||`${kind}-${crypto.randomUUID()}`;
-  const cur=(store.get()[key]||[]).find(x=>x.id===id),payload=cur?Object.fromEntries(Object.entries(cur).filter(([k])=>!["id","title","visibility","creator"].includes(k))):(kind==="mock"?{questions:80,minutes:90}:{});
+  const cur=(store.get()[key]||[]).find(x=>x.id===id);let parsed;
+  try{parsed=JSON.parse(root.querySelector("#practiceQuestions")?.value||"[]")}catch{throw new Error("รูปแบบ JSON ของคำถามไม่ถูกต้อง")}
+  if(!Array.isArray(parsed))throw new Error("ข้อมูลคำถามต้องเป็น JSON Array");
+  const payload=cur?Object.fromEntries(Object.entries(cur).filter(([k])=>!["id","title","visibility","creator"].includes(k))):{};
+  payload.minutes=Math.max(1,Number(root.querySelector("#practiceMinutes")?.value)||10);
+  if(kind==="mock"){payload.sections=parsed;payload.questions=parsed.reduce((n,section)=>n+(section.questions?.length||0),0)||80;payload.itemCount=payload.questions}
+  else{
+   payload.questions=parsed;payload.itemCount=parsed.length;
+   const content=root.querySelector("#practiceContent")?.value.trim()||"";
+   if(kind==="reading"){payload.text=content;payload.category=root.querySelector("#practiceCategory")?.value.trim()||"General article"}
+   if(kind==="listening"){payload.script=content;payload.type=root.querySelector("#practiceCategory")?.value.trim()||"Conversation";payload.accent=payload.accent||"en-US"}
+   if(kind==="writing"){payload.passage=content;payload.type=root.querySelector("#practiceType")?.value||"Text Completion"}
+  }
   const localSave=(v)=>store.update(s=>({...s,[key]:id?s[key].map(x=>x.id===id?{...x,title,visibility:v}:x):[...s[key],{id:newId,title,visibility:v,creator,...payload}]}));
   if(visibility==="private"&&!canPrivateLocally(store.get(),kind,id)){
     pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id:newId,title,payload,confirm_public:true})});localSave("public")};
@@ -244,10 +314,11 @@ export async function createApp(root){
  function openGame(kind,deck,words){
   if(kind==="match"){
    if(words.length<4){modalHtml=modal("Match","ต้องจำศัพท์อย่างน้อย 4 คำก่อนเล่น");return render()}
-   root.innerHTML=layout(`<div class="content-header"><h1 class="content-title">Match · ${escapeHtml(deck.name)}</h1></div><div class="match-board">${words.slice(0,6).flatMap((w,i)=>[`<button class="match-tile" data-pair="${i}">${escapeHtml(w.w)}</button>`,`<button class="match-tile" data-pair="${i}">${escapeHtml(w.m)}</button>`]).join("")}</div>`);let first=null;root.querySelectorAll(".match-tile").forEach(t=>t.onclick=()=>{if(!first){first=t;t.classList.add("selected")}else if(first!==t&&first.dataset.pair===t.dataset.pair){first.classList.add("matched");t.classList.add("matched");first=null}else{first.classList.remove("selected");first=null}});return
+   const pairs=words.slice(0,6),tiles=pairs.flatMap((w,i)=>[{pair:i,text:w.w},{pair:i,text:w.m}]).sort(()=>Math.random()-.5);
+   root.innerHTML=layout(`<div class="content-header"><div><p class="content-eyebrow">VOCABULARY GAME</p><h1 class="content-title">Match · ${escapeHtml(deck.name)}</h1><p class="content-desc">จับคู่คำศัพท์กับความหมายให้ครบโดยใช้จำนวนครั้งให้น้อยที่สุด</p></div><span class="content-mode">Mastered words</span></div><div class="match-toolbar"><div>เวลา <strong id="matchTime">0:00</strong></div><div>ครั้ง <strong id="matchMoves">0</strong></div><div>คู่ <strong id="matchPairs">0/${pairs.length}</strong></div></div><div class="match-board quizlet-match">${tiles.map(t=>`<button class="match-tile" data-pair="${t.pair}">${escapeHtml(t.text)}</button>`).join("")}</div>`);bind();let first=null,moves=0,matched=0,seconds=0;const clock=setInterval(()=>{seconds++;const el=root.querySelector("#matchTime");if(el)el.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;else clearInterval(clock)},1000);root.querySelectorAll(".match-tile").forEach(t=>t.onclick=()=>{if(t.classList.contains("matched"))return;if(!first){first=t;t.classList.add("selected");return}if(first===t)return;moves++;root.querySelector("#matchMoves").textContent=moves;if(first.dataset.pair===t.dataset.pair){first.classList.add("matched");t.classList.add("matched");matched++;root.querySelector("#matchPairs").textContent=`${matched}/${pairs.length}`;first=null;if(matched===pairs.length){clearInterval(clock);setTimeout(()=>toast(`จบ Match ใน ${seconds} วินาที · ${moves} ครั้ง`),250)}}else{const old=first;first=null;t.classList.add("wrong");setTimeout(()=>{old.classList.remove("selected");t.classList.remove("wrong")},350)}});return
   }
   if(words.length<3){modalHtml=modal("Crossword","ต้องจำศัพท์อย่างน้อย 3 คำก่อนเล่น");return render()}
-  const w=words[0];root.innerHTML=layout(`<div class="content-header"><h1 class="content-title">Crossword · ${escapeHtml(deck.name)}</h1></div><div class="card"><h3>คำใบ้: ${escapeHtml(w.m)}</h3><div class="cross-grid-pro" style="--cols:${w.w.length}">${[...w.w].map(c=>`<input class="cross-cell" maxlength="1" data-a="${escapeHtml(c.toUpperCase())}">`).join("")}</div><button class="btn btn-primary" id="checkCross">ตรวจคำตอบ</button></div>`);root.querySelector("#checkCross").onclick=()=>root.querySelectorAll(".cross-cell").forEach(x=>x.classList.toggle("wrong",x.value.toUpperCase()!==x.dataset.a))
+  const selectedWords=words.filter(w=>/^[a-z]+$/i.test(w.w)).slice(0,5);root.innerHTML=layout(`<div class="content-header"><div><p class="content-eyebrow">VOCABULARY GAME</p><h1 class="content-title">Crossword · ${escapeHtml(deck.name)}</h1><p class="content-desc">เติมคำจากคำใบ้โดยใช้เฉพาะคำที่จำแล้ว</p></div><span class="content-mode" id="crossTime">0:00</span></div><div class="crossword-layout"><div class="crossword-main">${selectedWords.map((w,wi)=>`<div class="cross-word-row"><b>${wi+1}</b><div class="cross-letter-row">${[...w.w].map(c=>`<input class="cross-cell" maxlength="1" data-a="${escapeHtml(c.toUpperCase())}" aria-label="คำที่ ${wi+1}">`).join("")}</div></div>`).join("")}<div class="actions"><button class="btn btn-primary" id="checkCross">ตรวจคำตอบ</button><button class="btn" id="clearCross">ล้างคำตอบ</button></div></div><aside class="clue-panel"><h3>คำใบ้</h3>${selectedWords.map((w,i)=>`<div class="clue-item"><b>${i+1}. ${escapeHtml(w.m)}</b><small>${w.w.length} ตัวอักษร</small></div>`).join("")}</aside></div>`);bind();let seconds=0;const clock=setInterval(()=>{seconds++;const el=root.querySelector("#crossTime");if(el)el.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;else clearInterval(clock)},1000);root.querySelectorAll(".cross-cell").forEach((x,i,all)=>x.oninput=()=>{x.value=x.value.replace(/[^a-z]/gi,"").toUpperCase();if(x.value)all[i+1]?.focus()});root.querySelector("#clearCross").onclick=()=>root.querySelectorAll(".cross-cell").forEach(x=>{x.value="";x.classList.remove("wrong")});root.querySelector("#checkCross").onclick=()=>{const cells=[...root.querySelectorAll(".cross-cell")];cells.forEach(x=>x.classList.toggle("wrong",x.value.toUpperCase()!==x.dataset.a));if(cells.every(x=>x.value.toUpperCase()===x.dataset.a)){clearInterval(clock);toast(`ถูกทั้งหมด · ใช้เวลา ${seconds} วินาที`)}}
  }
  async function markKnown(i){
   if(!study)return;
@@ -270,6 +341,13 @@ export async function createApp(root){
   card.onpointermove=e=>{if(sx===null)return;dx=e.clientX-sx;card.style.transform=`translateX(${dx}px) rotate(${dx/25}deg)`};
   card.onpointerup=()=>{if(Math.abs(dx)>90){dx>0?known():missed();return}card.style.transform="";sx=null;dx=0};
   document.onkeydown=e=>{if(route!=="study")return;if(e.key==="ArrowRight"){e.preventDefault();known()}else if(e.key==="ArrowLeft"){e.preventDefault();missed()}};
+ }
+
+ function startExamTimer(){
+  clearInterval(examTimer);examTimer=null;
+  const el=root.querySelector("#examTimer");if(!el)return;
+  let remaining=Number(el.dataset.seconds)||0;
+  examTimer=setInterval(()=>{remaining=Math.max(0,remaining-1);const m=Math.floor(remaining/60),s=remaining%60;el.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;if(!remaining){clearInterval(examTimer);examTimer=null;toast("หมดเวลาฝึกแล้ว")}},1000);
  }
 
  store.subscribe(()=>{render();scheduleSync()});
