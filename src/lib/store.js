@@ -1,4 +1,4 @@
-import { defaultWords,defaultReading,defaultListening,defaultWriting } from "../data/defaultData.js";
+import { defaultWords,defaultReading,defaultListening,defaultWriting,defaultMocks } from "../data/defaultData.js";
 const KEY="jumsup.production.v3";
 const LEGACY_KEYS=["jumsup.production.v1","vantage.production.v1"];
 if(!localStorage.getItem(KEY)){
@@ -15,10 +15,18 @@ const initial=()=>({
  progress:{},
  flashSettings:{loopSize:10,autoSpeak:false,showMeaning:true,shuffle:false},
  reading:defaultReading,listening:defaultListening,writing:defaultWriting,
- mocks:[{id:"mock-1",title:"English Full Mock #1",visibility:"private",creator:"guest",questions:80,minutes:90}],
- community:[]
+ mocks:defaultMocks,
+ community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{}
 });
-let state=(()=>{try{return {...initial(),...JSON.parse(localStorage.getItem(KEY)||"{}"),user:null,subscription:null,syncing:false}}catch{return initial()}})();
+function mergeSamples(saved){
+ const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false};
+ for(const key of ["reading","listening","writing","mocks"]){
+  const existing=Array.isArray(next[key])?next[key]:[];
+  next[key]=[...existing,...base[key].filter(sample=>!existing.some(item=>item.id===sample.id))];
+ }
+ return next;
+}
+let state=(()=>{try{return mergeSamples(JSON.parse(localStorage.getItem(KEY)||"{}"))}catch{return initial()}})();
 const listeners=new Set();
 function persist(){const copy={...state,user:null,subscription:null,syncing:false};localStorage.setItem(KEY,JSON.stringify(copy))}
 export const store={
