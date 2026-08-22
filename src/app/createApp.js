@@ -14,6 +14,7 @@ import { renderCommunity } from "../features/community/community.js";
 import { renderProfile } from "../features/profile/profile.js";
 import { modal } from "../components/modal.js";
 import { importerModal,parseCsv,validateImport,downloadTemplate,buildImportedContent,TYPES } from "../features/importer/bulkImporter.js";
+import { lookupReadingWord } from "../data/readingDictionary.js";
 
 export async function createApp(root){
  let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,renderFrame=null,hydrating=false;
@@ -425,7 +426,7 @@ export async function createApp(root){
 
  async function openWord(word,target){
   root.querySelector(".word-popover")?.remove();
-  const local=store.get().decks.flatMap(d=>d.words).find(w=>w.w.toLowerCase()===word.toLowerCase())?.m;
+  const local=store.get().decks.flatMap(d=>d.words).find(w=>w.w.toLowerCase()===word.toLowerCase())?.m||lookupReadingWord(word);
   const pop=document.createElement("div");pop.className="word-popover";pop.innerHTML=`<div class="word-popover-head"><strong>${escapeHtml(word)}</strong><button type="button" aria-label="ปิด">×</button></div><p data-word-meaning>${escapeHtml(local||"กำลังค้นหาคำแปล…")}</p><label>เพิ่มไปยังชุด<select data-word-deck>${store.get().decks.map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`).join("")||'<option value="new">Reading vocabulary</option>'}</select></label><button type="button" class="btn btn-primary">+ เพิ่มเข้า Flashcard</button>`;
   root.appendChild(pop);const rect=target?.getBoundingClientRect(),width=280;pop.style.left=Math.max(10,Math.min(innerWidth-width-10,rect?.left||20))+"px";pop.style.top=Math.min(innerHeight-210,(rect?.bottom||80)+7)+"px";
   const close=()=>pop.remove();pop.querySelector('[aria-label="ปิด"]').onclick=close;
