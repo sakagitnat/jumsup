@@ -175,4 +175,4 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 .tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px;padding-bottom:2px}
 .tab{flex:0 0 auto;padding:9px 13px;border:1px solid var(--app-border);border-radius:10px;background:var(--app-surface);color:var(--app-muted);font-weight:700}
 .tab.active{border-color:var(--app-primary);background:var(--app-primary);color:#fff}
-@media(max-width:620px){.tabs{margin-inline:-2px}.audio-controls{align-items:stretch}.audio-controls .btn,.audio-controls label{width:100%}}
+@media(max-width:620px){.tabs{width:100%;max-width:100%;margin-inline:0;box-sizing:border-box}.audio-controls{align-items:stretch}.audio-controls .btn,.audio-controls label{width:100%}}
