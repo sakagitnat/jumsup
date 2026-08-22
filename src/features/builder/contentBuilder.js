@@ -46,9 +46,20 @@ function syncFromDom(root,b){
  root.querySelectorAll("[data-word]").forEach(row=>{const w=b.words[Number(row.dataset.word)];if(!w)return;w.w=row.querySelector("[data-word-field=w]")?.value||"";w.m=row.querySelector("[data-word-field=m]")?.value||""});
 }
 function parseQuestions(text){
- const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),out=[];let q=null;
- for(const line of lines){const qm=line.match(/^(?:Q(?:uestion)?\s*)?\d+[.)]\s*(.+)/i),cm=line.match(/^[A-D][.)]\s*(.+)/i);if(qm){if(q)out.push(q);q={prompt:qm[1],choices:[],answer:0}}else if(cm&&q)q.choices.push(cm[1]);else if(q&&q.choices.length===0)q.prompt+=" "+line}
- if(q)out.push(q);return out.filter(x=>x.prompt).map(x=>({...x,choices:[...x.choices,"","","",""].slice(0,4)})).slice(0,60);
+ const lines=text.split(/\r?\n/).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean),out=[];let q=null;
+ const finish=()=>{if(q?.prompt){q.choices=[...q.choices,"","","",""].slice(0,4);out.push(q)}q=null};
+ for(const line of lines){
+  const alpha=line.match(/^(?:\(?[A-Da-d]\)?[.)]?)[ \t]+(.+)/),num=line.match(/^(\d{1,3})[.)][ \t]+(.+)/),paren=line.match(/^\(([1-4])\)[ \t]*(.+)/);
+  if((alpha||paren)&&q){q.choices.push((alpha||paren)[alpha?1:2]);continue}
+  if(num){
+   const n=Number(num[1]);
+   if(q&&q.choices.length<4&&n>=1&&n<=4){q.choices.push(num[2]);continue}
+   finish();q={prompt:num[2],choices:[],answer:0};continue
+  }
+  if(/\?$/.test(line)&&(!q||q.choices.length)){finish();q={prompt:line,choices:[],answer:0};continue}
+  if(q&&!q.choices.length&&line.length<260)q.prompt+=" "+line;
+ }
+ finish();return out.filter(x=>x.prompt&&x.choices.filter(Boolean).length>=2).slice(0,60);
 }
 function parseWords(text){
  const out=[];for(const raw of text.split(/\r?\n/)){const line=raw.trim();if(!line)continue;const m=line.match(/^([A-Za-z][A-Za-z '-]{1,40})\s*(?:[-–—:=\t]|\s{2,})\s*(.{1,120})$/);if(m)out.push({w:m[1].trim(),m:m[2].trim()})}return out.slice(0,200);
@@ -56,8 +67,13 @@ function parseWords(text){
 async function readPdf(file){
  const pdfjs=await import("pdfjs-dist/build/pdf.mjs");pdfjs.GlobalWorkerOptions.workerSrc=pdfWorkerUrl;
  const data=new Uint8Array(await file.arrayBuffer()),pdf=await pdfjs.getDocument({data}).promise,parts=[];
- for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),content=await page.getTextContent();parts.push(content.items.map(x=>x.str).join(" "))}
- return parts.join("\n");
+ for(let p=1;p<=pdf.numPages;p++){
+  const page=await pdf.getPage(p),content=await page.getTextContent(),rows=new Map();
+  for(const item of content.items){if(!item.str?.trim())continue;const y=Math.round(item.transform?.[5]||0),x=item.transform?.[4]||0;if(!rows.has(y))rows.set(y,[]);rows.get(y).push({x,text:item.str.trim()})}
+  const lines=[...rows.entries()].sort((a,b)=>b[0]-a[0]).map(([,items])=>items.sort((a,b)=>a.x-b.x).map(x=>x.text).join(" ").replace(/\s+/g," ").trim()).filter(Boolean);
+  parts.push(lines.join("\n"));
+ }
+ return parts.join("\n\n");
 }
 
 export function bindContentBuilder(root,b,hooks){
