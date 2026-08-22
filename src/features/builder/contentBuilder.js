@@ -1,4 +1,5 @@
 import { escapeHtml } from "../../lib/utils.js";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 const labels={vocab:"ชุดคำศัพท์",reading:"Reading",listening:"Listening",writing:"Writing",mock:"Mock Exam"};
 const blankQuestion=()=>({prompt:"",choices:["","","",""],answer:0});
@@ -53,7 +54,7 @@ function parseWords(text){
  const out=[];for(const raw of text.split(/\r?\n/)){const line=raw.trim();if(!line)continue;const m=line.match(/^([A-Za-z][A-Za-z '-]{1,40})\s*(?:[-–—:=\t]|\s{2,})\s*(.{1,120})$/);if(m)out.push({w:m[1].trim(),m:m[2].trim()})}return out.slice(0,200);
 }
 async function readPdf(file){
- const pdfjs=await import(/* @vite-ignore */ "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.min.mjs");pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.worker.min.mjs";
+ const pdfjs=await import("pdfjs-dist/build/pdf.mjs");pdfjs.GlobalWorkerOptions.workerSrc=pdfWorkerUrl;
  const data=new Uint8Array(await file.arrayBuffer()),pdf=await pdfjs.getDocument({data}).promise,parts=[];
  for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),content=await page.getTextContent();parts.push(content.items.map(x=>x.str).join(" "))}
  return parts.join("\n");
