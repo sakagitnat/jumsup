@@ -2,7 +2,7 @@ import { Header } from "../../components/ui.js";
 import { escapeHtml,speak } from "../../lib/utils.js";
 export function renderDecks(s,mode="flash"){
  return `${Header("VOCABULARY","เลือกชุดคำศัพท์","เลือกชุดก่อนเริ่มฝึก แก้ไข ลบ และกำหนดการมองเห็นได้",`${s.decks.length} sets`)}
- <div class="actions" style="margin:14px 0"><button class="btn btn-primary" data-action="new-deck">+ สร้างชุดใหม่</button><button class="btn" data-nav="community">ค้นหาใน Community</button></div>
+ <div class="actions" style="margin:14px 0"><button class="btn btn-primary" data-action="new-deck">+ สร้างชุดใหม่</button><button class="btn" data-action="open-bulk-import" data-type="vocab">นำเข้าหลายคำ</button><button class="btn" data-nav="community">ค้นหาใน Community</button></div>
  <div class="grid g2">${s.decks.map(d=>`<div class="card"><div class="card-head"><div><span class="tag ${d.visibility==="public"?"green":"blue"}">${d.visibility==="public"?"สาธารณะ":"ส่วนตัว"}</span><h3>${escapeHtml(d.name)}</h3><p>${d.words.length} คำ · สร้างโดย @${escapeHtml(d.creator)}</p></div><span class="avatar-mini">Aa</span></div><div class="actions" style="margin-top:12px"><button class="btn btn-primary" data-action="start-deck" data-id="${d.id}" data-mode="${mode}">เริ่ม ${mode==="match"?"Match":mode==="crossword"?"Crossword":"Flashcards"}</button><button class="btn" data-action="edit-deck" data-id="${d.id}">แก้ไข</button><button class="btn btn-danger" data-action="delete-deck" data-id="${d.id}">ลบ</button></div></div>`).join("")}</div>`;
 }
 export function renderStudy(s,session){
