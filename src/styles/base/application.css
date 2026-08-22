@@ -117,11 +117,13 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 .practice-choice-grid label{min-width:0}
 .practice-choice-grid label span{display:block;margin-bottom:6px}
 .practice-choice-grid input{width:100%;min-width:0}
+.practice-section-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}
 .practice-add-question{justify-self:start}
 .modal-two.compact{align-items:end}
 @media(max-width:620px){
  .practice-builder-intro,.practice-builder-row-head{align-items:stretch;flex-direction:column}
  .practice-builder-intro .btn,.practice-add-question{width:100%}
+ .practice-section-footer{align-items:stretch;flex-direction:column}
  .practice-builder-row-head>div{justify-content:space-between}
  .practice-builder-row-head>div:last-child{display:grid;grid-template-columns:1fr 1fr;width:100%}
  .practice-choice-grid{grid-template-columns:1fr}
