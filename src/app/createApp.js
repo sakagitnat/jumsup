@@ -157,6 +157,7 @@ export async function createApp(root){
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
   const importFile=root.querySelector("#bulkImportFile");if(importFile)importFile.onchange=async()=>{const file=importFile.files?.[0];if(!file)return;const error=root.querySelector("#importFileError");if(!file.name.toLowerCase().endsWith(".csv")){error.textContent="ตอนนี้รองรับ CSV เท่านั้น กรุณาดาวน์โหลดเทมเพลต CSV แล้วนำข้อมูลมาวาง";error.classList.remove("hidden");return}try{const parsed=parseCsv(await file.text());if(!parsed.headers.length||!parsed.rows.length)throw new Error("ไฟล์ไม่มีข้อมูล");bulkImportState={...bulkImportState,fileName:file.name,...parsed,step:2};openBulkImport()}catch(err){error.textContent=err.message||"อ่านไฟล์ไม่สำเร็จ";error.classList.remove("hidden")}};
   bindDeckEditor();
+  bindPracticeEditor();
   bindSwipe();
  }
 
@@ -349,33 +350,63 @@ export async function createApp(root){
   if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,visibility,payload:{words}})});
   localSave(visibility);modalHtml="";render()
  }
+ function practiceQuestionEditor(q={},index=0){
+  const choices=[...(q.choices||[]),...Array(4).fill("")].slice(0,4),answer=Math.max(0,Math.min(3,Number(q.answer)||0));
+  return \`<article class="practice-question-editor" data-practice-question><div class="practice-builder-row-head"><strong>คำถาม <span data-question-number>\${index+1}</span></strong><div><button type="button" class="mini-btn" data-practice-copy-question>คัดลอก</button><button type="button" class="mini-btn danger" data-practice-delete-question>ลบ</button></div></div><label>คำถาม<input data-question-prompt value="\${escapeHtml(q.prompt||"")}" placeholder="เช่น What is the main idea of the passage?"></label><div class="practice-choice-grid">\${choices.map((choice,i)=>\`<label><span>ตัวเลือก \${String.fromCharCode(65+i)}</span><input data-question-choice="\${i}" value="\${escapeHtml(choice)}" placeholder="พิมพ์ตัวเลือก"></label>\`).join("")}</div><div class="modal-two compact"><label>คำตอบที่ถูก<select data-question-answer>\${choices.map((_,i)=>\`<option value="\${i}" \${answer===i?"selected":""}>\${String.fromCharCode(65+i)}</option>\`).join("")}</select></label><label>คำอธิบาย (ไม่บังคับ)<input data-question-explanation value="\${escapeHtml(q.explanation||"")}" placeholder="อธิบายเหตุผลหลังส่งคำตอบ"></label></div></article>\`;
+ }
+ function practiceSectionEditor(kind,section={},index=0){
+  const content=kind==="reading"?section.text||section.context||"":kind==="listening"?section.script||section.context||"":kind==="writing"?section.passage||section.context||"":section.context||"";
+  const contentLabel=kind==="reading"?"บทความ":kind==="listening"?"บทพูด / Transcript":kind==="writing"?"ข้อความหรือโจทย์ประกอบ":"เนื้อหาประกอบของ Section";
+  const questions=section.questions?.length?section.questions:[{}];
+  return \`<section class="practice-section-editor" data-practice-section><div class="practice-builder-row-head"><div><span class="tag blue">SECTION <span data-section-number>\${index+1}</span></span><strong data-section-heading>\${escapeHtml(section.title||\`ส่วนที่ \${index+1}\`)}</strong></div><div><button type="button" class="mini-btn" data-practice-copy-section>คัดลอก Section</button><button type="button" class="mini-btn danger" data-practice-delete-section>ลบ</button></div></div><div class="modal-two"><label>ชื่อ Section<input data-section-title value="\${escapeHtml(section.title||"")}" placeholder="เช่น General article 1"></label>\${kind==="mock"?\`<label>ประเภท<select data-section-type><option value="reading" \${section.type==="reading"?"selected":""}>Reading</option><option value="listening" \${section.type==="listening"?"selected":""}>Listening</option><option value="writing" \${section.type==="writing"?"selected":""}>Writing</option></select></label>\`:\`<label>คำแนะนำ (ไม่บังคับ)<input data-section-description value="\${escapeHtml(section.description||section.situation||section.directions||"")}" placeholder="ข้อความที่ผู้ทำแบบฝึกจะเห็น"></label>\`}</div><label>\${contentLabel}<textarea data-section-content rows="6" placeholder="วางหรือพิมพ์เนื้อหาสำหรับ Section นี้">\${escapeHtml(content)}</textarea></label><div class="practice-question-list">\${questions.map((q,i)=>practiceQuestionEditor(q,i)).join("")}</div><button type="button" class="btn practice-add-question" data-practice-add-question>+ เพิ่มคำถามใน Section นี้</button></section>\`;
+ }
+ function renumberPracticeEditor(){
+  root.querySelectorAll("[data-practice-section]").forEach((section,si)=>{const n=section.querySelector("[data-section-number]");if(n)n.textContent=si+1;section.querySelectorAll("[data-practice-question]").forEach((q,qi)=>{const x=q.querySelector("[data-question-number]");if(x)x.textContent=qi+1})})
+ }
+ function bindPracticeEditor(){
+  const host=root.querySelector("#practiceSectionList");if(!host)return;
+  const kind=host.dataset.kind;
+  const addQuestion=section=>{section.querySelector(".practice-question-list")?.insertAdjacentHTML("beforeend",practiceQuestionEditor({},section.querySelectorAll("[data-practice-question]").length));renumberPracticeEditor()};
+  root.querySelector("[data-practice-add-section]")?.addEventListener("click",()=>{host.insertAdjacentHTML("beforeend",practiceSectionEditor(kind,{},host.querySelectorAll("[data-practice-section]").length));renumberPracticeEditor();host.lastElementChild?.scrollIntoView({behavior:"smooth",block:"nearest"})});
+  host.onclick=e=>{
+   const section=e.target.closest("[data-practice-section]"),question=e.target.closest("[data-practice-question]");
+   if(e.target.closest("[data-practice-add-question]"))return addQuestion(section);
+   if(e.target.closest("[data-practice-delete-question]")){if(section.querySelectorAll("[data-practice-question]").length<=1)return toast("แต่ละ Section ต้องมีอย่างน้อย 1 คำถาม");question.remove();return renumberPracticeEditor()}
+   if(e.target.closest("[data-practice-copy-question]")){question.insertAdjacentHTML("afterend",practiceQuestionEditor(readPracticeQuestion(question),0));return renumberPracticeEditor()}
+   if(e.target.closest("[data-practice-delete-section]")){if(host.querySelectorAll("[data-practice-section]").length<=1)return toast("ชุดฝึกต้องมีอย่างน้อย 1 Section");section.remove();return renumberPracticeEditor()}
+   if(e.target.closest("[data-practice-copy-section]")){section.insertAdjacentHTML("afterend",practiceSectionEditor(kind,readPracticeSection(section,kind),0));return renumberPracticeEditor()}
+  };
+ }
+ function readPracticeQuestion(row){
+  return {id:row.dataset.questionId||crypto.randomUUID(),prompt:row.querySelector("[data-question-prompt]")?.value.trim()||"",choices:[...row.querySelectorAll("[data-question-choice]")].map(x=>x.value.trim()),answer:Number(row.querySelector("[data-question-answer]")?.value||0),explanation:row.querySelector("[data-question-explanation]")?.value.trim()||""}
+ }
+ function readPracticeSection(row,kind){
+  const title=row.querySelector("[data-section-title]")?.value.trim()||"",description=row.querySelector("[data-section-description]")?.value.trim()||"",content=row.querySelector("[data-section-content]")?.value.trim()||"",questions=[...row.querySelectorAll(":scope > .practice-question-list > [data-practice-question]")].map(readPracticeQuestion),section={title,description,questions};
+  if(kind==="reading")section.text=content;
+  else if(kind==="listening"){section.script=content;section.situation=description}
+  else if(kind==="writing"){section.passage=content;section.directions=description}
+  else{section.context=content;section.type=row.querySelector("[data-section-type]")?.value||"reading"}
+  return section
+ }
  function openPracticeModal(kind,id){
   const s=store.get(),arr=kind==="mock"?s.mocks:s[kind],x=id?arr.find(v=>v.id===id):null;
-  const content=kind==="reading"?x?.text||"":kind==="listening"?x?.script||"":kind==="writing"?x?.passage||x?.prompt||"":"";
-  const questionData=kind==="mock"?(x?.sections||[]):(x?.questions||[]);
-  modalHtml=modal(x?"แก้ไขชุดฝึก":"สร้างชุดฝึก",`<div class="modal-form practice-editor"><div class="modal-two"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(x?.title||"")}"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${x?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${x?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div><div class="modal-two"><label>เวลา (นาที)<input id="practiceMinutes" type="number" min="1" max="240" value="${Number(x?.minutes||10)}"></label>${kind==="writing"?`<label>ประเภท<select id="practiceType"><option ${x?.type!=="Paragraph Organization"?"selected":""}>Text Completion</option><option ${x?.type==="Paragraph Organization"?"selected":""}>Paragraph Organization</option></select></label>`:`<label>หมวด/ประเภท<input id="practiceCategory" value="${escapeHtml(x?.category||x?.type||"")}"></label>`}</div>${kind!=="mock"?`<label>${kind==="reading"?"บทความ":kind==="listening"?"บทสนทนา / Transcript":"ข้อความหรือ Passage"}<textarea id="practiceContent" rows="7" placeholder="ใส่เนื้อหาที่ผู้เรียนจะใช้ตอบคำถาม">${escapeHtml(content)}</textarea></label>`:""}<label>${kind==="mock"?"Sections และข้อสอบ":"คำถาม"} (JSON)<textarea id="practiceQuestions" rows="12" spellcheck="false" placeholder='[{"prompt":"Question","choices":["A","B","C","D"],"answer":0}]'>${escapeHtml(JSON.stringify(questionData,null,2))}</textarea></label><div class="modal-note">answer ใช้เลข 0–3 ตามลำดับตัวเลือก หากเป็น Mock ให้ใช้โครงสร้าง sections ที่มี title, description, context และ questions</div></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-practice" data-kind="${kind}" data-id="${id||""}">บันทึก</button>`);render()
+  let sections=x?.sections?.length?x.sections:null;
+  if(!sections){const content=kind==="reading"?x?.text||"":kind==="listening"?x?.script||"":kind==="writing"?x?.passage||x?.prompt||"":"";sections=[{title:x?.title||"",text:kind==="reading"?content:undefined,script:kind==="listening"?content:undefined,passage:kind==="writing"?content:undefined,questions:x?.questions||[]}]} 
+  modalHtml=modal(x?"แก้ไขชุดฝึก":"สร้างชุดฝึก",\`<div class="modal-form practice-builder-modal"><div class="modal-two"><label>ชื่อชุด<input id="modalName" value="\${escapeHtml(x?.title||"")}" placeholder="ตั้งชื่อชุดฝึก"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" \${x?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" \${x?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label><label>เวลา (นาที)<input id="practiceMinutes" type="number" min="1" value="\${x?.minutes||10}"></label><label>หมวด/ประเภท<input id="practiceCategory" value="\${escapeHtml(x?.category||x?.type||"")}" placeholder="ไม่บังคับ"></label></div><div class="practice-builder-intro"><div><b>สร้างแบบฝึกได้โดยไม่ต้องอัปไฟล์</b><p>แบ่งเป็นหลาย Section และเพิ่มคำถามทีละข้อ ระบบจะแสดงผลตัวอย่างตามประเภทที่เลือกไว้</p></div><button type="button" class="btn btn-primary" data-practice-add-section>+ เพิ่ม Section</button></div><div id="practiceSectionList" class="practice-section-list" data-kind="\${kind}">\${sections.map((section,i)=>practiceSectionEditor(kind,section,i)).join("")}</div></div>\`,\`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-practice" data-kind="\${kind}" data-id="\${id||""}">บันทึก</button>\`);render()
  }
  async function savePractice(kind,id){
-  const title=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!title)return;
-  const key=kind==="mock"?"mocks":kind,creator=store.get().profile?.username||"guest",newId=id||`${kind}-${crypto.randomUUID()}`;
-  const cur=(store.get()[key]||[]).find(x=>x.id===id);let parsed;
-  try{parsed=JSON.parse(root.querySelector("#practiceQuestions")?.value||"[]")}catch{throw new Error("รูปแบบ JSON ของคำถามไม่ถูกต้อง")}
-  if(!Array.isArray(parsed))throw new Error("ข้อมูลคำถามต้องเป็น JSON Array");
-  const payload=cur?Object.fromEntries(Object.entries(cur).filter(([k])=>!["id","title","visibility","creator"].includes(k))):{};
-  payload.minutes=Math.max(1,Number(root.querySelector("#practiceMinutes")?.value)||10);
-  if(kind==="mock"){payload.sections=parsed;payload.questions=parsed.reduce((n,section)=>n+(section.questions?.length||0),0)||80;payload.itemCount=payload.questions}
-  else{
-   payload.questions=parsed;payload.itemCount=parsed.length;
-   const content=root.querySelector("#practiceContent")?.value.trim()||"";
-   if(kind==="reading"){payload.text=content;payload.category=root.querySelector("#practiceCategory")?.value.trim()||"General article"}
-   if(kind==="listening"){payload.script=content;payload.type=root.querySelector("#practiceCategory")?.value.trim()||"Conversation";payload.accent=payload.accent||"en-US"}
-   if(kind==="writing"){payload.passage=content;payload.type=root.querySelector("#practiceType")?.value||"Text Completion"}
-  }
-  const localSave=(v)=>store.update(s=>({...s,[key]:id?s[key].map(x=>x.id===id?{...x,title,visibility:v}:x):[...s[key],{id:newId,title,visibility:v,creator,...payload}]}));
-  if(visibility==="private"&&!canPrivateLocally(store.get(),kind,id)){
-    pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id:newId,title,payload,confirm_public:true})});localSave("public")};
-    modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ ${kind} ส่วนตัวได้ 1 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
-  }
+  const title=root.querySelector("#modalName")?.value.trim()||"",visibility=root.querySelector("#modalVisibility")?.value||"private";if(!title)throw new Error("กรุณาตั้งชื่อชุดฝึก");
+  const rows=[...root.querySelectorAll("[data-practice-section]")];if(!rows.length)throw new Error("กรุณาเพิ่มอย่างน้อย 1 Section");
+  const sections=rows.map(row=>readPracticeSection(row,kind));
+  for(let si=0;si<sections.length;si++)for(let qi=0;qi<sections[si].questions.length;qi++){const q=sections[si].questions[qi],filled=q.choices.filter(Boolean);if(!q.prompt)throw new Error(\`Section \${si+1} คำถาม \${qi+1}: กรุณาพิมพ์คำถาม\`);if(filled.length<2)throw new Error(\`Section \${si+1} คำถาม \${qi+1}: กรุณาใส่อย่างน้อย 2 ตัวเลือก\`);if(!q.choices[q.answer])throw new Error(\`Section \${si+1} คำถาม \${qi+1}: ตัวเลือกคำตอบที่ถูกยังว่างอยู่\`)}
+  const key=kind==="mock"?"mocks":kind,creator=store.get().profile?.username||"guest",newId=id||\`\${kind}-\${crypto.randomUUID()}\`,cur=(store.get()[key]||[]).find(x=>x.id===id);
+  const payload=cur?Object.fromEntries(Object.entries(cur).filter(([k])=>!["id","title","visibility","creator"].includes(k))):{},questions=sections.flatMap(section=>section.questions);
+  payload.minutes=Math.max(1,Number(root.querySelector("#practiceMinutes")?.value)||10);payload.sections=sections;payload.itemCount=questions.length;
+  const category=root.querySelector("#practiceCategory")?.value.trim()||"";
+  if(kind==="mock")payload.questions=questions.length;
+  else{payload.questions=questions;if(kind==="reading"){payload.text=sections[0]?.text||"";payload.category=category||"General article"}if(kind==="listening"){payload.script=sections[0]?.script||"";payload.type=category||"Conversation";payload.accent=payload.accent||"en-US"}if(kind==="writing"){payload.passage=sections[0]?.passage||"";payload.type=category||"Text Completion"}}
+  const localSave=v=>store.update(s=>({...s,[key]:id?s[key].map(x=>x.id===id?{...x,title,visibility:v,...payload}:x):[...s[key],{id:newId,title,visibility:v,creator,...payload}]}));
+  if(visibility==="private"&&!canPrivateLocally(store.get(),kind,id)){pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id:newId,title,payload,confirm_public:true})});localSave("public")};modalHtml=modal("โควตาชุดส่วนตัวเต็ม",\`<p class="modal-desc">Free เก็บ \${kind} ส่วนตัวได้ 1 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>\`,\`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>\`);return render()}
   if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind,id:newId,title,visibility,payload})});
   localSave(visibility);modalHtml="";render()
  }
