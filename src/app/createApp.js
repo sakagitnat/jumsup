@@ -11,7 +11,6 @@ import { renderHome } from "../features/home/home.js";
 import { renderDecks,renderStudy,masteredWords } from "../features/flashcards/flashcards.js";
 import { renderList,renderReading,renderListening,renderWriting,renderMock,renderPracticeResult } from "../features/practice/practice.js";
 import { renderCommunity } from "../features/community/community.js";
-import { renderSettings } from "../features/settings/settings.js";
 import { renderProfile } from "../features/profile/profile.js";
 import { modal } from "../components/modal.js";
 
@@ -24,7 +23,7 @@ export async function createApp(root){
   ["flash","Aa","flash"],["match","↔","match"],["crossword","+","cross"],
   ["home","⌂","home"],["reading","R","reading"],["listening","L","listening"],
   ["writing","W","writing"],["mock","M","mock"],["community","◇","community"],
-  ["profile","◎","profile"],["settings","⚙","settings"]
+  ["profile","◎","profile"]
  ];
 
  function accountMini(s){
@@ -39,7 +38,6 @@ export async function createApp(root){
    <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,4).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"practice")}</p><div class="nav-grid">${nav().slice(4,8).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(8,10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
-   <div class="side-section"><p class="side-label">${tr(s.lang,"system")}</p><div class="nav-grid">${nav().slice(10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="sidebar-bottom">${accountMini(s)}</div>
   </aside><main class="app-content"><div class="sync-chip ${s.syncing?"show":""}" aria-live="polite">กำลังบันทึก…</div>${content}<footer class="legal-footer"><a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a><a href="/terms/" target="_blank" rel="noopener">Terms of Service</a><a href="mailto:sakagitnat@gmail.com">Contact</a></footer></main></div><nav class="bottom-nav"><button class="${route==="home"?"active":""}" data-nav="home"><span>⌂</span>Home</button><button class="${route.startsWith("reading")?"active":""}" data-nav="reading"><span>R</span>Reading</button><button class="${route.startsWith("listening")?"active":""}" data-nav="listening"><span>L</span>Listening</button><button class="${route.startsWith("writing")?"active":""}" data-nav="writing"><span>W</span>Writing</button><button class="${route.startsWith("mock")?"active":""}" data-nav="mock"><span>M</span>Mock</button></nav>${modalHtml}</div>`;
  }
@@ -65,7 +63,7 @@ export async function createApp(root){
   else if(route==="practice-result")html=renderPracticeResult(selected,practiceAttempt);
   else if(route==="community")html=renderCommunity(s,communityQuery,communityTab);
   else if(route==="profile")html=renderProfile(s);
-  else if(route==="settings")html=renderSettings(s);
+  else if(route==="settings"){route="profile";html=renderProfile(s)}
   else html=renderHome(s);
   root.innerHTML=layout(html);bind();startExamTimer();
   if(preserveScroll&&previousScroll)requestAnimationFrame(()=>window.scrollTo({top:previousScroll,behavior:"instant"}));
@@ -166,11 +164,12 @@ export async function createApp(root){
    if(a==="open-edit-profile")return openEditProfile()
    if(a==="save-username"){
     if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อน");
-    const username=(root.querySelector("#"+(el.dataset.input||"profileUsername"))?.value||"").normalize("NFKC").trim();
-    if(!/^[\\p{L}\\p{N}_]{3,24}$/u.test(username))return toast("ชื่อผู้ใช้ต้องมี 3–24 ตัวอักษร และใช้ได้เฉพาะตัวอักษร ตัวเลข หรือ _");
+    const username=(root.querySelector("#"+(el.dataset.input||"accountDisplayName"))?.value||"").normalize("NFKC").trim().replace(/\s+/g," ");
+    const length=Array.from(username).length;
+    if(length<1||length>40||/[\u0000-\u001F\u007F]/.test(username))return toast("ชื่อที่แสดงต้องมี 1–40 ตัวอักษร");
     const {data,error}=await supabase.from("profiles").update({username}).eq("user_id",currentUser.id).select("*").single();
-    if(error){if(error.code==="23505")return toast("ชื่อผู้ใช้นี้มีคนใช้แล้ว กรุณาเลือกชื่ออื่น");throw error}
-    modalHtml="";store.set({profile:{...s.profile,...data}});return toast("บันทึกชื่อผู้ใช้แล้ว");
+    if(error)throw error
+    modalHtml="";store.set({profile:{...s.profile,...data}});return toast("บันทึกชื่อที่แสดงแล้ว");
    }
    if(a==="open-membership-settings")return openMembershipSettings()
    if(a==="billing-help")return openBillingHelp()
