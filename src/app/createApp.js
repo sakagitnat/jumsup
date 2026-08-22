@@ -154,7 +154,7 @@ export async function createApp(root){
   });
   root.querySelectorAll("[data-jump]").forEach(el=>el.onclick=()=>document.getElementById(el.dataset.jump)?.scrollIntoView({behavior:"smooth",block:"start"}));
   root.querySelectorAll(".read-word").forEach(el=>el.onclick=e=>{e.stopPropagation();openWord(el.dataset.word,el)});
-  root.querySelectorAll(".writing-response").forEach(el=>el.oninput=()=>{const count=el.closest(".writing-task-card")?.querySelector("[data-word-count]");if(count)count.textContent=(el.value.trim().match(/\\S+/g)||[]).length});
+  root.querySelectorAll(".writing-response").forEach(el=>el.oninput=()=>{const count=el.closest(".writing-task-card")?.querySelector("[data-word-count]");if(count)count.textContent=(el.value.trim().match(/\S+/g)||[]).length});
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
   const importFile=root.querySelector("#bulkImportFile"),dropZone=root.querySelector("[data-import-drop]");
   const acceptImportFile=async file=>{
