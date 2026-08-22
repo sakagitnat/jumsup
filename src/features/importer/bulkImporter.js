@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.5 seconds
-Output:
 import { escapeHtml } from "../../lib/utils.js";
 
 const TYPES={
