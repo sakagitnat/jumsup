@@ -135,6 +135,7 @@ export async function createApp(root){
  }
 
  function bind(){
+  const modalCard=root.querySelector("[data-modal-card]");if(modalCard)modalCard.onclick=e=>e.stopPropagation();
   root.querySelectorAll("[data-nav]").forEach(el=>el.onclick=()=>{route=el.dataset.nav;selected=null;study=null;if(route==="community")refreshCommunity();render()});
   root.querySelectorAll("[data-action]").forEach(el=>el.onclick=e=>handleAction(el.dataset.action,el,e));
   root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>store.set({lang:el.dataset.lang}));
@@ -155,6 +156,7 @@ export async function createApp(root){
   root.querySelectorAll(".read-word").forEach(el=>el.onclick=()=>openWord(el.dataset.word));
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
   const importFile=root.querySelector("#bulkImportFile");if(importFile)importFile.onchange=async()=>{const file=importFile.files?.[0];if(!file)return;const error=root.querySelector("#importFileError");if(!file.name.toLowerCase().endsWith(".csv")){error.textContent="ตอนนี้รองรับ CSV เท่านั้น กรุณาดาวน์โหลดเทมเพลต CSV แล้วนำข้อมูลมาวาง";error.classList.remove("hidden");return}try{const parsed=parseCsv(await file.text());if(!parsed.headers.length||!parsed.rows.length)throw new Error("ไฟล์ไม่มีข้อมูล");bulkImportState={...bulkImportState,fileName:file.name,...parsed,step:2};openBulkImport()}catch(err){error.textContent=err.message||"อ่านไฟล์ไม่สำเร็จ";error.classList.remove("hidden")}};
+  bindDeckEditor();
   bindSwipe();
  }
 
@@ -321,21 +323,30 @@ export async function createApp(root){
   if(!bulkImportState)return;const type=bulkImportState.type;
   if(bulkImportState.step===2){const mapping={};root.querySelectorAll("[data-import-map]").forEach(x=>mapping[x.dataset.importMap]=x.value);const missing=TYPES[type].required.filter(h=>!mapping[h]);if(missing.length)return toast(`กรุณาจับคู่คอลัมน์ที่จำเป็น: ${missing.join(", ")}`);bulkImportState.mapping=mapping;bulkImportState.checked=validateImport(type,bulkImportState.rows,mapping);bulkImportState.step=3;return openBulkImport()}
   if(bulkImportState.step===3){if(!bulkImportState.checked?.valid?.length)return toast("ยังไม่มีรายการที่พร้อมนำเข้า");bulkImportState.step=4;return openBulkImport()}
-  if(bulkImportState.step===4){const built=buildImportedContent(type,bulkImportState.checked.valid,store.get().profile?.username||"guest");store.update(s=>({...s,[built.key]:[...(s[built.key]||[]),built.value]}));scheduleSync();bulkImportState=null;modalHtml="";route=type==="vocab"?"flash":type;render();return toast("นำเข้าเป็นฉบับร่างส่วนตัวเรียบร้อยแล้ว")}
+  if(bulkImportState.step===4){const built=buildImportedContent(type,bulkImportState.checked.valid,store.get().profile?.username||"guest");bulkImportState=null;modalHtml="";route=type==="vocab"?"flash":type;store.update(s=>({...s,[built.key]:[...(s[built.key]||[]),built.value]}));return toast("นำเข้าเป็นฉบับร่างส่วนตัวเรียบร้อยแล้ว")}
+ }
+ function deckWordRow(word={},index=0){return `<div class="deck-word-row" data-deck-word><span class="deck-word-number">${index+1}</span><label>คำหรือวลี<input data-word-term value="${escapeHtml(word.w||"")}" placeholder="เช่น analyze"></label><label>ความหมาย<input data-word-meaning value="${escapeHtml(word.m||"")}" placeholder="เช่น วิเคราะห์"></label><label class="deck-example">ประโยคตัวอย่าง<input data-word-example value="${escapeHtml(word.e||"")}" placeholder="ไม่บังคับ"></label><div class="deck-word-actions"><button type="button" class="btn btn-quiet" data-deck-editor-action="copy">ทำสำเนา</button><button type="button" class="btn btn-quiet" data-deck-editor-action="delete">ลบ</button></div></div>`}
+ function renumberDeckWords(){root.querySelectorAll("[data-deck-word] .deck-word-number").forEach((x,i)=>x.textContent=i+1)}
+ function bindDeckEditor(){
+  const list=root.querySelector("#deckWordList"),add=root.querySelector("#addDeckWord");if(!list||!add)return;
+  add.onclick=()=>{list.insertAdjacentHTML("beforeend",deckWordRow({},list.children.length));renumberDeckWords();list.querySelector("[data-deck-word]:last-child [data-word-term]")?.focus()};
+  list.onclick=e=>{const button=e.target.closest("[data-deck-editor-action]");if(!button)return;const row=button.closest("[data-deck-word]"),action=button.dataset.deckEditorAction;if(action==="delete"){if(list.children.length>1)row.remove();else row.querySelectorAll("input").forEach(x=>x.value="")}if(action==="copy"){const copy={w:row.querySelector("[data-word-term]").value,m:row.querySelector("[data-word-meaning]").value,e:row.querySelector("[data-word-example]").value};row.insertAdjacentHTML("afterend",deckWordRow(copy,0))}renumberDeckWords()};
  }
  function openDeckModal(id){
-  const s=store.get(),d=id?s.decks.find(x=>x.id===id):null;
-  modalHtml=modal(d?"แก้ไขชุดคำศัพท์":"สร้างชุดคำศัพท์",`<div class="modal-form"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(d?.name||"")}"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${d?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${d?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-deck" data-id="${id||""}">บันทึก</button>`);render()
+  const s=store.get(),d=id?s.decks.find(x=>x.id===id):null,words=d?.words?.length?d.words:[{}];
+  modalHtml=modal(d?"แก้ไขชุดคำศัพท์":"สร้างชุดคำศัพท์",`<div class="deck-editor-modal"><div class="modal-two deck-meta"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(d?.name||"")}" placeholder="เช่น คำศัพท์ A-Level บทที่ 1"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${d?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${d?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div><div class="deck-editor-head"><div><b>คำศัพท์ในชุด</b><small>กรอกคำและความหมาย แล้วเพิ่มคำถัดไปได้ทันที</small></div><button id="addDeckWord" type="button" class="btn">+ เพิ่มคำศัพท์</button></div><div id="deckWordList" class="deck-word-list">${words.map(deckWordRow).join("")}</div></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-deck" data-id="${id||""}">บันทึกชุด</button>`);render()
  }
  async function saveDeck(id){
-  const name=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!name)return;
+  const name=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!name)return toast("กรุณาตั้งชื่อชุด");
+  const words=[...root.querySelectorAll("[data-deck-word]")].map(row=>({w:row.querySelector("[data-word-term]").value.trim(),m:row.querySelector("[data-word-meaning]").value.trim(),e:row.querySelector("[data-word-example]").value.trim()})).filter(x=>x.w||x.m);
+  const incomplete=words.find(x=>!x.w||!x.m);if(incomplete)return toast("ทุกคำต้องมีทั้งคำศัพท์และความหมาย");if(!words.length)return toast("กรุณาเพิ่มคำศัพท์อย่างน้อย 1 คำ");
   const creator=store.get().profile?.username||"guest",newId=id||`deck-${crypto.randomUUID()}`;
-  const localSave=(v)=>store.update(s=>({...s,decks:id?s.decks.map(d=>d.id===id?{...d,name,visibility:v}:d):[...s.decks,{id:newId,name,visibility:v,creator,words:[]}]}));
+  const localSave=(v)=>store.update(s=>({...s,decks:id?s.decks.map(d=>d.id===id?{...d,name,visibility:v,words}:d):[...s.decks,{id:newId,name,visibility:v,creator,words}]}));
   if(visibility==="private"&&!canPrivateLocally(store.get(),"vocab",id)){
-    pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,confirm_public:true})});localSave("public")};
+    pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,payload:{words},confirm_public:true})});localSave("public")};
     modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ Flashcard ส่วนตัวได้ 3 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
   }
-  if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,visibility})});
+  if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,visibility,payload:{words}})});
   localSave(visibility);modalHtml="";render()
  }
  function openPracticeModal(kind,id){
