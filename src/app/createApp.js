@@ -370,7 +370,8 @@ export async function createApp(root){
   root.querySelector("[data-practice-add-section]")?.addEventListener("click",()=>{host.insertAdjacentHTML("beforeend",practiceSectionEditor(kind,{},host.querySelectorAll("[data-practice-section]").length));renumberPracticeEditor();host.lastElementChild?.scrollIntoView({behavior:"smooth",block:"nearest"})});
   host.onclick=e=>{
    const section=e.target.closest("[data-practice-section]"),question=e.target.closest("[data-practice-question]");
-   if(e.target.closest("[data-practice-add-section-after]")){section.insertAdjacentHTML("afterend",practiceSectionEditor(kind,{},0));renumberPracticeEditor();section.nextElementSibling?.scrollIntoView({behavior:"smooth",block:"start"});return}\n   if(e.target.closest("[data-practice-add-question]"))return addQuestion(section);
+   if(e.target.closest("[data-practice-add-section-after]")){section.insertAdjacentHTML("afterend",practiceSectionEditor(kind,{},0));renumberPracticeEditor();section.nextElementSibling?.scrollIntoView({behavior:"smooth",block:"start"});return}
+   if(e.target.closest("[data-practice-add-question]"))return addQuestion(section);
    if(e.target.closest("[data-practice-delete-question]")){if(section.querySelectorAll("[data-practice-question]").length<=1)return;question.remove();return renumberPracticeEditor()}
    if(e.target.closest("[data-practice-copy-question]")){question.insertAdjacentHTML("afterend",practiceQuestionEditor(readPracticeQuestion(question),0));return renumberPracticeEditor()}
    if(e.target.closest("[data-practice-delete-section]")){if(host.querySelectorAll("[data-practice-section]").length<=1)return;section.remove();return renumberPracticeEditor()}
