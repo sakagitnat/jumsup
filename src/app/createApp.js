@@ -5,6 +5,7 @@ import { backendEnabled,getSession,signInGoogle,signOut,onAuthChange } from "../
 import { loadCloudState,pushCloudState,loadCommunity,importCommunityItem,uploadAvatar,toggleCommunityLike,saveCommunityReview,reportCommunityContent } from "../lib/cloud.js";
 import { api } from "../lib/api.js";
 import { canPrivateLocally,startDailyFeature } from "../lib/policy.js";
+import { isPro } from "../lib/entitlements.js";
 import { supabase } from "../lib/supabase.js";
 import { renderHome } from "../features/home/home.js";
 import { renderDecks,renderStudy,masteredWords } from "../features/flashcards/flashcards.js";
