@@ -13,9 +13,10 @@ import { renderList,renderReading,renderListening,renderWriting,renderMock,rende
 import { renderCommunity } from "../features/community/community.js";
 import { renderProfile } from "../features/profile/profile.js";
 import { modal } from "../components/modal.js";
+import { createContentBuilder,renderContentBuilder,bindContentBuilder,builderData } from "../features/builder/contentBuilder.js";
 
 export async function createApp(root){
- let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,renderFrame=null,hydrating=false;
+ let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,contentBuilder=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,renderFrame=null,hydrating=false;
  let pendingPublicSave=null;const activeUsageSessions={};
  let currentUser=null;
 
@@ -61,6 +62,7 @@ export async function createApp(root){
   else if(route==="writing-play")html=renderWriting(selected);
   else if(route==="mock-play")html=renderMock(selected);
   else if(route==="practice-result")html=renderPracticeResult(selected,practiceAttempt);
+  else if(route==="content-builder")html=renderContentBuilder(contentBuilder);
   else if(route==="community")html=renderCommunity(s,communityQuery,communityTab);
   else if(route==="profile")html=renderProfile(s);
   else if(route==="settings"){route="profile";html=renderProfile(s)}
@@ -153,6 +155,7 @@ export async function createApp(root){
   root.querySelectorAll("[data-jump]").forEach(el=>el.onclick=()=>document.getElementById(el.dataset.jump)?.scrollIntoView({behavior:"smooth",block:"start"}));
   root.querySelectorAll(".read-word").forEach(el=>el.onclick=()=>openWord(el.dataset.word));
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
+  if(route==="content-builder"&&contentBuilder)bindContentBuilder(root,contentBuilder,{rerender:()=>render({preserveScroll:true}),changeKind:kind=>changeBuilderKind(kind),cancel:()=>closeContentBuilder(),save:data=>saveBuilderContent(data)});
   bindSwipe();
  }
 
@@ -188,11 +191,11 @@ export async function createApp(root){
    if(a==="open-flash-settings")openFlashSettings()
    if(a==="save-study-settings")saveFlashSettings()
    if(a==="next-loop"){const d=s.decks.find(x=>x.id===study.deckId),remain=d.words.length-study.poolSize;if(remain<=0)return;const n=Math.max(1,Math.min(remain,Number(prompt("เพิ่มอีกกี่คำ?","10"))||1));study.poolSize+=n;render()}
-   if(a==="new-deck")openDeckModal()
-   if(a==="edit-deck")openDeckModal(el.dataset.id)
+   if(a==="new-deck")openContentBuilder("vocab")
+   if(a==="edit-deck")openContentBuilder("vocab",el.dataset.id)
    if(a==="delete-deck")openDelete("deck",el.dataset.id)
-   if(a==="new-practice")openPracticeModal(el.dataset.kind)
-   if(a==="edit-practice")openPracticeModal(el.dataset.kind,el.dataset.id)
+   if(a==="new-practice")openContentBuilder(el.dataset.kind)
+   if(a==="edit-practice")openContentBuilder(el.dataset.kind,el.dataset.id)
    if(a==="delete-practice")openDelete(el.dataset.kind,el.dataset.id)
    if(a==="open-practice"){
     const kind=el.dataset.kind,arr=kind==="mock"?s.mocks:s[kind];selected=arr.find(x=>x.id===el.dataset.id);
@@ -302,6 +305,40 @@ export async function createApp(root){
   if(!study)return;const s=store.get(),deck=s.decks.find(d=>d.id===study.deckId),max=Math.max(1,deck.words.length);
   const settings={loopSize:Math.max(1,Math.min(max,Number(root.querySelector("#studyLoopSize").value)||1)),autoSpeak:root.querySelector("#studyAutoSpeak").checked,showMeaning:root.querySelector("#studyShowMeaning").checked,shuffle:root.querySelector("#studyShuffle").checked};
   study.poolSize=settings.loopSize;study.mastered=study.mastered.filter(i=>i<settings.loopSize);study.cursor=0;modalHtml="";store.set({flashSettings:settings});
+ }
+ function openContentBuilder(kind,id=null){
+  const s=store.get(),item=kind==="vocab"?(id?s.decks.find(x=>x.id===id):null):(id?(kind==="mock"?s.mocks:s[kind]).find(x=>x.id===id):null);
+  contentBuilder=createContentBuilder(kind,item);route="content-builder";modalHtml="";render();
+ }
+ function changeBuilderKind(kind){
+  const previous=contentBuilder,next=createContentBuilder(kind);
+  next.title=previous.title;next.visibility=previous.visibility;next.minutes=previous.minutes;next.category=previous.category;next.content=previous.content;next.pdfName=previous.pdfName;next.pdfText=previous.pdfText;next.pdfStatus=previous.pdfStatus;
+  contentBuilder=next;render({preserveScroll:true});
+ }
+ function closeContentBuilder(){const kind=contentBuilder?.kind;contentBuilder=null;route=kind==="vocab"?"flash":kind||"home";render()}
+ async function saveBuilderContent(builder){
+  const data=builderData(builder);if(!data.title)return toast("กรุณาตั้งชื่อชุดก่อน");
+  const s=store.get(),creator=s.profile?.username||"guest";
+  if(data.kind==="vocab"){
+   if(!data.words.length)return toast("เพิ่มคำศัพท์และความหมายอย่างน้อย 1 คำ");
+   const id=data.id||`deck-${crypto.randomUUID()}`;
+   const localSave=v=>store.update(state=>({...state,decks:data.id?state.decks.map(d=>d.id===data.id?{...d,name:data.title,visibility:v,words:data.words}:d):[...state.decks,{id,name:data.title,visibility:v,creator,words:data.words}]}));
+   if(data.visibility==="private"&&!canPrivateLocally(s,"vocab",data.id)){
+    pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id,title:data.title,payload:{words:data.words},confirm_public:true})});localSave("public");contentBuilder=null;route="flash"};
+    modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ Flashcard ส่วนตัวได้ 3 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
+   }
+   if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id,title:data.title,visibility:data.visibility,payload:{words:data.words}})});
+   localSave(data.visibility);contentBuilder=null;route="flash";modalHtml="";return render()
+  }
+  if(!data.payload.itemCount)return toast("เพิ่มคำถามอย่างน้อย 1 ข้อ");
+  const kind=data.kind,key=kind==="mock"?"mocks":kind,id=data.id||`${kind}-${crypto.randomUUID()}`,current=(s[key]||[]).find(x=>x.id===data.id);
+  const localSave=v=>store.update(state=>({...state,[key]:data.id?state[key].map(x=>x.id===data.id?{...x,title:data.title,visibility:v,...data.payload}:x):[...state[key],{id,title:data.title,visibility:v,creator,...data.payload}]}));
+  if(data.visibility==="private"&&!canPrivateLocally(s,kind,data.id)){
+   pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id,title:data.title,payload:data.payload,confirm_public:true})});localSave("public");contentBuilder=null;route=kind};
+   modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บชุดส่วนตัวในหมวดนี้ได้ 1 ชุด ชุดนี้จะเผยแพร่เมื่อคุณกดยืนยันเท่านั้น</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
+  }
+  if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind,id,title:data.title,visibility:data.visibility,payload:data.payload})});
+  localSave(data.visibility);contentBuilder=null;route=kind;modalHtml="";render()
  }
  function openDeckModal(id){
   const s=store.get(),d=id?s.decks.find(x=>x.id===id):null;
