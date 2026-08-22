@@ -161,7 +161,7 @@ export async function createApp(root){
     if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อน");
     const username=(root.querySelector("#"+(el.dataset.input||"profileUsername"))?.value||"").normalize("NFKC").trim();
     if(!/^[\\p{L}\\p{N}_]{3,24}$/u.test(username))return toast("ชื่อผู้ใช้ต้องมี 3–24 ตัวอักษร และใช้ได้เฉพาะตัวอักษร ตัวเลข หรือ _");
-    const {data,error}=await supabase.from("profiles").update({username,updated_at:new Date().toISOString()}).eq("user_id",currentUser.id).select("*").single();
+    const {data,error}=await supabase.from("profiles").update({username}).eq("user_id",currentUser.id).select("*").single();
     if(error){if(error.code==="23505")return toast("ชื่อผู้ใช้นี้มีคนใช้แล้ว กรุณาเลือกชื่ออื่น");throw error}
     modalHtml="";store.set({profile:{...s.profile,...data}});return toast("บันทึกชื่อผู้ใช้แล้ว");
    }
