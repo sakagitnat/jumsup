@@ -155,7 +155,15 @@ export async function createApp(root){
   root.querySelectorAll("[data-jump]").forEach(el=>el.onclick=()=>document.getElementById(el.dataset.jump)?.scrollIntoView({behavior:"smooth",block:"start"}));
   root.querySelectorAll(".read-word").forEach(el=>el.onclick=()=>openWord(el.dataset.word));
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
-  const importFile=root.querySelector("#bulkImportFile");if(importFile)importFile.onchange=async()=>{const file=importFile.files?.[0];if(!file)return;const error=root.querySelector("#importFileError");if(!file.name.toLowerCase().endsWith(".csv")){error.textContent="ตอนนี้รองรับ CSV เท่านั้น กรุณาดาวน์โหลดเทมเพลต CSV แล้วนำข้อมูลมาวาง";error.classList.remove("hidden");return}try{const parsed=parseCsv(await file.text());if(!parsed.headers.length||!parsed.rows.length)throw new Error("ไฟล์ไม่มีข้อมูล");bulkImportState={...bulkImportState,fileName:file.name,...parsed,step:2};openBulkImport()}catch(err){error.textContent=err.message||"อ่านไฟล์ไม่สำเร็จ";error.classList.remove("hidden")}};
+  const importFile=root.querySelector("#bulkImportFile"),dropZone=root.querySelector("[data-import-drop]");
+  const acceptImportFile=async file=>{
+   if(!file)return;const error=root.querySelector("#importFileError"),status=root.querySelector("[data-import-drop-status]");
+   error?.classList.add("hidden");if(!file.name.toLowerCase().endsWith(".csv")){if(error){error.textContent=file.name.toLowerCase().endsWith(".zip")?"ไฟล์ ZIP ใช้อัปโหลดพร้อมกันไม่ได้ กรุณาแตกไฟล์แล้วลาก CSV ของหมวดนี้มาวาง":"รองรับเฉพาะไฟล์ CSV กรุณาใช้ไฟล์ตามเทมเพลต";error.classList.remove("hidden")}return}
+   try{if(status)status.textContent="กำลังอ่าน "+file.name+"…";const parsed=parseCsv(await file.text());if(!parsed.headers.length||!parsed.rows.length)throw new Error("ไฟล์ไม่มีข้อมูล");bulkImportState={...bulkImportState,fileName:file.name,...parsed,step:2};openBulkImport()}catch(err){if(error){error.textContent=err.message||"อ่านไฟล์ไม่สำเร็จ";error.classList.remove("hidden")}if(status)status.textContent="ลากไฟล์ CSV มาวางตรงนี้"}
+  };
+  if(importFile)importFile.onchange=()=>acceptImportFile(importFile.files?.[0]);
+  if(dropZone){let dragDepth=0;dropZone.ondragenter=e=>{e.preventDefault();dragDepth++;dropZone.classList.add("is-dragging")};dropZone.ondragover=e=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect="copy"};dropZone.ondragleave=e=>{e.preventDefault();dragDepth=Math.max(0,dragDepth-1);if(!dragDepth)dropZone.classList.remove("is-dragging")};dropZone.ondrop=e=>{e.preventDefault();dragDepth=0;dropZone.classList.remove("is-dragging");acceptImportFile(e.dataTransfer?.files?.[0])}}
+
   bindDeckEditor();
   bindPracticeEditor();
   bindSwipe();
