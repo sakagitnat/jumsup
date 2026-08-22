@@ -19,7 +19,7 @@ function wordCard(w,i){return `<div class="builder-word" data-word="${i}"><b>${i
 
 export function renderContentBuilder(b){
  const vocab=b.kind==="vocab";
- return `<section class="builder-page"><header class="builder-topbar"><div><p class="content-eyebrow">CONTENT BUILDER</p><h1 class="content-title">${b.id?"แก้ไข":"สร้าง"}${labels[b.kind]}</h1><p class="content-desc">กรอกข้อมูลและตรวจหน้าตาแบบฝึกจาก Preview ได้ทันที</p></div><div class="builder-top-actions"><button class="btn" type="button" data-builder="cancel">ยกเลิก</button><button class="btn btn-primary" type="button" data-builder="save">บันทึกชุด</button></div></header>
+ return `<section class="builder-page"><header class="builder-topbar"><div><p class="content-eyebrow">CONTENT BUILDER</p><h1 class="content-title">${b.id?"แก้ไข":"สร้าง"} ${labels[b.kind]}</h1><p class="content-desc">กรอกข้อมูลและตรวจหน้าตาแบบฝึกจาก Preview ได้ทันที</p></div><div class="builder-top-actions"><button class="btn" type="button" data-builder="cancel">ยกเลิก</button><button class="btn btn-primary" type="button" data-builder="save">บันทึกชุด</button></div></header>
  <nav class="builder-kind-tabs" aria-label="ประเภทเนื้อหา">${Object.entries(labels).map(([k,v])=>`<button type="button" data-builder-kind="${k}" class="${b.kind===k?"active":""}">${v}</button>`).join("")}</nav>
  <div class="builder-layout"><main class="builder-form">
   <section class="builder-section"><div class="builder-section-title"><span>1</span><div><h2>ข้อมูลชุด</h2><p>ตั้งชื่อและกำหนดว่าใครมองเห็นได้</p></div></div><div class="builder-grid">
