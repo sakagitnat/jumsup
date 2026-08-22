@@ -162,3 +162,17 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 .writing-support summary{cursor:pointer;font-weight:700}
 .result-choice-review{display:grid;gap:7px;margin:12px 0}.result-choice{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--app-border);border-radius:10px}.result-choice span{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:var(--app-soft);font-weight:800}.result-choice p{margin:0}.result-choice b{font-size:10px}.result-choice.is-correct{border-color:#62aa7d;background:#e8f6ed;color:#23683d}.result-choice.is-correct span{background:#3c9560;color:#fff}.result-choice.is-wrong{border-color:#d7838e;background:#fff0f2;color:#9c3445}.result-choice.is-wrong span{background:#c55364;color:#fff}
 @media(max-width:620px){.listening-practice-note,.conversation-toolbar{align-items:stretch;flex-direction:column}.conversation-toolbar .btn{width:100%}.writing-task-card{padding:14px}}
+
+
+/* Vantage A-Level Suite V2 alignment */
+.reading-suite-head{margin-bottom:12px}
+.reading-suite-head h3{margin:9px 0 5px}
+.reading-suite-head p{margin:0;color:var(--app-muted)}
+.reading-saved-list{max-height:260px;overflow:auto;margin:10px 0 14px}
+.saved-word-card{padding:9px;margin-bottom:6px;border:1px solid var(--app-border);border-radius:10px;background:var(--app-surface)}
+.saved-word-card b{font-size:11px}
+.saved-word-card p{margin:3px 0 0;color:var(--app-muted);font-size:10px}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px;padding-bottom:2px}
+.tab{flex:0 0 auto;padding:9px 13px;border:1px solid var(--app-border);border-radius:10px;background:var(--app-surface);color:var(--app-muted);font-weight:700}
+.tab.active{border-color:var(--app-primary);background:var(--app-primary);color:#fff}
+@media(max-width:620px){.tabs{margin-inline:-2px}.audio-controls{align-items:stretch}.audio-controls .btn,.audio-controls label{width:100%}}
