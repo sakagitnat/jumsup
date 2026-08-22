@@ -3,8 +3,10 @@ import { json,body,cors } from "../_lib/http.js";
 export const onRequestOptions=()=>new Response(null,{headers:cors});
 export async function onRequestPost({request,env}){
  try{
-  const {sb}=await requireUser(request,env);const {text,target="th"}=await body(request);
+  const {text,target="th"}=await body(request);
   if(!text)throw new Error("Text is required");
+  if(!env.GOOGLE_TRANSLATE_API_KEY)return json({translation:null,provider:"not-configured"},200,cors);
+  const {sb}=await requireUser(request,env);
   const {data:quota,error:qe}=await sb.rpc("consume_translation_quota");
   if(qe)throw qe;
   if(quota && quota.allowed===false)return json({error:"Free translation quota reached",quota},402,cors);
