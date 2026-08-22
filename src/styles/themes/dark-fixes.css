@@ -1,0 +1,138 @@
+/*
+ * Final dark-mode compatibility layer.
+ * Kept last in the cascade so feature styles cannot reintroduce light surfaces.
+ */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --dark-raised:#282d34;
+  --dark-success-soft:#203a31;
+  --dark-danger-soft:#41292f;
+  --dark-warning-soft:#3d3524;
+  --dark-violet-soft:#302c46;
+}
+
+/* Recently added account, practice, and game surfaces */
+:root[data-theme="dark"] :is(
+  .account-identity,.preference-card,.membership-card,.account-tools,
+  .account-tools-body,.private-account-note,.privacy-banner,.membership-status,
+  .billing-help-list,.practice-overview,.practice-paper-head,.practice-spec div,
+  .game-hud>div,.personal-ranking,.quest-ranking,.crossword-main,.cross-feedback
+){
+  background:var(--app-surface)!important;
+  border-color:var(--app-border)!important;
+  color:var(--app-text)!important;
+}
+
+:root[data-theme="dark"] :is(.account-identity,.practice-overview,.game-hero){
+  background:linear-gradient(135deg,#242936,#202329 58%,#202c2a)!important;
+  border-color:var(--app-border)!important;
+}
+:root[data-theme="dark"] .game-hero::after{background:rgba(137,175,210,.09)!important}
+:root[data-theme="dark"] .game-hud .best-stat{
+  background:linear-gradient(135deg,var(--dark-warning-soft),var(--app-surface))!important;
+}
+
+:root[data-theme="dark"] :is(
+  .display-name-editor input,.account-extras input,.compact-language-picker button,
+  .segmented-control,.toggle-line,.modal-actions
+){
+  background:var(--app-surface-2)!important;
+  border-color:var(--app-border)!important;
+  color:var(--app-text)!important;
+}
+:root[data-theme="dark"] :is(.compact-language-picker button.selected,.preference-actions .selected){
+  background:var(--app-primary-soft)!important;
+  border-color:var(--app-primary-border)!important;
+  color:#b9d8f2!important;
+}
+:root[data-theme="dark"] :is(
+  .account-identity h2,.preference-card b,.membership-card b,.account-tools b,
+  .game-hud strong,.personal-ranking h3,.quest-ranking h3,.practice-overview h2,
+  .practice-paper-head h2
+){color:var(--app-text)!important}
+:root[data-theme="dark"] :is(
+  .account-identity p,.preference-card small,.membership-card small,
+  .private-account-note,.privacy-banner,.game-hud small,.cross-feedback
+){color:var(--app-muted)!important}
+
+/* Match states remain distinct without flashing white */
+:root[data-theme="dark"] .quizlet-match .match-tile{
+  background:var(--app-surface-2)!important;
+  border-color:#48515e!important;
+  color:var(--app-text)!important;
+  box-shadow:0 6px 16px rgba(0,0,0,.16)!important;
+}
+:root[data-theme="dark"] .quizlet-match .match-tile.word{color:#c9bdf3!important}
+:root[data-theme="dark"] .quizlet-match .match-tile:hover{
+  box-shadow:0 9px 20px rgba(0,0,0,.24)!important;
+}
+:root[data-theme="dark"] .quizlet-match .match-tile.selected{
+  background:var(--dark-violet-soft)!important;
+  border-color:#8171b8!important;
+  color:#eeeaff!important;
+}
+:root[data-theme="dark"] .quizlet-match .match-tile.pop,
+:root[data-theme="dark"] .quizlet-match .match-tile.matched{
+  background:var(--dark-success-soft)!important;
+  border-color:#4d8f76!important;
+  color:#bce8d7!important;
+}
+:root[data-theme="dark"] .quizlet-match .match-tile.wrong{
+  background:var(--dark-danger-soft)!important;
+  border-color:#a65b68!important;
+  color:#f2bcc5!important;
+}
+
+/* Crossword inputs and feedback */
+:root[data-theme="dark"] .crossword-main{
+  background:linear-gradient(145deg,#202329,#262a31)!important;
+}
+:root[data-theme="dark"] .cross-cell{
+  background:var(--app-surface-2)!important;
+  border-color:#4a5360!important;
+  color:var(--app-text)!important;
+  caret-color:#b9d8f2;
+}
+:root[data-theme="dark"] .cross-cell.hinted{
+  background:var(--dark-warning-soft)!important;
+  border-color:#8a7847!important;
+  color:#f0dea9!important;
+}
+:root[data-theme="dark"] .cross-cell.correct{
+  background:var(--dark-success-soft)!important;
+  border-color:#4d8f76!important;
+  color:#bce8d7!important;
+}
+:root[data-theme="dark"] .cross-cell.wrong{
+  background:var(--dark-danger-soft)!important;
+  border-color:#a65b68!important;
+  color:#f2bcc5!important;
+}
+:root[data-theme="dark"] .clue-panel>.clue-item{
+  background:linear-gradient(135deg,var(--dark-violet-soft),var(--app-surface))!important;
+  color:var(--app-text)!important;
+}
+:root[data-theme="dark"] :is(.personal-ranking li,.quest-ranking li){
+  background:var(--app-surface-2)!important;
+  color:var(--app-text)!important;
+}
+:root[data-theme="dark"] :is(.personal-ranking .new-record,.quest-ranking .new-record){
+  background:var(--dark-warning-soft)!important;
+  color:#f0dea9!important;
+}
+
+/* Practice answer states */
+:root[data-theme="dark"] .choice.correct{
+  background:var(--dark-success-soft)!important;
+  border-color:#4d8f76!important;
+  color:#bce8d7!important;
+}
+:root[data-theme="dark"] .choice.wrong{
+  background:var(--dark-danger-soft)!important;
+  border-color:#a65b68!important;
+  color:#f2bcc5!important;
+}
+:root[data-theme="dark"] .directions{
+  background:var(--app-primary-soft)!important;
+  color:var(--app-text)!important;
+}
