@@ -5,6 +5,7 @@ import { backendEnabled,getSession,signInGoogle,signOut,onAuthChange } from "../
 import { loadCloudState,pushCloudState,loadCommunity,importCommunityItem,uploadAvatar,toggleCommunityLike,saveCommunityReview,reportCommunityContent } from "../lib/cloud.js";
 import { api } from "../lib/api.js";
 import { canPrivateLocally,startDailyFeature } from "../lib/policy.js";
+import { isPro } from "../lib/entitlements.js";
 import { supabase } from "../lib/supabase.js";
 import { renderHome } from "../features/home/home.js";
 import { renderDecks,renderStudy,masteredWords } from "../features/flashcards/flashcards.js";
@@ -155,6 +156,19 @@ export async function createApp(root){
   try{
    if(a==="login-google")return signInGoogle();
    if(a==="logout"){await signOut();return}
+   if(a==="open-edit-profile")return openEditProfile()
+   if(a==="save-username"){
+    if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อน");
+    const username=(root.querySelector("#"+(el.dataset.input||"profileUsername"))?.value||"").normalize("NFKC").trim();
+    if(!/^[\\p{L}\\p{N}_]{3,24}$/u.test(username))return toast("ชื่อผู้ใช้ต้องมี 3–24 ตัวอักษร และใช้ได้เฉพาะตัวอักษร ตัวเลข หรือ _");
+    const {data,error}=await supabase.from("profiles").update({username}).eq("user_id",currentUser.id).select("*").single();
+    if(error){if(error.code==="23505")return toast("ชื่อผู้ใช้นี้มีคนใช้แล้ว กรุณาเลือกชื่ออื่น");throw error}
+    modalHtml="";store.set({profile:{...s.profile,...data}});return toast("บันทึกชื่อผู้ใช้แล้ว");
+   }
+   if(a==="open-membership-settings")return openMembershipSettings()
+   if(a==="billing-help")return openBillingHelp()
+   if(a==="open-apple-subscriptions"){location.href="https://apps.apple.com/account/subscriptions";return}
+   if(a==="open-apple-refund"){location.href="https://reportaproblem.apple.com/";return}
    if(a==="checkin"){
     if(currentUser&&backendEnabled){
      const {data,error}=await supabase.rpc("do_daily_checkin");if(error)throw error;
@@ -247,6 +261,22 @@ export async function createApp(root){
   modalHtml=modal("รายงานเนื้อหา",`<div class="modal-form"><label>เหตุผล<select id="reportReason"><option>ข้อมูลหรือเฉลยไม่ถูกต้อง</option><option>ละเมิดลิขสิทธิ์</option><option>Spam หรือโฆษณา</option><option>เนื้อหาไม่เหมาะสม</option></select></label><label>รายละเอียด<textarea rows="4" maxlength="1000" placeholder="อธิบายสิ่งที่พบ"></textarea></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-danger" data-action="send-community-report" data-id="${id}">ส่งรายงาน</button>`);render()
  }
 
+ function openEditProfile(){
+  const username=store.get().profile?.username||"";
+  modalHtml=modal("แก้ไขโปรไฟล์",`<div class="modal-form"><label>ชื่อผู้ใช้<input id="profileUsername" maxlength="24" value="${escapeHtml(username)}" autocomplete="off"></label><p class="modal-note">ชื่อนี้จะแสดงใน Community แทนอีเมลของคุณ ใช้ตัวอักษร ตัวเลข หรือ _ จำนวน 3–24 ตัวอักษร</p></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-username" data-input="profileUsername">บันทึก</button>`);render()
+ }
+ function openMembershipSettings(){
+  const s=store.get(),sub=s.subscription||{},provider=(sub.provider||sub.source||(sub.stripe_subscription_id?"stripe":"")).toLowerCase(),apple=provider.includes("apple")||provider.includes("ios"),active=["active","trialing"].includes(sub.status);
+  const status=active?(sub.cancel_at_period_end?"สิทธิ์จะสิ้นสุดเมื่อจบรอบปัจจุบัน":"กำลังใช้งาน"):"ไม่มีการต่ออายุผ่านร้านค้า";
+  const providerName=apple?"Apple App Store":provider==="stripe"?"เว็บไซต์ (Stripe)":"Jumsup";
+  const actions=apple?`<button class="btn" data-action="billing-help">ความช่วยเหลือ</button><button class="btn btn-primary" data-action="open-apple-subscriptions">จัดการผ่าน Apple</button>`:provider==="stripe"?`<button class="btn" data-action="billing-help">ความช่วยเหลือด้านการชำระเงิน</button><button class="btn btn-primary" data-action="billing-portal">จัดการสมาชิก</button>`:`<button class="btn btn-primary" data-action="close-modal">เสร็จสิ้น</button>`;
+  modalHtml=modal("การสมัครสมาชิก",`<div class="membership-modal"><div class="membership-status"><span>★</span><div><b>${isPro(s)?"Jumsup Pro":"Jumsup Free"}</b><small>${providerName} · ${status}</small></div></div><p class="modal-desc">การต่ออายุ การยกเลิก และการคืนเงินต้องจัดการผ่านช่องทางที่ใช้ชำระเงิน เพื่อความปลอดภัยของบัญชี</p></div>`,actions);render()
+ }
+ function openBillingHelp(){
+  const sub=store.get().subscription||{},provider=(sub.provider||sub.source||(sub.stripe_subscription_id?"stripe":"")).toLowerCase(),apple=provider.includes("apple")||provider.includes("ios");
+  const body=apple?`<p class="modal-desc">Apple เป็นผู้ดูแลการเรียกเก็บเงิน การยกเลิก และการคืนเงินของรายการที่ซื้อผ่าน App Store</p><div class="billing-help-list"><button class="btn" data-action="open-apple-subscriptions">จัดการการสมัครสมาชิก</button><button class="btn" data-action="open-apple-refund">ขอคืนเงินกับ Apple</button></div>`:`<p class="modal-desc">หากต้องการยกเลิก ให้เปิดหน้าจัดการสมาชิกของ Stripe การยกเลิกจะหยุดการต่ออายุและสิทธิ์ยังอยู่ถึงวันสิ้นสุดรอบ</p><div class="billing-help-list"><button class="btn" data-action="billing-portal">จัดการหรือยกเลิกสมาชิก</button><button class="btn btn-quiet" data-action="open-refund-request">ติดต่อเรื่องการเรียกเก็บเงิน</button><a class="btn" href="mailto:sakagitnat@gmail.com">ติดต่อฝ่ายช่วยเหลือ</a></div>`;
+  modalHtml=modal("ความช่วยเหลือด้านการชำระเงิน",body,`<button class="btn btn-primary" data-action="close-modal">ปิด</button>`);render()
+ }
  function openRefundRequest(){
   const s=store.get(),last=s.payments?.find(p=>p.status==="succeeded");
   if(!last)return toast("ยังไม่พบรายการชำระเงินที่คืนได้");
