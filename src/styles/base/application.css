@@ -130,3 +130,35 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
  .practice-section-editor{padding:13px}
  .practice-question-editor{padding:12px}
 }
+
+
+/* Restored practice experience */
+.read-word.saved{background:#dff2e8;color:#226846;border-radius:4px;padding:0 2px}
+.word-popover{position:fixed;z-index:1200;width:280px;max-width:calc(100vw - 20px);padding:14px;border:1px solid var(--app-border);border-radius:14px;background:var(--app-surface);box-shadow:0 18px 50px rgba(20,35,55,.2);color:var(--app-text)}
+.word-popover-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.word-popover-head strong{font-size:18px}
+.word-popover-head button{border:0;background:transparent;color:var(--app-muted);font-size:22px;cursor:pointer}
+.word-popover p{margin:8px 0 12px;line-height:1.55}
+.word-popover label{display:grid;gap:6px;margin-bottom:10px;font-size:11px}
+.word-popover select,.word-popover .btn{width:100%}
+.listening-practice-note{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:12px 14px;border:1px solid var(--app-border);border-radius:12px;background:var(--app-primary-soft);color:var(--app-text)}
+.listening-practice-note span{color:var(--app-muted);font-size:12px}
+.listening-conversation{display:grid;gap:14px}
+.conversation-card{padding:16px;border:1px solid var(--app-border);border-radius:14px;background:var(--app-soft)}
+.conversation-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.visible-dialogue{font-family:Georgia,serif;font-size:15px;line-height:1.9;color:var(--app-text)}
+.visible-dialogue hr{height:1px;margin:14px 0;border:0;background:var(--app-border)}
+.conversation-card.no-audio p{margin:7px 0 0;color:var(--app-muted)}
+.writing-task-list{display:grid;gap:18px}
+.writing-task-card{padding:20px;border:1px solid var(--app-border);border-radius:18px;background:var(--app-surface)}
+.writing-prompt,.writing-instructions{margin-top:12px;padding:14px;border-radius:12px;background:var(--app-soft)}
+.writing-prompt p,.writing-instructions p{margin:7px 0 0;line-height:1.7}
+.writing-task-meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.writing-task-meta span{padding:7px 10px;border-radius:999px;background:var(--app-primary-soft);font-size:11px}
+.writing-answer-label{display:grid;gap:7px}
+.writing-response{width:100%;resize:vertical;line-height:1.7}
+.writing-count{text-align:right;color:var(--app-muted);font-size:11px}
+.writing-support{margin-top:10px;padding:10px 12px;border:1px solid var(--app-border);border-radius:10px}
+.writing-support summary{cursor:pointer;font-weight:700}
+.result-choice-review{display:grid;gap:7px;margin:12px 0}.result-choice{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--app-border);border-radius:10px}.result-choice span{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:var(--app-soft);font-weight:800}.result-choice p{margin:0}.result-choice b{font-size:10px}.result-choice.is-correct{border-color:#62aa7d;background:#e8f6ed;color:#23683d}.result-choice.is-correct span{background:#3c9560;color:#fff}.result-choice.is-wrong{border-color:#d7838e;background:#fff0f2;color:#9c3445}.result-choice.is-wrong span{background:#c55364;color:#fff}
+@media(max-width:620px){.listening-practice-note,.conversation-toolbar{align-items:stretch;flex-direction:column}.conversation-toolbar .btn{width:100%}.writing-task-card{padding:14px}}
