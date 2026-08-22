@@ -77,13 +77,23 @@ export async function createApp(root){
   try{
    const remote=await loadCloudState(user);
    const local=store.get();
+   const restoreOfficialPractice=cloud=>{
+    const restored={...cloud};
+    for(const key of ["reading","listening","writing","mocks"]){
+     const cloudItems=Array.isArray(cloud[key])?cloud[key]:[];
+     const official=(local[key]||[]).filter(item=>item.creator==="Jumsup Official"&&!cloudItems.some(saved=>saved.id===item.id));
+     restored[key]=[...cloudItems,...official];
+    }
+    return restored;
+   };
    const remoteHasData=(remote.decks?.length||0)+(remote.reading?.length||0)+(remote.listening?.length||0)+(remote.writing?.length||0)+(remote.mocks?.length||0)>0;
    if(remoteHasData){
-    store.set({...remote,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
+    const restored=restoreOfficialPractice(remote);
+    store.set({...restored,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
    }else{
     store.set({user,profile:remote.profile,subscription:remote.subscription,backend:true,syncing:false});
     await pushCloudState(user,store.get());
-    const again=await loadCloudState(user);store.set({...again,backend:true,syncing:false});
+    const again=restoreOfficialPractice(await loadCloudState(user));store.set({...again,backend:true,syncing:false});
    }
    await refreshCommunity();
   }catch(e){console.error(e);store.set({syncing:false,user,backend:true})}
