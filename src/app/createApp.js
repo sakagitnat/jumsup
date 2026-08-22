@@ -16,7 +16,7 @@ import { renderProfile } from "../features/profile/profile.js";
 import { modal } from "../components/modal.js";
 
 export async function createApp(root){
- let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
+ let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,renderFrame=null,hydrating=false;
  let pendingPublicSave=null;const activeUsageSessions={};
  let currentUser=null;
 
@@ -41,10 +41,12 @@ export async function createApp(root){
    <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(8,10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"system")}</p><div class="nav-grid">${nav().slice(10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="sidebar-bottom">${accountMini(s)}</div>
-  </aside><main class="app-content">${s.syncing?`<div class="sync-chip">Syncing…</div>`:""}${content}<footer class="legal-footer"><a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a><a href="/terms/" target="_blank" rel="noopener">Terms of Service</a><a href="mailto:sakagitnat@gmail.com">Contact</a></footer></main></div><nav class="bottom-nav"><button class="${route==="home"?"active":""}" data-nav="home"><span>⌂</span>Home</button><button class="${route.startsWith("reading")?"active":""}" data-nav="reading"><span>R</span>Reading</button><button class="${route.startsWith("listening")?"active":""}" data-nav="listening"><span>L</span>Listening</button><button class="${route.startsWith("writing")?"active":""}" data-nav="writing"><span>W</span>Writing</button><button class="${route.startsWith("mock")?"active":""}" data-nav="mock"><span>M</span>Mock</button></nav>${modalHtml}</div>`;
+  </aside><main class="app-content"><div class="sync-chip ${s.syncing?"show":""}" aria-live="polite">กำลังบันทึก…</div>${content}<footer class="legal-footer"><a href="/privacy/" target="_blank" rel="noopener">Privacy Policy</a><a href="/terms/" target="_blank" rel="noopener">Terms of Service</a><a href="mailto:sakagitnat@gmail.com">Contact</a></footer></main></div><nav class="bottom-nav"><button class="${route==="home"?"active":""}" data-nav="home"><span>⌂</span>Home</button><button class="${route.startsWith("reading")?"active":""}" data-nav="reading"><span>R</span>Reading</button><button class="${route.startsWith("listening")?"active":""}" data-nav="listening"><span>L</span>Listening</button><button class="${route.startsWith("writing")?"active":""}" data-nav="writing"><span>W</span>Writing</button><button class="${route.startsWith("mock")?"active":""}" data-nav="mock"><span>M</span>Mock</button></nav>${modalHtml}</div>`;
  }
 
- function render(){
+ function render({preserveScroll=false}={}){
+  if(renderFrame){cancelAnimationFrame(renderFrame);renderFrame=null}
+  const previousScroll=preserveScroll?window.scrollY:0;
   const s=store.get();document.documentElement.dataset.theme=s.theme;
   let html;
   if(route==="home")html=renderHome(s);
@@ -66,6 +68,11 @@ export async function createApp(root){
   else if(route==="settings")html=renderSettings(s);
   else html=renderHome(s);
   root.innerHTML=layout(html);bind();startExamTimer();
+  if(preserveScroll&&previousScroll)requestAnimationFrame(()=>window.scrollTo({top:previousScroll,behavior:"instant"}));
+ }
+ function requestRender(options={preserveScroll:true}){
+  if(renderFrame)return;
+  renderFrame=requestAnimationFrame(()=>{renderFrame=null;render(options)});
  }
 
  function toast(message){
@@ -121,10 +128,10 @@ export async function createApp(root){
   if(hydrating||!currentUser||!backendEnabled)return;
   clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
-   store.set({syncing:true});
+   store.set({syncing:true});root.querySelector(".sync-chip")?.classList.add("show");
    try{await pushCloudState(currentUser,store.get())}
    catch(e){console.error("Sync failed",e)}
-   finally{store.set({syncing:false})}
+   finally{store.set({syncing:false});root.querySelector(".sync-chip")?.classList.remove("show")}
   },900);
  }
 
@@ -359,7 +366,7 @@ export async function createApp(root){
    root.innerHTML=layout(`<section class="game-hero match-hero"><div><p class="content-eyebrow">SPEED MATCH</p><h1 class="content-title">Match · ${escapeHtml(deck.name)}</h1><p class="content-desc">แตะคำศัพท์และความหมายที่ตรงกันให้เร็วที่สุด เวลาเริ่มทันทีเมื่อแตะแผ่นแรก</p></div><button class="btn" id="matchRestart">↻ เล่นใหม่</button></section><div class="game-hud"><div><small>เวลา</small><strong id="matchTime">0.00s</strong></div><div><small>คู่ที่จับได้</small><strong id="matchPairs">0/${pairs.length}</strong></div><div><small>พลาด</small><strong id="matchMistakes">0</strong></div><div class="best-stat"><small>สถิติของฉัน</small><strong>${best?formatTime(best.time):"—"}</strong></div></div><div class="match-progress"><i id="matchProgress"></i></div><div class="match-board quizlet-match">${tiles.map(t=>`<button class="match-tile ${t.type}" data-pair="${t.pair}">${escapeHtml(t.text)}</button>`).join("")}</div><aside class="personal-ranking"><div><p class="content-eyebrow">PERSONAL BEST</p><h3>อันดับของฉัน</h3></div><ol id="matchRanking">${previous.length?previous.map((r,i)=>`<li><b>#${i+1}</b><span>${formatTime(r.time)}</span><small>${r.score.toLocaleString()} pts</small></li>`).join(""):`<li class="empty-rank">เล่นรอบแรกเพื่อสร้างสถิติ</li>`}</ol></aside>`);bind();
    let first=null,matched=0,mistakes=0,startedAt=0,frame=0,locked=false;const tick=()=>{if(!startedAt)return;const elapsed=performance.now()-startedAt,el=root.querySelector("#matchTime");if(!el)return;if(elapsed>30000)el.closest("div")?.classList.add("danger");el.textContent=formatTime(elapsed);frame=requestAnimationFrame(tick)},start=()=>{if(startedAt)return;startedAt=performance.now();root.querySelector(".match-hero")?.classList.add("playing");tick()};
    root.querySelector("#matchRestart").onclick=()=>{cancelAnimationFrame(frame);openGame("match",deck,words)};
-   root.querySelectorAll(".match-tile").forEach(t=>t.onclick=()=>{if(locked||t.classList.contains("matched")){return}start();if(!first){first=t;t.classList.add("selected");return}if(first===t)return;if(first.dataset.pair===t.dataset.pair){locked=true;const old=first;first=null;old.classList.add("matched","pop");t.classList.add("matched","pop");matched++;root.querySelector("#matchPairs").textContent=`${matched}/${pairs.length}`;root.querySelector("#matchProgress").style.width=`${matched/pairs.length*100}%`;setTimeout(()=>{old.classList.add("gone");t.classList.add("gone");locked=false},190);if(matched===pairs.length){const elapsed=performance.now()-startedAt;cancelAnimationFrame(frame);const score=Math.max(100,Math.round(pairs.length*10000/Math.max(elapsed/1000,1)-mistakes*75)),wasBest=!best||elapsed<best.time,records=saveRecord(Math.round(elapsed),score);setTimeout(()=>{root.querySelector("#matchRanking").innerHTML=records.map((r,i)=>`<li class="${r.time===Math.round(elapsed)?"new-record":""}"><b>#${i+1}</b><span>${formatTime(r.time)}</span><small>${r.score.toLocaleString()} pts</small></li>`).join("");modalHtml=modal(wasBest?"🏆 สถิติใหม่!":"Match สำเร็จ",`<div class="game-result"><strong>${formatTime(elapsed)}</strong><p>${score.toLocaleString()} คะแนน · พลาด ${mistakes} ครั้ง</p></div>`,`<button class="btn" data-action="close-modal">ดูอันดับ</button><button class="btn btn-primary" id="playMatchAgain">ทำลายสถิติอีกครั้ง</button>`);render();root.querySelector("#playMatchAgain").onclick=()=>{modalHtml="";openGame("match",deck,words)}},260)}}else{mistakes++;root.querySelector("#matchMistakes").textContent=mistakes;locked=true;const old=first;first=null;old.classList.add("wrong");t.classList.add("wrong");setTimeout(()=>{old.classList.remove("selected","wrong");t.classList.remove("wrong");locked=false},260)}});return
+   root.querySelectorAll(".match-tile").forEach(t=>t.onclick=()=>{if(locked||t.classList.contains("matched")){return}start();if(!first){first=t;t.classList.add("selected");return}if(first===t)return;if(first.dataset.pair===t.dataset.pair){locked=true;const old=first;first=null;old.classList.add("matched","pop");t.classList.add("matched","pop");matched++;root.querySelector("#matchPairs").textContent=`${matched}/${pairs.length}`;root.querySelector("#matchProgress").style.width=`${matched/pairs.length*100}%`;setTimeout(()=>{old.classList.add("gone");t.classList.add("gone");locked=false},190);if(matched===pairs.length){const elapsed=performance.now()-startedAt;cancelAnimationFrame(frame);const score=Math.max(100,Math.round(pairs.length*10000/Math.max(elapsed/1000,1)-mistakes*75)),wasBest=!best||elapsed<best.time,records=saveRecord(Math.round(elapsed),score);setTimeout(()=>{const ranking=root.querySelector("#matchRanking");if(!ranking)return;ranking.innerHTML=records.map((r,i)=>`<li class="${r.time===Math.round(elapsed)?"new-record":""}"><b>#${i+1}</b><span>${formatTime(r.time)}</span><small>${r.score.toLocaleString()} pts</small></li>`).join("");modalHtml=modal(wasBest?"🏆 สถิติใหม่!":"Match สำเร็จ",`<div class="game-result"><strong>${formatTime(elapsed)}</strong><p>${score.toLocaleString()} คะแนน · พลาด ${mistakes} ครั้ง</p></div>`,`<button class="btn" data-action="close-modal">ดูอันดับ</button><button class="btn btn-primary" id="playMatchAgain">ทำลายสถิติอีกครั้ง</button>`);render();root.querySelector("#playMatchAgain").onclick=()=>{modalHtml="";openGame("match",deck,words)}},260)}}else{mistakes++;root.querySelector("#matchMistakes").textContent=mistakes;locked=true;const old=first;first=null;old.classList.add("wrong");t.classList.add("wrong");setTimeout(()=>{old.classList.remove("selected","wrong");t.classList.remove("wrong");locked=false},260)}});return
   }
   const playable=words.filter(w=>/^[a-z]+$/i.test(w.w));if(playable.length<3){modalHtml=modal("Crossword","ต้องจำศัพท์ภาษาอังกฤษอย่างน้อย 3 คำก่อนเล่น");return render()}
   const selectedWords=[...playable].sort(()=>Math.random()-.5).slice(0,Math.min(7,playable.length)),previous=readRecords(),best=previous[0];
@@ -401,7 +408,15 @@ export async function createApp(root){
   examTimer=setInterval(()=>{remaining=Math.max(0,remaining-1);const m=Math.floor(remaining/60),s=remaining%60;el.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;if(!remaining){clearInterval(examTimer);examTimer=null;toast("หมดเวลาฝึกแล้ว")}},1000);
  }
 
- store.subscribe(()=>{render();scheduleSync()});
+ let previousState=store.get();
+ const syncKeys=new Set(["theme","lang","sound","decks","progress","flashSettings","reading","listening","writing","mocks","profile"]);
+ store.subscribe(next=>{
+  const changed=Object.keys(next).filter(key=>next[key]!==previousState[key]);
+  previousState=next;
+  if(!changed.length)return;
+  if(changed.some(key=>key!=="syncing"))requestRender();
+  if(changed.some(key=>syncKeys.has(key)))scheduleSync();
+ });
 
  if(backendEnabled){
   const session=await getSession();currentUser=session?.user||null;
