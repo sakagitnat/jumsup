@@ -20,3 +20,5 @@
 .compact-exam-card .visible-dialogue{font-family:inherit;font-size:13px;line-height:1.65}
 .compact-exam-card .visible-dialogue strong{font-weight:900;color:var(--app-text)}
 @media(max-width:560px){.compact-exam-card{padding:11px 12px!important}.compact-exam-card.writing-passage{font-size:13px;line-height:1.65}.compact-exam-card .visible-dialogue{font-size:12px;line-height:1.6}}
+
+.conversation-transcript{border-top:1px solid var(--app-border);padding-top:9px}.conversation-transcript summary{width:max-content;cursor:pointer;list-style:none;border:1px solid var(--app-border);border-radius:9px;padding:7px 11px;background:var(--app-surface);font-size:10px;font-weight:900;color:var(--app-primary)}.conversation-transcript summary::-webkit-details-marker{display:none}.conversation-transcript .transcript-close{display:none}.conversation-transcript[open] .transcript-open{display:none}.conversation-transcript[open] .transcript-close{display:inline}.conversation-transcript .visible-dialogue{margin-top:10px;padding:12px;border-radius:10px;background:var(--app-surface-2)}
