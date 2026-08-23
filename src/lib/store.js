@@ -20,6 +20,12 @@ const initial=()=>({
 });
 function mergeSamples(saved){
  const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false};
+ const savedDecks=Array.isArray(next.decks)?next.decks:[];
+ const starters=base.decks.map(sample=>{
+  const savedDeck=savedDecks.find(deck=>deck.id===sample.id);
+  return savedDeck?.words?.length?savedDeck:{...sample,...savedDeck,words:sample.words};
+ });
+ next.decks=[...starters,...savedDecks.filter(deck=>!starters.some(sample=>sample.id===deck.id))];
  for(const key of ["reading","listening","writing","mocks"]){
   const existing=(Array.isArray(next[key])?next[key]:[]).filter(item=>{
    const official=item?.creator==="Jumsup Official";
