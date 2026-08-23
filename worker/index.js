@@ -42,6 +42,9 @@ const methodHandler = (route, method) => route[`onRequest${method[0]}${method.sl
 
 export default {
   async fetch(request, env, ctx) {
+    if (!env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_SERVER_KEY) {
+      env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVER_KEY;
+    }
     const url = new URL(request.url);
     const route = routes.get(url.pathname);
     if (!route) return env.ASSETS.fetch(request);
