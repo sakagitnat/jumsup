@@ -4,9 +4,9 @@ import { PLANS } from "../../lib/plans.js";
 
 const checks=items=>`<ul class="plan-features">${items.map(x=>`<li><span>✓</span>${x}</li>`).join("")}</ul>`;
 
-export function renderPricing(s){
+export function renderPricing(s,{embedded=false}={}){
  const pro=isPro(s),loggedIn=Boolean(s.user),monthly=PLANS.monthly,yearly=PLANS.yearly;
- return `${Header("MEMBERSHIP","เลือกแพ็กเกจที่เหมาะกับคุณ","เริ่มใช้ฟรีได้จริง และอัปเกรดเมื่ออยากฝึกได้มากขึ้น","Pricing")}
+ return `${embedded?"":Header("MEMBERSHIP","เลือกแพ็กเกจที่เหมาะกับคุณ","เริ่มใช้ฟรีได้จริง และอัปเกรดเมื่ออยากฝึกได้มากขึ้น","Pricing")}
  <section class="pricing-intro"><span class="tag green">ทดลองระบบชำระเงินก่อนเปิดขายจริง</span><h2>เรียนต่อเนื่องในราคาที่เข้าถึงได้</h2><p>ไม่มีค่าแรกเข้า ไม่มีสัญญาผูกมัด และชุดที่คุณสร้างจะไม่หายเมื่อยกเลิก Pro</p></section>
  <div class="pricing-grid">
   <article class="plan-card"><div class="plan-head"><div><span class="plan-kicker">เริ่มต้น</span><h2>${PLANS.free.name}</h2></div>${!pro?`<span class="current-plan">แพ็กเกจปัจจุบัน</span>`:""}</div><div class="plan-price"><strong>฿0</strong><span>ตลอดไป</span></div>${checks(PLANS.free.features)}<button class="btn plan-button" disabled>${loggedIn?"ใช้งาน Free อยู่":"สมัครฟรีด้วย Google"}</button></article>
