@@ -456,18 +456,16 @@ export async function createApp(root){
  function confirmDelete(type,id){if(root.querySelector("#deleteText").value.trim()!=="ลบ"||!root.querySelector("#deleteCheck").checked)return;store.update(s=>{const key=type==="deck"?"decks":type==="mock"?"mocks":type;return {...s,[key]:s[key].filter(x=>x.id!==id)}});modalHtml="";render()}
 
 
- async function openWord(word){
+ async function openWord(word,anchor){
   const term=String(word||"").trim().toLowerCase();
   const localWord=store.get().decks.flatMap(d=>d.words||[]).find(w=>String(w.w||"").trim().toLowerCase()===term);
   let meaning=localWord?.m||"";
   if(currentUser&&backendEnabled){
-   try{
-    const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:term,target:"th",local_translation:meaning||undefined})});
-    meaning=d?.translation||meaning;
-    if(meaning)api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({word:term,meaning,target:"th"})}).catch(()=>{});
-   }catch(err){if(!apiUnavailable(err))console.error(err)}
+   try{const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:term,target:"th",local_translation:meaning||undefined})});meaning=d?.translation||meaning;if(meaning)api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({word:term,meaning,target:"th"})}).catch(()=>{})}
+   catch(err){if(!apiUnavailable(err))console.error(err)}
   }
-  modalHtml=modal("คำศัพท์",`<div class="word-lookup-card"><span class="tag blue">READING WORD</span><h2>${escapeHtml(term)}</h2><p class="word-lookup-meaning">${meaning?escapeHtml(meaning):"ยังไม่พบคำแปล คุณยังเพิ่มคำนี้ไว้ใน Flashcard และใส่คำแปลภายหลังได้"}</p></div>`,`<button class="btn" data-action="close-modal">ปิด</button><button class="btn btn-primary" data-action="add-reading-word" data-word="${escapeHtml(term)}" data-meaning="${escapeHtml(meaning)}">+ เพิ่มเข้า Flashcard</button>`);render()
+  const rect=anchor?.getBoundingClientRect?.()||{left:16,bottom:70,top:40,width:0},popupWidth=Math.min(320,window.innerWidth-24),left=Math.max(12,Math.min(window.innerWidth-popupWidth-12,rect.left+rect.width/2-popupWidth/2)),below=rect.bottom+10,top=below+190<window.innerHeight?below:Math.max(12,rect.top-190);
+  modalHtml=`<aside class="word-popover" role="dialog" aria-label="คำแปล ${escapeHtml(term)}" style="--word-x:${left}px;--word-y:${top}px;--word-width:${popupWidth}px"><button class="word-popover-close" data-action="close-modal" aria-label="ปิด">×</button><span class="word-popover-label">READING WORD</span><strong>${escapeHtml(term)}</strong><p>${meaning?escapeHtml(meaning):"ยังไม่พบคำแปล"}</p><button class="word-popover-add" data-action="add-reading-word" data-word="${escapeHtml(term)}" data-meaning="${escapeHtml(meaning)}">＋ เพิ่มเข้า Flashcard</button></aside>`;render()
  }
  function openGame(kind,deck,words){
   const recordKey=`jumsup.game.${kind}.${deck.id}`,readRecords=()=>{try{return JSON.parse(localStorage.getItem(recordKey)||"[]")}catch{return[]}},saveRecord=(time,score)=>{const records=[...readRecords(),{time,score,at:Date.now()}].sort((a,b)=>b.score-a.score||a.time-b.time).slice(0,5);localStorage.setItem(recordKey,JSON.stringify(records));return records},formatTime=ms=>(ms/1000).toFixed(2)+"s";
