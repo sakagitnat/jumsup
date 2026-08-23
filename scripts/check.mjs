@@ -1,6 +1,6 @@
 import fs from "node:fs";
 const req=[
- "index.html","package.json","src/main.js","src/app/createApp.js","src/lib/policy.js","src/lib/plans.js","src/features/pricing/pricing.js","src/features/landing/landing.js",
+ "index.html","package.json","src/main.js","src/app/createApp.js","src/lib/policy.js","src/lib/plans.js","src/features/pricing/pricing.js","src/features/landing/landing.js","src/features/onboarding/onboarding.js","supabase/migrations/010_learning_onboarding.sql",
  "functions/_lib/security.js","functions/api/stripe/webhook.js","functions/api/refund/request.js",
  "supabase/migrations/001_full_production.sql","supabase/migrations/002_production_hardening.sql",
  "supabase/migrations/003_refund_workflow.sql","supabase/migrations/004_audit_fixes.sql",
