@@ -15,11 +15,12 @@ import { renderCommunity } from "../features/community/community.js";
 import { renderSettings } from "../features/settings/settings.js";
 import { renderProfile } from "../features/profile/profile.js";
 import { renderPricing } from "../features/pricing/pricing.js";
+import { renderLanding } from "../features/landing/landing.js";
 import { modal } from "../components/modal.js";
 import { importerModal,parseCsv,validateImport,downloadTemplate,buildImportedContent,TYPES } from "../features/importer/bulkImporter.js";
 
 export async function createApp(root){
- let route="home",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
+ let route="landing",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
  let pendingPublicSave=null,bulkImportState=null;const activeUsageSessions={};
  let currentUser=null;
 
@@ -37,6 +38,7 @@ export async function createApp(root){
  }
  function layout(content){
   const s=store.get();
+  if(route==="landing"&&!s.user)return content;
   return `<div class="app-root"><header class="mobile-top"><div class="mobile-brand"><span>J</span><div><b>Jumsup</b><small>English Practice</small></div></div><button class="mobile-profile" data-nav="profile">◎</button></header><div class="app-shell"><aside class="app-sidebar">
    <div class="brand"><div class="brand-mark">J</div><div><strong>Jumsup</strong><small>English Practice</small></div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,4).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
@@ -50,7 +52,8 @@ export async function createApp(root){
  function render(){
   const s=store.get();document.documentElement.dataset.theme=s.theme;
   let html;
-  if(route==="home")html=renderHome(s);
+  if(route==="landing"&&!s.user)html=renderLanding();
+  else if(route==="home")html=renderHome(s);
   else if(route==="flash")html=renderDecks(s,"flash");
   else if(route==="match")html=renderDecks(s,"match");
   else if(route==="crossword")html=renderDecks(s,"crossword");
@@ -150,6 +153,10 @@ export async function createApp(root){
   const s=store.get();
   try{
    if(a==="login-google")return signInGoogle();
+   if(a==="explore-free"){route="home";return render()}
+   if(a==="landing-features"){document.getElementById("landingFeatures")?.scrollIntoView({behavior:"smooth"});return}
+   if(a==="landing-demo"){document.getElementById("landingDemo")?.scrollIntoView({behavior:"smooth",block:"center"});return}
+   if(a==="demo-miss"||a==="demo-know"){const card=root.querySelector(".landing-demo-card");card?.classList.add("demo-revealed");return}
    if(a==="logout"){await signOut();return}
    if(a==="checkin"){
     if(currentUser&&backendEnabled){
