@@ -15,5 +15,5 @@ const labels=Object.fromEntries(tabs.map(([id,label])=>[id,label]));
 export function renderAccount(s,active="menu"){
  if(active==="menu")return `${Header("ACCOUNT","บัญชีของฉัน","เลือกหัวข้อที่ต้องการจัดการ","Account")}<div class="account-menu-card">${tabs.map(([id,label,desc])=>`<button class="account-menu-row" data-account-tab="${id}"><span class="account-menu-icon">${icons[id]}</span><span><b>${label}</b><small>${desc}</small></span><i>›</i></button>`).join("")}</div>`;
  const content=active==="plan"?`${renderProfile(s,{embedded:true,section:"billing"})}${renderPricing(s,{embedded:true})}`:active==="settings"?renderSettings(s,{embedded:true}):active==="privacy"?renderProfile(s,{embedded:true,section:"privacy"}):renderProfile(s,{embedded:true,section:"profile"});
- return `<div class="account-subhead"><button class="icon-back" data-account-back aria-label="ย้อนกลับ">←</button><div><p class="content-eyebrow">ACCOUNT</p><h1>${labels[active]||"บัญชี"}</h1></div></div><div class="account-panel">${content}</div>`;
+ return `<div class="account-subhead"><button class="icon-back" data-account-back aria-label="ย้อนกลับ"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m10 7-5 5 5 5"/></svg></button><div><p class="content-eyebrow">ACCOUNT</p><h1>${labels[active]||"บัญชี"}</h1></div></div><div class="account-panel">${content}</div>`;
 }
