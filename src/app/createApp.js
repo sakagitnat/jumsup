@@ -347,20 +347,20 @@ export async function createApp(root){
  }
  const unavailableMeanings=new Set(["กำลังค้นหาคำแปล…","รอแปล","ยังไม่พบคำแปล","แปลไม่สำเร็จ แต่ยังเพิ่มคำไว้ใน Flashcard ได้","เข้าสู่ระบบเพื่อแปลออนไลน์ หรือเพิ่มคำนี้ไว้แปลภายหลัง"]);
  const cleanFlashMeaning=value=>unavailableMeanings.has(String(value||"").trim())?"":String(value||"");
- function deckWordRow(word={},index=0){return `<div class="deck-word-row" data-deck-word><span class="deck-word-number">${index+1}</span><label>คำหรือวลี<input data-word-term value="${escapeHtml(word.w||"")}" placeholder="เช่น analyze"></label><label>ความหมาย<input data-word-meaning value="${escapeHtml(cleanFlashMeaning(word.m))}" placeholder="เว้นว่างไว้ได้ หากยังไม่มีคำแปล"></label><label class="deck-example">ประโยคตัวอย่าง<input data-word-example value="${escapeHtml(word.e||"")}" placeholder="ไม่บังคับ"></label><div class="deck-word-actions"><button type="button" class="btn btn-quiet" data-deck-editor-action="copy">ทำสำเนา</button><button type="button" class="btn btn-quiet" data-deck-editor-action="delete">ลบ</button></div></div>`}
+ function deckWordRow(word={},index=0){return `<div class="deck-word-row" data-deck-word><span class="deck-word-number">${index+1}</span><label>คำหรือวลี<input data-word-term value="${escapeHtml(word.w||"")}" placeholder="เช่น significant"></label><label>คำอ่าน / การออกเสียง<input data-word-stress value="${escapeHtml(word.stress||word.p||"")}" placeholder="เช่น sig-NIF-i-cant"></label><label>ความหมาย<input data-word-meaning value="${escapeHtml(cleanFlashMeaning(word.m))}" placeholder="เช่น สำคัญ / มีนัยสำคัญ"></label><label class="deck-example">ประโยคตัวอย่าง<input data-word-example value="${escapeHtml(word.e||"")}" placeholder="เช่น The change had a significant effect."></label><div class="deck-word-actions"><button type="button" class="btn btn-quiet" data-deck-editor-action="copy">ทำสำเนา</button><button type="button" class="btn btn-quiet" data-deck-editor-action="delete">ลบ</button></div></div>`}
  function renumberDeckWords(){root.querySelectorAll("[data-deck-word] .deck-word-number").forEach((x,i)=>x.textContent=i+1)}
  function bindDeckEditor(){
   const list=root.querySelector("#deckWordList"),add=root.querySelector("#addDeckWord");if(!list||!add)return;
   add.onclick=()=>{list.insertAdjacentHTML("beforeend",deckWordRow({},list.children.length));renumberDeckWords();list.querySelector("[data-deck-word]:last-child [data-word-term]")?.focus()};
-  list.onclick=e=>{const button=e.target.closest("[data-deck-editor-action]");if(!button)return;const row=button.closest("[data-deck-word]"),action=button.dataset.deckEditorAction;if(action==="delete"){if(list.children.length>1)row.remove();else row.querySelectorAll("input").forEach(x=>x.value="")}if(action==="copy"){const copy={w:row.querySelector("[data-word-term]").value,m:row.querySelector("[data-word-meaning]").value,e:row.querySelector("[data-word-example]").value};row.insertAdjacentHTML("afterend",deckWordRow(copy,0))}renumberDeckWords()};
+  list.onclick=e=>{const button=e.target.closest("[data-deck-editor-action]");if(!button)return;const row=button.closest("[data-deck-word]"),action=button.dataset.deckEditorAction;if(action==="delete"){if(list.children.length>1)row.remove();else row.querySelectorAll("input").forEach(x=>x.value="")}if(action==="copy"){const copy={w:row.querySelector("[data-word-term]").value,stress:row.querySelector("[data-word-stress]").value,m:row.querySelector("[data-word-meaning]").value,e:row.querySelector("[data-word-example]").value};row.insertAdjacentHTML("afterend",deckWordRow(copy,0))}renumberDeckWords()};
  }
  function openDeckModal(id){
   const s=store.get(),d=id?s.decks.find(x=>x.id===id):null,words=d?.words?.length?d.words:[{}];
-  modalHtml=modal(d?"แก้ไขชุดคำศัพท์":"สร้างชุดคำศัพท์",`<div class="deck-editor-modal"><div class="modal-two deck-meta"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(d?.name||"")}" placeholder="เช่น คำศัพท์ A-Level บทที่ 1"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${d?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${d?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div><div class="deck-editor-head"><div><b>คำศัพท์ในชุด</b><small>กรอกคำและความหมาย แล้วเพิ่มคำถัดไปได้ทันที</small></div><button id="addDeckWord" type="button" class="btn">+ เพิ่มคำศัพท์</button></div><div id="deckWordList" class="deck-word-list">${words.map(deckWordRow).join("")}</div></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-deck" data-id="${id||""}">บันทึกชุด</button>`);render()
+  modalHtml=modal(d?"แก้ไขชุดคำศัพท์":"สร้างชุดคำศัพท์",`<div class="deck-editor-modal"><div class="modal-two deck-meta"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(d?.name||"")}" placeholder="เช่น คำศัพท์ A-Level บทที่ 1"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${d?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${d?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div><div class="deck-editor-head"><div><b>คำศัพท์ในชุด</b><small>กรอกคำศัพท์ คำอ่าน ความหมาย และประโยคตัวอย่างให้ตรงกับหน้าเรียน</small></div><button id="addDeckWord" type="button" class="btn">+ เพิ่มคำศัพท์</button></div><div id="deckWordList" class="deck-word-list">${words.map(deckWordRow).join("")}</div></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-deck" data-id="${id||""}">บันทึกชุด</button>`);render()
  }
  async function saveDeck(id){
   const name=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!name)return toast("กรุณาตั้งชื่อชุด");
-  const words=[...root.querySelectorAll("[data-deck-word]")].map(row=>({w:row.querySelector("[data-word-term]").value.trim(),m:cleanFlashMeaning(row.querySelector("[data-word-meaning]").value),e:row.querySelector("[data-word-example]").value.trim()})).filter(x=>x.w);
+  const words=[...root.querySelectorAll("[data-deck-word]")].map(row=>({w:row.querySelector("[data-word-term]").value.trim(),stress:row.querySelector("[data-word-stress]").value.trim(),m:cleanFlashMeaning(row.querySelector("[data-word-meaning]").value),e:row.querySelector("[data-word-example]").value.trim()})).filter(x=>x.w);
   if(!words.length)return toast("กรุณาเพิ่มคำศัพท์อย่างน้อย 1 คำ");
   const creator=store.get().profile?.username||"guest",newId=id||`deck-${crypto.randomUUID()}`;
   const localSave=(v)=>store.update(s=>({...s,decks:id?s.decks.map(d=>d.id===id?{...d,name,visibility:v,words}:d):[...s.decks,{id:newId,name,visibility:v,creator,words}]}));
@@ -520,15 +520,23 @@ export async function createApp(root){
 
  async function markKnown(i){
   if(!study)return;
+  const deckId=study.deckId;
+  const sessionMastered=[...study.mastered];
+  if(!sessionMastered.includes(i))sessionMastered.push(i);
+  study.mastered=sessionMastered;
   if(currentUser&&backendEnabled){
-    const {data,error}=await supabase.rpc("mark_word_mastered",{p_set_id:study.deckId,p_index:i});
-    if(error)throw error;
-    study.mastered=[...(data.mastered||[])];
-    store.set({xp:data.xp,progress:{...store.get().progress,[study.deckId]:{mastered:study.mastered}}});
+    try{
+      const {data,error}=await supabase.rpc("mark_word_mastered",{p_set_id:deckId,p_index:i});
+      if(error)throw error;
+      store.set({xp:data.xp,progress:{...store.get().progress,[deckId]:{mastered:[...(data.mastered||[])]}}});
+    }catch(err){
+      store.update(s=>({...s,progress:{...s.progress,[deckId]:{mastered:[...new Set([...(s.progress[deckId]?.mastered||[]),i])]}}}));
+      toast("บันทึกบนคลาวด์ไม่สำเร็จ แต่ยังเรียนต่อในรอบนี้ได้");
+    }
   }else{
-    const fresh=!study.mastered.includes(i);
-    if(fresh)study.mastered.push(i);
-    store.update(s=>({...s,progress:{...s.progress,[study.deckId]:{mastered:study.mastered}},xp:s.xp+(fresh?10:0)}));
+    const previous=store.get().progress[deckId]?.mastered||[];
+    const fresh=!previous.includes(i);
+    store.update(s=>({...s,progress:{...s.progress,[deckId]:{mastered:[...new Set([...previous,i])]}},xp:s.xp+(fresh?10:0)}));
   }
  }
  function bindSwipe(){
