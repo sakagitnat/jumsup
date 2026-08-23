@@ -1,0 +1,32 @@
+alter table public.profiles add column if not exists exam_goal text;
+alter table public.profiles add column if not exists exam_date date;
+alter table public.profiles add column if not exists daily_minutes integer;
+alter table public.profiles add column if not exists weak_skills text[] not null default '{}';
+alter table public.profiles add column if not exists onboarding_completed_at timestamptz;
+alter table public.profiles drop constraint if exists profiles_exam_goal_check;
+alter table public.profiles add constraint profiles_exam_goal_check check(exam_goal is null or exam_goal in ('alevel','tgat','general'));
+alter table public.profiles drop constraint if exists profiles_daily_minutes_check;
+alter table public.profiles add constraint profiles_daily_minutes_check check(daily_minutes is null or daily_minutes in (5,10,20));
+alter table public.profiles drop constraint if exists profiles_weak_skills_check;
+alter table public.profiles add constraint profiles_weak_skills_check check(weak_skills <@ array['vocabulary','reading','listening','writing']::text[]);
+create table if not exists public.product_events(id bigint generated always as identity primary key,user_id uuid references auth.users(id) on delete set null,event_name text not null check(char_length(event_name) between 1 and 64),properties jsonb not null default '{}'::jsonb,created_at timestamptz not null default now());
+create index if not exists product_events_user_created_idx on public.product_events(user_id,created_at desc);
+alter table public.product_events enable row level security;
+revoke all on public.product_events from anon,authenticated;
+create or replace function public.save_learning_profile(p_exam_goal text,p_exam_date date,p_daily_minutes integer,p_weak_skills text[]) returns jsonb language plpgsql security definer set search_path=public as $$
+declare uid uuid:=auth.uid(); clean_skills text[]; completed timestamptz:=now();
+begin
+ if uid is null then raise exception 'UNAUTHORIZED'; end if;
+ if p_exam_goal not in ('alevel','tgat','general') then raise exception 'INVALID_EXAM_GOAL'; end if;
+ if p_daily_minutes not in (5,10,20) then raise exception 'INVALID_DAILY_MINUTES'; end if;
+ if p_exam_date is not null and p_exam_date<current_date then raise exception 'INVALID_EXAM_DATE'; end if;
+ select coalesce(array_agg(distinct x),'{}') into clean_skills from unnest(coalesce(p_weak_skills,'{}')) x where x in ('vocabulary','reading','listening','writing');
+ if cardinality(clean_skills)=0 then clean_skills:=array['vocabulary']; end if;
+ update profiles set exam_goal=p_exam_goal,exam_date=p_exam_date,daily_minutes=p_daily_minutes,weak_skills=clean_skills,onboarding_completed_at=completed,updated_at=now() where user_id=uid;
+ insert into product_events(user_id,event_name,properties) values(uid,'onboarding_completed',jsonb_build_object('exam_goal',p_exam_goal,'daily_minutes',p_daily_minutes,'weak_skills',clean_skills));
+ return jsonb_build_object('exam_goal',p_exam_goal,'exam_date',p_exam_date,'daily_minutes',p_daily_minutes,'weak_skills',clean_skills,'onboarding_completed_at',completed);
+end $$;
+revoke all on function public.save_learning_profile(text,date,integer,text[]) from public,anon;
+grant execute on function public.save_learning_profile(text,date,integer,text[]) to authenticated;
+drop policy if exists product_events_admin_read on public.product_events;
+create policy product_events_admin_read on public.product_events for select to authenticated using(exists(select 1 from public.profiles p where p.user_id=auth.uid() and p.role='admin'));
