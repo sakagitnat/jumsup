@@ -146,6 +146,7 @@ export async function createApp(root){
 
 
  function bind(){
+  if(route==="reading-play"){const shell=root.querySelector(".reading-shell");if(shell&&!root.querySelector(".reading-bottom-submit"))shell.insertAdjacentHTML("afterend",`<div class="reading-bottom-submit"><button class="btn btn-primary practice-submit" data-action="submit-practice">ส่งคำตอบ</button></div>`)}
   const modalCard=root.querySelector("[data-modal-card]");if(modalCard)modalCard.onclick=e=>e.stopPropagation();
   root.querySelectorAll("[data-nav]").forEach(el=>el.onclick=()=>{route=el.dataset.nav;selected=null;study=null;if(route==="community")refreshCommunity();render()});
   root.querySelectorAll("[data-account-tab]").forEach(el=>el.onclick=()=>{accountTab=el.dataset.accountTab;route="account";render()});
