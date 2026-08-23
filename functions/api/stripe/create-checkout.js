@@ -8,9 +8,11 @@ export async function onRequestPost({request,env}){
   assertSameOrigin(request,env);assertJson(request);
   const {user,sb}=await requireUser(request,env);
   const {plan="monthly"}=await body(request);
+  if(!["monthly","yearly"].includes(plan))return json({error:"Invalid subscription plan"},400,noStore(cors));
   const price=plan==="yearly"?env.STRIPE_PRICE_PRO_YEARLY:env.STRIPE_PRICE_PRO_MONTHLY;
   if(!price)throw new Error("Stripe price is not configured");
   const {data:sub}=await sb.from("subscriptions").select("*").eq("user_id",user.id).maybeSingle();
+  if(sub&&["active","trialing"].includes(sub.status))return json({error:"Subscription is already active"},409,noStore(cors));
   let customer=sub?.stripe_customer_id;
   if(!customer){
    const c=await stripeRequest(env,"/customers",{method:"POST",params:{email:user.email,metadata:{user_id:user.id}}});
