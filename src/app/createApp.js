@@ -12,16 +12,15 @@ import { renderHome } from "../features/home/home.js";
 import { renderDecks,renderStudy,masteredWords } from "../features/flashcards/flashcards.js";
 import { renderList,renderReading,renderListening,renderWriting,renderMock,renderPracticeResult } from "../features/practice/practice.js";
 import { renderCommunity } from "../features/community/community.js";
-import { renderSettings } from "../features/settings/settings.js";
-import { renderProfile } from "../features/profile/profile.js";
 import { renderPricing } from "../features/pricing/pricing.js";
+import { renderAccount } from "../features/account/account.js";
 import { renderLanding } from "../features/landing/landing.js";
 import { renderOnboarding } from "../features/onboarding/onboarding.js";
 import { modal } from "../components/modal.js";
 import { importerModal,parseCsv,validateImport,downloadTemplate,buildImportedContent,TYPES } from "../features/importer/bulkImporter.js";
 
 export async function createApp(root){
- let route="landing",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
+ let route="landing",accountTab="profile",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
  let pendingPublicSave=null,bulkImportState=null;const activeUsageSessions={};
  let currentUser=null;
 
@@ -29,24 +28,24 @@ export async function createApp(root){
   ["flash","Aa","flash"],["match","↔","match"],["crossword","+","cross"],
   ["home","⌂","home"],["reading","R","reading"],["listening","L","listening"],
   ["writing","W","writing"],["mock","M","mock"],["community","◇","community"],
-  ["profile","◎","profile"],["pricing","฿","pricing"],["settings","⚙","settings"]
+  ["account","◎","account"]
  ];
 
  function accountMini(s){
-  if(!s.user)return `<button class="profile-mini" data-nav="profile"><div class="avatar">G</div><span><strong>Guest</strong><small>Login to sync</small></span></button>`;
+  if(!s.user)return `<button class="profile-mini" data-nav="account"><div class="avatar">G</div><span><strong>Guest</strong><small>Login to sync</small></span></button>`;
   const p=s.profile||{},letter=(p.username||s.user.email||"U").slice(0,1).toUpperCase();
-  return `<button class="profile-mini" data-nav="profile"><div class="avatar">${p.avatar_url?`<img src="${p.avatar_url}" alt="">`:letter}</div><span><strong>${p.username||"User"}</strong><small>${s.subscription?.status==="active"?"Pro · ":""}Cloud Sync</small></span></button>`;
+  return `<button class="profile-mini" data-nav="account"><div class="avatar">${p.avatar_url?`<img src="${p.avatar_url}" alt="">`:letter}</div><span><strong>${p.username||"User"}</strong><small>${s.subscription?.status==="active"?"Pro · ":""}Cloud Sync</small></span></button>`;
  }
  function layout(content){
   const s=store.get();
   if(route==="landing"&&!s.user)return content;
   if(route==="onboarding"&&s.user)return content;
-  return `<div class="app-root"><header class="mobile-top"><div class="mobile-brand"><span>J</span><div><b>Jumsup</b><small>English Practice</small></div></div><button class="mobile-profile" data-nav="profile">◎</button></header><div class="app-shell"><aside class="app-sidebar">
+  return `<div class="app-root"><header class="mobile-top"><div class="mobile-brand"><span>J</span><div><b>Jumsup</b><small>English Practice</small></div></div><button class="mobile-profile" data-nav="account">◎</button></header><div class="app-shell"><aside class="app-sidebar">
    <div class="brand"><div class="brand-mark">J</div><div><strong>Jumsup</strong><small>English Practice</small></div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,4).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"practice")}</p><div class="nav-grid">${nav().slice(4,8).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
-   <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(8,10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
-   <div class="side-section"><p class="side-label">${tr(s.lang,"system")}</p><div class="nav-grid">${nav().slice(10).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
+   <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(8,9).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
+   <div class="side-section"><p class="side-label">${tr(s.lang,"system")}</p><div class="nav-grid">${nav().slice(9).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="sidebar-bottom">${accountMini(s)}</div>
   </aside><main class="app-content">${s.syncing?`<div class="sync-chip">Syncing…</div>`:""}${content}</main></div><nav class="bottom-nav"><button class="${route==="home"?"active":""}" data-nav="home"><span>⌂</span>Home</button><button class="${route.startsWith("reading")?"active":""}" data-nav="reading"><span>R</span>Reading</button><button class="${route.startsWith("listening")?"active":""}" data-nav="listening"><span>L</span>Listening</button><button class="${route.startsWith("writing")?"active":""}" data-nav="writing"><span>W</span>Writing</button><button class="${route.startsWith("mock")?"active":""}" data-nav="mock"><span>M</span>Mock</button></nav>${modalHtml}</div>`;
  }
@@ -71,9 +70,8 @@ export async function createApp(root){
   else if(route==="mock-play")html=renderMock(selected);
   else if(route==="practice-result")html=renderPracticeResult(selected,practiceAttempt);
   else if(route==="community")html=renderCommunity(s,communityQuery,communityTab);
-  else if(route==="profile")html=renderProfile(s);
-  else if(route==="pricing")html=renderPricing(s);
-  else if(route==="settings")html=renderSettings(s);
+  else if(route==="account")html=renderAccount(s,accountTab);
+  else if(route==="pricing")html=s.user?renderAccount(s,"plan"):renderPricing(s);
   else html=renderHome(s);
   root.innerHTML=layout(html);bind();startExamTimer();
  }
@@ -130,7 +128,8 @@ export async function createApp(root){
  }
 
  function bind(){
-  root.querySelectorAll("[data-nav]").forEach(el=>el.onclick=()=>{route=el.dataset.nav;selected=null;study=null;if(route==="community")refreshCommunity();render()});
+  root.querySelectorAll("[data-nav]").forEach(el=>el.onclick=()=>{route=el.dataset.nav;if(route==="pricing"&&store.get().user){route="account";accountTab="plan"}selected=null;study=null;if(route==="community")refreshCommunity();render()});
+  root.querySelectorAll("[data-account-tab]").forEach(el=>el.onclick=()=>{accountTab=el.dataset.accountTab;route="account";render()});
   root.querySelectorAll("[data-action]").forEach(el=>el.onclick=e=>handleAction(el.dataset.action,el,e));
   root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>store.set({lang:el.dataset.lang}));
   root.querySelectorAll("[data-theme-choice]").forEach(el=>el.onclick=()=>store.set({theme:el.dataset.themeChoice}));
