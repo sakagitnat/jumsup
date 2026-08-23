@@ -2,7 +2,9 @@ import { Header } from "../../components/ui.js";
 import { todayKey } from "../../lib/utils.js";
 export function renderHome(s){
  const checked=s.lastCheckin===todayKey();
+ const p=s.profile||{},skill=(p.weak_skills||[])[0]||"vocabulary",route=skill==="vocabulary"?"flash":skill,labels={vocabulary:"ทบทวนคำศัพท์",reading:"ฝึก Reading",listening:"ฝึก Listening",writing:"ฝึก Writing"},minutes=p.daily_minutes||10;
  return `${Header("ENGLISH PRACTICE","ฝึกภาษาอังกฤษในแบบของคุณ","Flashcard, Reading, Listening, Writing และแบบทดสอบในที่เดียว","Practice Hub")}
+ ${p.onboarding_completed_at?`<div class="daily-plan-card"><div><span class="tag green">แผนวันนี้ · ${minutes} นาที</span><h2>${labels[skill]||"เริ่มฝึกตามแผน"}</h2><p>เริ่มจากทักษะที่คุณเลือกไว้ แล้วกลับมาทบทวนต่อได้ทุกวัน</p></div><button class="btn btn-primary" data-nav="${route}">เริ่มแผนวันนี้</button></div>`:""}
  <div class="grid g3">
   <div class="card"><span class="tag blue">XP</span><h3>${s.xp.toLocaleString()} XP</h3><p>ความก้าวหน้ารวม</p></div>
   <div class="card"><span class="tag green">STREAK</span><h3>${s.streak} วัน</h3><p>${checked?"เช็คอินแล้ววันนี้":"ยังไม่ได้เช็คอินวันนี้"}</p></div>
