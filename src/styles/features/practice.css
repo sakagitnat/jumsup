@@ -22,3 +22,5 @@
 .word-popover-add{width:100%;min-height:38px;border:0;border-radius:11px;background:var(--blue,#73a8d4);color:#fff;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
 .word-popover-add:hover{filter:brightness(.96)}
 @media(max-width:480px){.word-popover{border-radius:14px;padding:13px 13px 11px}.word-popover strong{font-size:20px}}
+.reading-bottom-submit{display:flex;justify-content:center;margin:22px 0 8px;padding:0 12px}
+.reading-bottom-submit .practice-submit{width:min(100%,560px);min-height:52px;font-size:16px;font-weight:800}
