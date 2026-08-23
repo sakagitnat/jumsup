@@ -24,6 +24,7 @@ export async function createApp(root){
  let route="landing",accountTab="menu",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
  let pendingPublicSave=null,bulkImportState=null;const activeUsageSessions={};
  let currentUser=null;
+ const apiUnavailable=err=>/\bHTTP (404|405)\b/.test(String(err?.message||err||""));
 
 
  const nav=()=>[
@@ -231,7 +232,7 @@ export async function createApp(root){
     if(currentUser&&backendEnabled&&["listening","writing","mock"].includes(kind)){
       const sessionKey=activeUsageSessions[kind]||`${kind}:${selected.id}:${crypto.randomUUID()}`;
       try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id});activeUsageSessions[kind]=usage.existing_session_key||sessionKey}
-      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return toast("วันนี้ใช้สิทธิ์ "+kind+" ฟรีไปแล้ว");throw err}
+      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return toast("วันนี้ใช้สิทธิ์ "+kind+" ฟรีไปแล้ว");if(!apiUnavailable(err))throw err}
     }
     practiceKind=kind;const questions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);practiceAttempt={answers:{},questions,startedAt:Date.now()};
     route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"mock-play";render()
@@ -379,7 +380,7 @@ export async function createApp(root){
     pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,payload:{words},confirm_public:true})});localSave("public")};
     modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ Flashcard ส่วนตัวได้ 3 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
   }
-  if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,visibility,payload:{words}})});
+  if(currentUser&&backendEnabled)try{await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,visibility,payload:{words}})})}catch(err){if(!apiUnavailable(err))throw err}
   localSave(visibility);modalHtml="";render()
  }
  function practiceQuestionEditor(q={},index=0){
@@ -442,7 +443,7 @@ export async function createApp(root){
   else{payload.questions=questions;if(kind==="reading"){payload.text=sections[0]?.text||"";payload.category=category||"General article"}if(kind==="listening"){payload.script=sections[0]?.script||"";payload.type=category||"Conversation";payload.accent=payload.accent||"en-US"}if(kind==="writing"){payload.passage=sections[0]?.passage||"";payload.type=category||"Text Completion"}}
   const localSave=v=>store.update(s=>({...s,[key]:id?s[key].map(x=>x.id===id?{...x,title,visibility:v,...payload}:x):[...s[key],{id:newId,title,visibility:v,creator,...payload}]}));
   if(visibility==="private"&&!canPrivateLocally(store.get(),kind,id)){pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id:newId,title,payload,confirm_public:true})});localSave("public")};modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ ${kind} ส่วนตัวได้ 1 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()}
-  if(currentUser&&backendEnabled)await api("/api/content/save",{method:"POST",body:JSON.stringify({kind,id:newId,title,visibility,payload})});
+  if(currentUser&&backendEnabled)try{await api("/api/content/save",{method:"POST",body:JSON.stringify({kind,id:newId,title,visibility,payload})})}catch(err){if(!apiUnavailable(err))throw err}
   localSave(visibility);modalHtml="";render()
  }
  function openDelete(type,id){modalHtml=modal("ยืนยันการลบ",`<div class="delete-warning"><b>การลบไม่สามารถย้อนกลับได้</b></div><div class="modal-form"><label>พิมพ์คำว่า ลบ<input id="deleteText"></label><label class="delete-check-row"><input id="deleteCheck" type="checkbox"><span>ฉันเข้าใจว่ารายการนี้จะถูกลบถาวร</span></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-danger" data-action="confirm-delete" data-type="${type}" data-id="${id}">ลบถาวร</button>`);render()}
