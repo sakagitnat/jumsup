@@ -210,6 +210,12 @@ export async function createApp(root){
    if(a==="start-deck"){const d=s.decks.find(x=>x.id===el.dataset.id);if(el.dataset.mode!=="flash"){const p=s.progress[d.id]||{mastered:[]},mastered=masteredWords(s,d.id,p),minimum=el.dataset.mode==="match"?4:3,playable=mastered.length>=minimum?mastered:d.words;if(el.dataset.mode==="match")return openGame("match",d,playable);if(el.dataset.mode==="crossword")return openGame("crossword",d,playable)}study={deckId:d.id,poolSize:Math.min(s.flashSettings.loopSize,d.words.length),mastered:[],cursor:0};route="study";render()}
    if(a==="know-word"){await markKnown(Number(el.dataset.index));study.cursor=0}
    if(a==="miss-word"){study.cursor++;render()}
+   if(a==="add-reading-word"){
+    const term=String(el.dataset.word||"").trim(),meaning=String(el.dataset.meaning||"").trim(),state=store.get(),deckId=state.activeDeckId||state.decks?.[0]?.id;
+    if(!deckId)return toast("ยังไม่มีชุดคำศัพท์สำหรับบันทึก");
+    const deck=state.decks.find(d=>d.id===deckId);if(deck?.words?.some(w=>String(w.w||"").toLowerCase()===term.toLowerCase())){modalHtml="";render();return toast("คำนี้อยู่ใน Flashcard แล้ว")}
+    store.update(x=>({...x,decks:x.decks.map(d=>d.id===deckId?{...d,words:[...(d.words||[]),{w:term,p:"",m:meaning,e:""}]}:d)}));modalHtml="";render();return toast("เพิ่ม "+term+" เข้า Flashcard แล้ว")
+   }
    if(a==="speak")speak(el.dataset.word)
    if(a==="open-flash-settings")openFlashSettings()
    if(a==="save-study-settings")saveFlashSettings()
@@ -274,7 +280,7 @@ export async function createApp(root){
    if(a==="redeem-gift"){const code=root.querySelector("#giftCode")?.value;await api("/api/gift/redeem",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("แลก Gift Code สำเร็จ")}
    if(a==="claim-referral"){const code=root.querySelector("#referralCode")?.value;await api("/api/referral/claim",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("ใช้ Referral สำเร็จ")}
    if(a==="admin-create-gift"){const code=root.querySelector("#adminGiftCode")?.value,days=root.querySelector("#adminGiftDays")?.value;await api("/api/admin/gift-code",{method:"POST",body:JSON.stringify({code,days})});return toast("สร้าง Gift Code แล้ว")}
-  }catch(err){console.error(err);toast(err.message||"เกิดข้อผิดพลาด")}
+  }catch(err){console.error(err);toast(apiUnavailable(err)?"ฟังก์ชันออนไลน์นี้ยังไม่ได้เปิดใช้งานบนเซิร์ฟเวอร์":(err.message||"เกิดข้อผิดพลาด"))}
  }
  function openBulkImport(type){
   const nextType=type||bulkImportState?.type||"vocab";
@@ -377,7 +383,7 @@ export async function createApp(root){
   const creator=store.get().profile?.username||"guest",newId=id||`deck-${crypto.randomUUID()}`;
   const localSave=(v)=>store.update(s=>({...s,decks:id?s.decks.map(d=>d.id===id?{...d,name,visibility:v,words}:d):[...s.decks,{id:newId,name,visibility:v,creator,words}]}));
   if(visibility==="private"&&!canPrivateLocally(store.get(),"vocab",id)){
-    pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,payload:{words},confirm_public:true})});localSave("public")};
+    pendingPublicSave=async()=>{if(currentUser&&backendEnabled)try{await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,payload:{words},confirm_public:true})})}catch(err){if(!apiUnavailable(err))throw err}localSave("public")};
     modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ Flashcard ส่วนตัวได้ 3 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
   }
   if(currentUser&&backendEnabled)try{await api("/api/content/save",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,visibility,payload:{words}})})}catch(err){if(!apiUnavailable(err))throw err}
@@ -442,7 +448,7 @@ export async function createApp(root){
   if(kind==="mock")payload.questions=questions.length;
   else{payload.questions=questions;if(kind==="reading"){payload.text=sections[0]?.text||"";payload.category=category||"General article"}if(kind==="listening"){payload.script=sections[0]?.script||"";payload.type=category||"Conversation";payload.accent=payload.accent||"en-US"}if(kind==="writing"){payload.passage=sections[0]?.passage||"";payload.type=category||"Text Completion"}}
   const localSave=v=>store.update(s=>({...s,[key]:id?s[key].map(x=>x.id===id?{...x,title,visibility:v,...payload}:x):[...s[key],{id:newId,title,visibility:v,creator,...payload}]}));
-  if(visibility==="private"&&!canPrivateLocally(store.get(),kind,id)){pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id:newId,title,payload,confirm_public:true})});localSave("public")};modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ ${kind} ส่วนตัวได้ 1 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()}
+  if(visibility==="private"&&!canPrivateLocally(store.get(),kind,id)){pendingPublicSave=async()=>{if(currentUser&&backendEnabled)try{await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind,id:newId,title,payload,confirm_public:true})})}catch(err){if(!apiUnavailable(err))throw err}localSave("public")};modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ ${kind} ส่วนตัวได้ 1 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()}
   if(currentUser&&backendEnabled)try{await api("/api/content/save",{method:"POST",body:JSON.stringify({kind,id:newId,title,visibility,payload})})}catch(err){if(!apiUnavailable(err))throw err}
   localSave(visibility);modalHtml="";render()
  }
@@ -451,17 +457,17 @@ export async function createApp(root){
 
 
  async function openWord(word){
-  const local=store.get().decks.flatMap(d=>d.words).find(w=>w.w===word)?.m;
-  if(local){
-   if(!currentUser)return toast(`${word}: เข้าสู่ระบบเพื่อใช้การแปล`);
+  const term=String(word||"").trim().toLowerCase();
+  const localWord=store.get().decks.flatMap(d=>d.words||[]).find(w=>String(w.w||"").trim().toLowerCase()===term);
+  let meaning=localWord?.m||"";
+  if(currentUser&&backendEnabled){
    try{
-    if(backendEnabled)api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({word,meaning:local,target:"th"})}).catch(()=>{});
-    const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:word,target:"th",local_translation:local})});
-    return toast(`${word}: ${d.translation}`);
-   }catch(e){return toast(e.message)}
+    const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:term,target:"th",local_translation:meaning||undefined})});
+    meaning=d?.translation||meaning;
+    if(meaning)api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({word:term,meaning,target:"th"})}).catch(()=>{});
+   }catch(err){if(!apiUnavailable(err))console.error(err)}
   }
-  if(!currentUser)return toast(`${word}: เข้าสู่ระบบเพื่อใช้การแปลออนไลน์`);
-  try{const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:word,target:store.get().lang==="en"?"th":store.get().lang})});toast(`${word}: ${d.translation||"ยังไม่ได้ตั้ง Translation API"}`)}catch(e){toast(e.message)}
+  modalHtml=modal("คำศัพท์",`<div class="word-lookup-card"><span class="tag blue">READING WORD</span><h2>${escapeHtml(term)}</h2><p class="word-lookup-meaning">${meaning?escapeHtml(meaning):"ยังไม่พบคำแปล คุณยังเพิ่มคำนี้ไว้ใน Flashcard และใส่คำแปลภายหลังได้"}</p></div>`,`<button class="btn" data-action="close-modal">ปิด</button><button class="btn btn-primary" data-action="add-reading-word" data-word="${escapeHtml(term)}" data-meaning="${escapeHtml(meaning)}">+ เพิ่มเข้า Flashcard</button>`);render()
  }
  function openGame(kind,deck,words){
   const recordKey=`jumsup.game.${kind}.${deck.id}`,readRecords=()=>{try{return JSON.parse(localStorage.getItem(recordKey)||"[]")}catch{return[]}},saveRecord=(time,score)=>{const records=[...readRecords(),{time,score,at:Date.now()}].sort((a,b)=>b.score-a.score||a.time-b.time).slice(0,5);localStorage.setItem(recordKey,JSON.stringify(records));return records},formatTime=ms=>(ms/1000).toFixed(2)+"s";
