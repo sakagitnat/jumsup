@@ -97,11 +97,12 @@ export async function createApp(root){
    const remote=await loadCloudState(user);
    if(!remote.profile?.onboarding_completed_at)route="onboarding";
    const local=store.get();
-   const restoreOfficialPractice=cloud=>{const restored={...cloud};for(const key of ["reading","listening","writing","mocks"]){const cloudItems=Array.isArray(cloud[key])?cloud[key]:[],official=(local[key]||[]).filter(item=>item.creator==="Jumsup Official"&&!cloudItems.some(saved=>saved.id===item.id));restored[key]=[...cloudItems,...official]}return restored};
+   const restoreOfficialPractice=cloud=>{const restored={...cloud};for(const key of ["reading","listening","writing","mocks"]){const cloudItems=Array.isArray(cloud[key])?cloud[key]:[],official=(local[key]||[]).filter(item=>item.creator==="Jumsup Official"&&!cloudItems.some(saved=>saved.id===item.id));restored[key]=[...cloudItems,...official]}const cloudDecks=Array.isArray(cloud.decks)?cloud.decks:[],starters=(local.decks||[]).filter(deck=>["deck-1","deck-2"].includes(deck.id));restored.decks=[...cloudDecks.map(deck=>{const starter=starters.find(sample=>sample.id===deck.id);return starter&&!deck.words?.length?{...deck,words:starter.words}:deck}),...starters.filter(sample=>!cloudDecks.some(deck=>deck.id===sample.id))];return restored};
    const remoteHasData=(remote.decks?.length||0)+(remote.reading?.length||0)+(remote.listening?.length||0)+(remote.writing?.length||0)+(remote.mocks?.length||0)>0;
    if(remoteHasData){
     const restored=restoreOfficialPractice(remote);
     store.set({...restored,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
+    const starterRepair=(restored.decks||[]).some(deck=>["deck-1","deck-2"].includes(deck.id)&&deck.words?.length)&&!(remote.decks||[]).some(deck=>["deck-1","deck-2"].includes(deck.id)&&deck.words?.length);if(starterRepair)await pushCloudState(user,store.get());
    }else{
     store.set({user,profile:remote.profile,subscription:remote.subscription,backend:true,syncing:false});
     await pushCloudState(user,store.get());
