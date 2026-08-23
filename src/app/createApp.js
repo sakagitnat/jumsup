@@ -16,6 +16,7 @@ import { renderSettings } from "../features/settings/settings.js";
 import { renderProfile } from "../features/profile/profile.js";
 import { renderPricing } from "../features/pricing/pricing.js";
 import { renderLanding } from "../features/landing/landing.js";
+import { renderOnboarding } from "../features/onboarding/onboarding.js";
 import { modal } from "../components/modal.js";
 import { importerModal,parseCsv,validateImport,downloadTemplate,buildImportedContent,TYPES } from "../features/importer/bulkImporter.js";
 
@@ -39,6 +40,7 @@ export async function createApp(root){
  function layout(content){
   const s=store.get();
   if(route==="landing"&&!s.user)return content;
+  if(route==="onboarding"&&s.user)return content;
   return `<div class="app-root"><header class="mobile-top"><div class="mobile-brand"><span>J</span><div><b>Jumsup</b><small>English Practice</small></div></div><button class="mobile-profile" data-nav="profile">◎</button></header><div class="app-shell"><aside class="app-sidebar">
    <div class="brand"><div class="brand-mark">J</div><div><strong>Jumsup</strong><small>English Practice</small></div></div>
    <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,4).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${i}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
@@ -53,6 +55,7 @@ export async function createApp(root){
   const s=store.get();document.documentElement.dataset.theme=s.theme;
   let html;
   if(route==="landing"&&!s.user)html=renderLanding();
+  else if(route==="onboarding"&&s.user)html=renderOnboarding(s);
   else if(route==="home")html=renderHome(s);
   else if(route==="flash")html=renderDecks(s,"flash");
   else if(route==="match")html=renderDecks(s,"match");
@@ -84,6 +87,7 @@ export async function createApp(root){
   hydrating=true;store.set({syncing:true,backend:true,user});
   try{
    const remote=await loadCloudState(user);
+   if(!remote.profile?.onboarding_completed_at)route="onboarding";
    const local=store.get();
    const remoteHasData=(remote.decks?.length||0)+(remote.reading?.length||0)+(remote.listening?.length||0)+(remote.writing?.length||0)+(remote.mocks?.length||0)>0;
    if(remoteHasData){
@@ -153,6 +157,12 @@ export async function createApp(root){
   const s=store.get();
   try{
    if(a==="login-google")return signInGoogle();
+   if(a==="save-onboarding"){
+    if(!currentUser||!backendEnabled)return toast("กรุณาเข้าสู่ระบบก่อนสร้างแผน");
+    const goal=root.querySelector('input[name="examGoal"]:checked')?.value||"alevel",minutes=Number(root.querySelector('input[name="dailyMinutes"]:checked')?.value||10),skills=[...root.querySelectorAll('input[name="weakSkill"]:checked')].map(x=>x.value),examDate=root.querySelector("#onboardingExamDate")?.value||null;
+    const {data,error}=await supabase.rpc("save_learning_profile",{p_exam_goal:goal,p_exam_date:examDate,p_daily_minutes:minutes,p_weak_skills:skills});if(error)throw error;
+    store.set({profile:{...s.profile,...data}});route="home";return render()
+   }
    if(a==="explore-free"){route="home";return render()}
    if(a==="landing-features"){document.getElementById("landingFeatures")?.scrollIntoView({behavior:"smooth"});return}
    if(a==="landing-demo"){document.getElementById("landingDemo")?.scrollIntoView({behavior:"smooth",block:"center"});return}
