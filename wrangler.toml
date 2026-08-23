@@ -1,7 +1,10 @@
 name = "jumsup"
+main = "./worker/index.js"
 compatibility_date = "2026-08-18"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
