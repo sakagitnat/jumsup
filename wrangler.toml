@@ -6,6 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 APP_URL = "https://jumsup.sakagitnat.workers.dev"
 SUPABASE_URL = "https://vhzpmnirzgrzyaaotcep.supabase.co"
+STRIPE_PRICE_PRO_MONTHLY = "price_1U7g9H1fOGLYXf4Cik7BbaBq"
+STRIPE_PRICE_PRO_YEARLY = "price_1U7gEC1fOGLYXf4CuFn3be94"
 
 [assets]
 directory = "./dist"
