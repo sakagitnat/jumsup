@@ -31,6 +31,8 @@ export async function createApp(root){
  ];
  const navIcon=r=>({flash:'<svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z"/><path d="M8 8h8M8 12h6"/></svg>',match:'<svg viewBox="0 0 24 24"><path d="m8 7-4 4 4 4M4 11h16M16 17l4-4-4-4"/></svg>',crossword:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="10" y="10" width="7" height="7"/><rect x="3" y="17" width="7" height="4"/><rect x="17" y="3" width="4" height="7"/></svg>',home:'<svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>',reading:'<svg viewBox="0 0 24 24"><path d="M4 5c4-1 6 0 8 2v14c-2-2-4-3-8-2V5ZM20 5c-4-1-6 0-8 2v14c2-2 4-3 8-2V5Z"/></svg>',listening:'<svg viewBox="0 0 24 24"><path d="M4 13v-2a8 8 0 0 1 16 0v2"/><path d="M4 13h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1-2ZM20 13h-3v7h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-2Z"/></svg>',writing:'<svg viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.5 8 3 3"/></svg>',mock:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v3h6V3M9 11h6M9 15h6"/></svg>',community:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3-.4 5 1.3 6 4"/></svg>',account:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-4 3.3-6 7.5-6s6.7 2 7.5 6"/></svg>'}[r]||'');
 
+ const displayIcon=r=>r==="match"?'<svg viewBox="0 0 24 24"><path d="M6 7h12M15 4l3 3-3 3M18 17H6M9 14l-3 3 3 3"/></svg>':navIcon(r);
+
  function accountMini(s){
   if(!s.user)return `<button class="profile-mini" data-nav="account"><div class="avatar">G</div><span><strong>Guest</strong><small>Login to sync</small></span></button>`;
   const p=s.profile||{},letter=(p.username||s.user.email||"U").slice(0,1).toUpperCase();
@@ -42,9 +44,9 @@ export async function createApp(root){
   if(route==="onboarding"&&s.user)return content;
   return `<div class="app-root"><header class="mobile-top"><div class="mobile-brand"><span>J</span><div><b>Jumsup</b><small>English Practice</small></div></div><button class="mobile-profile" data-nav="account" aria-label="บัญชี">${navIcon("account")}</button></header><div class="app-shell"><aside class="app-sidebar">
    <div class="brand"><div class="brand-mark">J</div><div><strong>Jumsup</strong><small>English Practice</small></div></div>
-   <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,3).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${navIcon(r)}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
-   <div class="side-section"><p class="side-label">${tr(s.lang,"practice")}</p><div class="nav-grid">${nav().slice(3,7).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${navIcon(r)}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
-   <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(7).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${navIcon(r)}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
+   <div class="side-section"><p class="side-label">${tr(s.lang,"vocab")}</p><div class="nav-grid">${nav().slice(0,3).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${displayIcon(r)}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
+   <div class="side-section"><p class="side-label">${tr(s.lang,"practice")}</p><div class="nav-grid">${nav().slice(3,7).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${displayIcon(r)}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
+   <div class="side-section"><p class="side-label">${tr(s.lang,"manage")}</p><div class="nav-grid">${nav().slice(7).map(([r,i,k])=>`<button class="nav-card ${route===r?"active":""}" data-nav="${r}"><span>${displayIcon(r)}</span>${tr(s.lang,k)}</button>`).join("")}</div></div>
    <div class="sidebar-bottom">${accountMini(s)}</div>
   </aside><main class="app-content">${s.syncing?`<div class="sync-chip">Syncing…</div>`:""}${content}</main></div><nav class="bottom-nav"><button class="${route==="home"?"active":""}" data-nav="home"><span>⌂</span>Home</button><button class="${route.startsWith("reading")?"active":""}" data-nav="reading"><span>R</span>Reading</button><button class="${route.startsWith("listening")?"active":""}" data-nav="listening"><span>L</span>Listening</button><button class="${route.startsWith("writing")?"active":""}" data-nav="writing"><span>W</span>Writing</button><button class="${route.startsWith("mock")?"active":""}" data-nav="mock"><span>M</span>Mock</button></nav>${modalHtml}</div>`;
  }
@@ -73,7 +75,7 @@ export async function createApp(root){
   else if(route==="pricing")html=s.user?renderAccount(s,"plan"):renderPricing(s);
   else html=renderHome(s);
   const detailRoutes=["study","reading-play","listening-play","writing-play","mock-play","practice-result"];
-  if(detailRoutes.includes(route))html=`<button class="page-back" data-action="go-back"><span>←</span> ย้อนกลับ</button>${html}`;
+  if(detailRoutes.includes(route))html=`<button class="page-back" data-action="go-back"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m10 7-5 5 5 5"/></svg> ย้อนกลับ</button>${html}`;
   root.innerHTML=layout(html);bind();startExamTimer();
  }
 
