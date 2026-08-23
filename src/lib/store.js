@@ -21,8 +21,12 @@ const initial=()=>({
 function mergeSamples(saved){
  const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false};
  for(const key of ["reading","listening","writing","mocks"]){
-  const existing=Array.isArray(next[key])?next[key]:[];
-  next[key]=[...existing,...base[key].filter(sample=>!existing.some(item=>item.id===sample.id))];
+  const existing=(Array.isArray(next[key])?next[key]:[]).filter(item=>{
+   const official=item?.creator==="Jumsup Official";
+   const legacy=/^(reading|listening|writing|mock)(-alevel|-parallel)|^mock-parallel-1$/.test(item?.id||"");
+   return !official&&!legacy;
+  });
+  next[key]=[...base[key],...existing.filter(item=>!base[key].some(sample=>sample.id===item.id))];
  }
  return next;
 }
