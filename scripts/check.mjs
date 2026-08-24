@@ -17,4 +17,3 @@ for(const marker of ["function deckWordRow","function bindDeckEditor","function 
 const i18n=fs.readFileSync("src/lib/i18n.js","utf8");
 for(const lang of ["th","en","zh","ja","ko","pt","de","ru","hi"]){if(!i18n.includes(`[\"${lang}\"`)){console.error("Missing supported language",lang);process.exit(1)}}
 console.log("Jumsup V6 audited structure OK");
-
