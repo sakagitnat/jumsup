@@ -1,4 +1,4 @@
-import { requireAdmin } from "../../_lib/supabase.js";
+import { requireAdmin,adminClient } from "../../_lib/supabase.js";
 import { stripeRequest } from "../../_lib/stripe.js";
 import { json,body,cors } from "../../_lib/http.js";
 import { assertSameOrigin,assertJson,cleanText,errorStatus,noStore } from "../../_lib/security.js";
@@ -19,7 +19,7 @@ async function cancelSubscription(env,sb,userId){
 export async function onRequestPost({request,env}){
  try{
   assertSameOrigin(request,env);assertJson(request);
-  const {user:admin,sb}=await requireAdmin(request,env);const b=await body(request);
+  const {user:admin}=await requireAdmin(request,env),sb=adminClient(env);const b=await body(request);
   const action=cleanText(b.action,{min:1,max:20,name:"action"});
   const id=String(b.refund_request_id||"");
   if(!/^[0-9a-f-]{36}$/i.test(id))throw new Error("INVALID_REFUND_REQUEST_ID");
