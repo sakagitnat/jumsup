@@ -13,17 +13,3 @@ directory = "./admin-dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
-name = "jumsup-admin"
-main = "./admin-worker/index.js"
-compatibility_date = "2026-08-18"
-compatibility_flags = ["nodejs_compat"]
-
-[vars]
-APP_URL = "https://jumsup-admin.sakagitnat.workers.dev"
-SUPABASE_URL = "https://vhzpmnirzgrzyaaotcep.supabase.co"
-
-[assets]
-directory = "./admin-dist"
-binding = "ASSETS"
-not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]
