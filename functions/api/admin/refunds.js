@@ -1,6 +1,7 @@
 import { requireAdmin,adminClient } from "../../_lib/supabase.js";
 import { json,cors } from "../../_lib/http.js";
 import { assertSameOrigin,errorStatus,noStore } from "../../_lib/security.js";
+export const onRequestOptions=()=>new Response(null,{headers:cors});
 export async function onRequestGet({request,env}){
  try{
   assertSameOrigin(request,env);await requireAdmin(request,env);const sb=adminClient(env);
