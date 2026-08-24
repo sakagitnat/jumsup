@@ -8,7 +8,7 @@ export async function loadCloudState(user){
 
   const [{data:profile,error:pe},{data:sets,error:se},{data:practice,error:pre},{data:progress,error:proe},{data:subscription,error:sue},{data:payments,error:payE},{data:refunds,error:refE}]=await Promise.all([
     supabase.from("profiles").select("*").eq("user_id",user.id).single(),
-    supabase.from("vocab_sets").select("id,name,visibility,user_id,created_at,updated_at,vocab_words(id,word,stress,meaning,example,sort_order)").eq("user_id",user.id).order("created_at"),
+    supabase.from("vocab_sets").select("id,name,visibility,source_type,user_id,created_at,updated_at,vocab_words(id,word,stress,meaning,example,sort_order)").eq("user_id",user.id).order("created_at"),
     supabase.from("practice_sets").select("*").eq("user_id",user.id).order("created_at"),
     supabase.from("learning_progress").select("*").eq("user_id",user.id),
     supabase.from("subscriptions").select("*").eq("user_id",user.id).maybeSingle(),
@@ -18,7 +18,7 @@ export async function loadCloudState(user){
   if(pe)throw pe;if(se)throw se;if(pre)throw pre;if(proe)throw proe;if(sue)throw sue;if(payE)throw payE;if(refE)throw refE;
 
   const decks=(sets||[]).map(s=>({
-    id:s.id,name:s.name,visibility:s.visibility,creator:ownCreator(profile),
+    id:s.id,name:s.name,visibility:s.visibility,sourceType:s.source_type||"own",creator:ownCreator(profile),
     words:(s.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order).map(w=>({
       w:w.word,stress:w.stress||"",p:"",m:w.meaning||"",e:w.example||""
     }))
@@ -81,7 +81,7 @@ export async function pushCloudState(user,state){
   }
   for(const deck of state.decks||[]){
     const {error}=await supabase.from("vocab_sets").upsert({
-      id:deck.id,user_id:user.id,name:deck.name,visibility:deck.visibility||"private",updated_at:new Date().toISOString()
+      id:deck.id,user_id:user.id,name:deck.name,visibility:deck.visibility||"private",source_type:deck.sourceType||"own",updated_at:new Date().toISOString()
     },{onConflict:"id"});
     if(error)throw error;
     await replaceWords(user.id,deck);
@@ -131,7 +131,7 @@ export async function loadCommunity(query="",type="vocab"){
   if(type==="vocab"){
     let q=supabase.from("vocab_sets")
       .select("id,name,user_id,visibility,profiles!vocab_sets_user_id_fkey(username),vocab_words(id)")
-      .eq("visibility","public").limit(40);
+      .eq("visibility","public").eq("moderation_status","visible").limit(40);
     if(query)q=q.ilike("name",`%${query}%`);
     const {data,error}=await q;
     if(error)throw error;
@@ -142,7 +142,7 @@ export async function loadCommunity(query="",type="vocab"){
   }
   let q=supabase.from("practice_sets")
     .select("id,title,kind,user_id,visibility,profiles!practice_sets_user_id_fkey(username)")
-    .eq("visibility","public").limit(40);
+    .eq("visibility","public").eq("moderation_status","visible").limit(40);
   if(query)q=q.ilike("title",`%${query}%`);
   const {data,error}=await q;
   if(error)throw error;
@@ -193,7 +193,7 @@ export async function importCommunityItem(user,item){
     if(error)throw error;
     const newId=`deck-${crypto.randomUUID()}`;
     const {error:ie}=await supabase.from("vocab_sets").insert({
-      id:newId,user_id:user.id,name:`${set.name} · @${item.creator}`,visibility:"private"
+      id:newId,user_id:user.id,name:`${set.name} · @${item.creator}`,visibility:"private",source_type:"community"
     });
     if(ie)throw ie;
     const words=(set.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order);
