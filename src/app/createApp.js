@@ -1,5 +1,5 @@
 import { store } from "../lib/store.js";
-import { tr } from "../lib/i18n.js";
+import { tr,localizePage } from "../lib/i18n.js";
 import { speak,todayKey,escapeHtml } from "../lib/utils.js";
 import { backendEnabled,getSession,signInGoogle,signOut,onAuthChange } from "../lib/auth.js";
 import { loadCloudState,pushCloudState,loadCommunity,importCommunityItem,uploadAvatar,toggleCommunityLike,saveCommunityReview,reportCommunityContent } from "../lib/cloud.js";
@@ -52,9 +52,9 @@ export async function createApp(root){
  }
 
  function render(){
-  const s=store.get();document.documentElement.dataset.theme=s.theme;
+  const s=store.get();document.documentElement.dataset.theme=s.theme;document.documentElement.lang=s.lang==="zh"?"zh-CN":s.lang==="pt"?"pt-BR":s.lang;
   let html;
-  if(route==="landing"&&!s.user)html=renderLanding();
+  if(route==="landing"&&!s.user)html=renderLanding(s.lang);
   else if(route==="onboarding"&&s.user)html=renderOnboarding(s);
   else if(route==="home")html=renderHome(s);
   else if(route==="flash")html=renderDecks(s,"flash");
@@ -76,7 +76,7 @@ export async function createApp(root){
   else html=renderHome(s);
   const detailRoutes=["study","reading-play","listening-play","writing-play","mock-play","practice-result"];
   if(detailRoutes.includes(route))html=`<button class="page-back" data-action="go-back"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m10 7-5 5 5 5"/></svg> ย้อนกลับ</button>${html}`;
-  root.innerHTML=layout(html);bind();startExamTimer();
+  root.innerHTML=layout(html);localizePage(root,s.lang);bind();startExamTimer();
  }
 
  function toast(message){
@@ -135,10 +135,10 @@ export async function createApp(root){
   root.querySelectorAll("[data-account-tab]").forEach(el=>el.onclick=()=>{accountTab=el.dataset.accountTab;route="account";render()});
   root.querySelectorAll("[data-account-back]").forEach(el=>el.onclick=()=>{accountTab="menu";render()});
   root.querySelectorAll("[data-action]").forEach(el=>el.onclick=e=>handleAction(el.dataset.action,el,e));
-  root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>store.set({lang:el.dataset.lang}));
+  root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>{store.set({lang:el.dataset.lang});scheduleSync()});
+  const uiLanguage=root.querySelector("#uiLanguage");if(uiLanguage)uiLanguage.onchange=()=>{store.set({lang:uiLanguage.value});scheduleSync()};
   root.querySelectorAll("[data-theme-choice]").forEach(el=>el.onclick=()=>store.set({theme:el.dataset.themeChoice}));
   const st=root.querySelector("#soundToggle");if(st)st.onchange=()=>store.set({sound:st.checked});
-  const billingCurrency=root.querySelector("#billingCurrency");if(billingCurrency)billingCurrency.onchange=()=>store.set({billingCurrency:billingCurrency.value});
   const communitySort=root.querySelector("#communitySort");if(communitySort)communitySort.onchange=()=>store.set({communitySort:communitySort.value});
   root.querySelectorAll("[data-community-tab]").forEach(el=>el.onclick=async()=>{communityTab=el.dataset.communityTab;await refreshCommunity();render()});
   root.querySelectorAll(".choice").forEach(el=>el.onclick=()=>{
@@ -239,7 +239,7 @@ export async function createApp(root){
    if(a==="admin-load-refunds")await loadAdminRefunds()
    if(a==="admin-approve-refund"){const amount=el.dataset.amount?Number(el.dataset.amount):null;await api("/api/admin/refund-action",{method:"POST",body:JSON.stringify({action:"approve",refund_request_id:el.dataset.id,amount})});await loadAdminRefunds();return toast("ส่งคำสั่งคืนเงินไปยัง Stripe แล้ว")}
    if(a==="admin-reject-refund"){const note=prompt("เหตุผลที่ปฏิเสธ","ไม่เข้าเงื่อนไขนโยบายคืนเงิน")||"Rejected";await api("/api/admin/refund-action",{method:"POST",body:JSON.stringify({action:"reject",refund_request_id:el.dataset.id,admin_note:note})});await loadAdminRefunds();return toast("ปฏิเสธคำขอแล้ว")}
-   if(a==="checkout-monthly"||a==="checkout-yearly"){const d=await api("/api/stripe/create-checkout",{method:"POST",body:JSON.stringify({plan:a==="checkout-yearly"?"yearly":"monthly",currency:(store.get().billingCurrency||"THB").toLowerCase()})});location.href=d.url}
+   if(a==="checkout-monthly"||a==="checkout-yearly"){const d=await api("/api/stripe/create-checkout",{method:"POST",body:JSON.stringify({plan:a==="checkout-yearly"?"yearly":"monthly",currency:store.get().lang==="th"?"thb":"usd"})});location.href=d.url}
    if(a==="billing-portal"){const d=await api("/api/stripe/create-portal",{method:"POST",body:"{}"});location.href=d.url}
    if(a==="redeem-gift"){const code=root.querySelector("#giftCode")?.value;await api("/api/gift/redeem",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("แลก Gift Code สำเร็จ")}
    if(a==="claim-referral"){const code=root.querySelector("#referralCode")?.value;await api("/api/referral/claim",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("ใช้ Referral สำเร็จ")}
