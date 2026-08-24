@@ -6,7 +6,7 @@ import { loadCloudState,pushCloudState,loadCommunity,importCommunityItem,uploadA
 import { api } from "../lib/api.js";
 import { canPrivateLocally,startDailyFeature } from "../lib/policy.js";
 import { isPro } from "../lib/entitlements.js";
-import { PRO_LIMITS } from "../lib/plans.js";
+import { FREE_LIMITS,PRO_LIMITS } from "../lib/plans.js";
 import { supabase } from "../lib/supabase.js";
 import { renderHome } from "../features/home/home.js";
 import { renderDecks,renderStudy,masteredWords } from "../features/flashcards/flashcards.js";
@@ -90,6 +90,10 @@ export async function createApp(root){
 
  function toast(message){
   modalHtml=modal("Jumsup",`<p class="modal-desc">${escapeHtml(message)}</p>`,`<button class="btn btn-primary" data-action="close-modal">ตกลง</button>`);render();
+ }
+
+ function proPopup(title,description){
+  modalHtml=modal(title,`<p class="modal-desc">${escapeHtml(description)}</p><div class="modal-note">อัปเกรดเป็น Jumsup Pro เพื่อใช้งานต่อได้ทันที</div>`,`<button class="btn" data-action="close-modal">ไว้ก่อน</button><button class="btn btn-primary" data-nav="pricing">ดู Jumsup Pro</button>`);render();
  }
 
  async function hydrateFromCloud(user){
@@ -188,7 +192,7 @@ export async function createApp(root){
      store.set({lastCheckin:todayKey(),streak:data.streak,xp:data.xp});
     }else if(s.lastCheckin!==todayKey())store.set({lastCheckin:todayKey(),streak:s.streak+1,xp:s.xp+20});
    }
-   if(a==="start-deck"){const d=s.decks.find(x=>x.id===el.dataset.id);if(el.dataset.mode!=="flash"){const p=s.progress[d.id]||{mastered:[]};const m=masteredWords(s,d.id,p);if(el.dataset.mode==="match")return openGame("match",d,m);if(el.dataset.mode==="crossword")return openGame("crossword",d,m)}study={deckId:d.id,poolSize:Math.min(s.flashSettings.loopSize,d.words.length),mastered:[...((s.progress[d.id]||{}).mastered||[])],cursor:0};route="study";render()}
+   if(a==="start-deck"){const d=s.decks.find(x=>x.id===el.dataset.id);if(el.dataset.mode!=="flash"){const game=el.dataset.mode==="match"?"match":"crossword";if(currentUser&&backendEnabled){try{await startDailyFeature(game,`${game}:${crypto.randomUUID()}`,{content_id:d.id})}catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup(`${game==="match"?"Match":"Crossword"} ครบโควต้าแล้ว`,game==="match"?"Free เล่น Match ได้ 10 รอบต่อวัน":"Free เล่น Crossword ได้ 3 รอบต่อวัน");throw err}}const p=s.progress[d.id]||{mastered:[]};const m=masteredWords(s,d.id,p);return openGame(game,d,m)}study={deckId:d.id,poolSize:Math.min(s.flashSettings.loopSize,d.words.length),mastered:[...((s.progress[d.id]||{}).mastered||[])],cursor:0};route="study";render()}
    if(a==="know-word"){await markKnown(Number(el.dataset.index));study.cursor=0}
    if(a==="miss-word"){study.cursor++;render()}
    if(a==="speak")speak(el.dataset.word)
@@ -208,20 +212,21 @@ export async function createApp(root){
    if(a==="delete-practice")openDelete(el.dataset.kind,el.dataset.id)
    if(a==="open-practice"){
     const kind=el.dataset.kind,arr=kind==="mock"?s.mocks:s[kind];selected=arr.find(x=>x.id===el.dataset.id);
-    if(currentUser&&backendEnabled&&["listening","writing","mock"].includes(kind)){
+    let endsAt=Date.now()+Math.max(1,Number(selected.minutes||10))*60000;
+    if(currentUser&&backendEnabled&&["reading","listening","writing","mock"].includes(kind)){
       const sessionKey=activeUsageSessions[kind]||`${kind}:${selected.id}:${crypto.randomUUID()}`;
-      try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id});activeUsageSessions[kind]=usage.existing_session_key||sessionKey}
-      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return toast("วันนี้ใช้สิทธิ์ "+kind+" ฟรีไปแล้ว");throw err}
+      try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id,minutes:Number(selected.minutes||10)});activeUsageSessions[kind]=usage.existing_session_key||sessionKey;endsAt=usage.ends_at?new Date(usage.ends_at).getTime():endsAt}
+      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup("ยังเริ่มรอบใหม่ไม่ได้",kind==="mock"?"Free ใช้ Mock รอบถัดไปได้ทุก 7 วัน":"Reading, Listening และ Writing ใช้โควต้าร่วมกัน รอบถัดไปเปิดทุก 3 วัน");throw err}
     }
-    practiceKind=kind;const questions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);practiceAttempt={answers:{},questions,startedAt:Date.now()};
+    selected={...selected,_endsAt:endsAt};practiceKind=kind;const questions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);practiceAttempt={answers:{},questions,startedAt:Date.now(),endsAt};
     route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"mock-play";render()
    }
    if(a==="speak-script")speak(el.dataset.script,root.querySelector("#listenAccent")?.value||"en-US",root.querySelector("#listenRate")?.value||.9);
    if(a==="pause-speech")speechSynthesis?.pause();
    if(a==="resume-speech")speechSynthesis?.resume();
    if(a==="stop-speech")speechSynthesis?.cancel();
-   if(a==="submit-practice"){if(!practiceAttempt)return;clearInterval(examTimer);examTimer=null;route="practice-result";return render()}
-   if(a==="retry-practice"){practiceAttempt={answers:{},questions:practiceAttempt.questions,startedAt:Date.now()};route=practiceKind==="reading"?"reading-play":practiceKind==="listening"?"listening-play":practiceKind==="writing"?"writing-play":"mock-play";return render()}
+   if(a==="submit-practice"){if(!practiceAttempt)return;clearInterval(examTimer);examTimer=null;const key=activeUsageSessions[practiceKind];if(key&&backendEnabled)api("/api/usage/save",{method:"POST",body:JSON.stringify({session_key:key,state:{content_id:selected?.id,answers:practiceAttempt.answers},complete:true})}).catch(console.error);route="practice-result";return render()}
+   if(a==="retry-practice"){route=practiceKind||"home";practiceAttempt=null;selected=null;return proPopup("เริ่มรอบใหม่","เลือกรอบใหม่จากหน้ารายการ ระบบจะตรวจสิทธิ์ทดลองหรือเวลาพักให้อัตโนมัติ")}
    if(a==="back-practice-list"){route=practiceKind||"home";selected=null;practiceAttempt=null;return render()}
    if(a==="community-search"){communityQuery=root.querySelector("#communitySearch").value;await refreshCommunity();render()}
    if(a==="community-refresh"){await refreshCommunity();render()}
@@ -229,7 +234,7 @@ export async function createApp(root){
     const item=s.community.find(x=>x.id===el.dataset.id);
     if(!backendEnabled){localCommunityImport(item);return toast("นำเข้าเป็นสำเนาใหม่ในโหมดทดสอบแล้ว")}
     if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนนำเข้า Community");
-    await importCommunityItem(currentUser,item);await hydrateFromCloud(currentUser);return toast("นำเข้าเป็นสำเนาใหม่แล้ว");
+    try{await importCommunityItem(currentUser,item)}catch(err){if(String(err.message).includes("COMMUNITY_SET_LIMIT_REACHED"))return proPopup("เก็บชุด Community ครบ 3 ชุดแล้ว","ลบชุด Community เดิมก่อนเลือกชุดใหม่ หรืออัปเกรดเป็น Pro เพื่อเก็บได้ไม่จำกัด");throw err}await hydrateFromCloud(currentUser);return toast("นำเข้าเป็นสำเนาใหม่แล้ว");
    }
    if(a==="like-community"){const id=el.dataset.id,item=s.community.find(x=>x.id===id);if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนกดถูกใจ");await toggleCommunityLike(currentUser,item)}else store.set({communityLikes:{...(s.communityLikes||{}),[id]:!s.communityLikes?.[id]}});await refreshCommunity();return}
    if(a==="review-community")return openCommunityReview(el.dataset.id)
@@ -309,8 +314,9 @@ export async function createApp(root){
  }
  async function saveDeck(id){
   const name=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!name)return;
+  const before=store.get();if(!id&&!isPro(before)&&(before.decks||[]).filter(d=>(d.sourceType||"own")==="own").length>=FREE_LIMITS.privateVocab)return proPopup("สร้าง Flashcard ครบ 3 ชุดแล้ว","Free สร้างชุดของตัวเองได้สูงสุด 3 ชุด อัปเกรดเป็น Pro เพื่อสร้างได้ไม่จำกัด");
   const creator=store.get().profile?.username||"guest",newId=id||`deck-${crypto.randomUUID()}`;
-  const localSave=(v)=>store.update(s=>({...s,decks:id?s.decks.map(d=>d.id===id?{...d,name,visibility:v}:d):[...s.decks,{id:newId,name,visibility:v,creator,words:[]}]}));
+  const localSave=(v)=>store.update(s=>({...s,decks:id?s.decks.map(d=>d.id===id?{...d,name,visibility:v}:d):[...s.decks,{id:newId,name,visibility:v,sourceType:"own",creator,words:[]}]}));
   if(visibility==="private"&&!canPrivateLocally(store.get(),"vocab",id)){
     pendingPublicSave=async()=>{if(currentUser&&backendEnabled)await api("/api/content/publish-confirmed",{method:"POST",body:JSON.stringify({kind:"vocab",id:newId,title:name,confirm_public:true})});localSave("public")};
     modalHtml=modal("โควตาชุดส่วนตัวเต็ม",`<p class="modal-desc">Free เก็บ Flashcard ส่วนตัวได้ 3 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่</p>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="confirm-public-save">ยืนยันเผยแพร่</button>`);return render()
@@ -364,6 +370,8 @@ export async function createApp(root){
   return box;
  }
  function addReadingWord(word,meaning,anchor,box){
+  const s0=store.get(),existing0=s0.decks.find(d=>d.id==="deck-2")||s0.decks[0],limit=isPro(s0)?PRO_LIMITS.wordsPerDeck:FREE_LIMITS.wordsPerDeck;
+  if(existing0&&(existing0.words?.length||0)>=limit){box.remove();return proPopup("คำศัพท์ในชุดเต็มแล้ว",`แพ็กเกจปัจจุบันเก็บได้สูงสุด ${limit.toLocaleString()} คำต่อชุด`)}
   store.update(s=>{
    const existing=s.decks.find(d=>d.id==="deck-2")||s.decks[0];
    if(!existing)return {...s,decks:[...s.decks,{id:"deck-2",name:"Reading Words",visibility:"private",creator:s.profile?.username||"user",words:[{w:word,m:meaning||"",p:"",e:""}]}]};
@@ -421,8 +429,8 @@ export async function createApp(root){
  function startExamTimer(){
   clearInterval(examTimer);examTimer=null;
   const el=root.querySelector("#examTimer");if(!el)return;
-  let remaining=Number(el.dataset.seconds)||0;
-  examTimer=setInterval(()=>{remaining=Math.max(0,remaining-1);const m=Math.floor(remaining/60),s=remaining%60;el.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;if(!remaining){clearInterval(examTimer);examTimer=null;toast("หมดเวลาฝึกแล้ว")}},1000);
+  const endsAt=Number(el.dataset.endsAt)||practiceAttempt?.endsAt||Date.now()+(Number(el.dataset.seconds)||0)*1000;
+  const tick=()=>{const remaining=Math.max(0,Math.ceil((endsAt-Date.now())/1000)),m=Math.floor(remaining/60),s=remaining%60;el.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;el.parentElement?.classList.toggle("warning",remaining>0&&remaining<=300);if(!remaining){clearInterval(examTimer);examTimer=null;el.parentElement?.classList.add("expired");if(practiceAttempt){route="practice-result";render()}}};tick();if(examTimer===null&&endsAt>Date.now())examTimer=setInterval(tick,1000);
  }
 
  store.subscribe(()=>{render();scheduleSync()});
