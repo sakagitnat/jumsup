@@ -160,7 +160,7 @@ export async function createApp(root){
    const number=Number((host.id.match(/(\d+)$/)||[])[1]);if(number)root.querySelector(`[data-jump="mock-${number}"]`)?.classList.add("done");
   });
   root.querySelectorAll("[data-jump]").forEach(el=>el.onclick=()=>document.getElementById(el.dataset.jump)?.scrollIntoView({behavior:"smooth",block:"start"}));
-  root.querySelectorAll(".read-word").forEach(el=>el.onclick=()=>openWord(el.dataset.word));
+  root.querySelectorAll(".read-word").forEach(el=>el.onclick=()=>openWord(el));
   const avatar=root.querySelector("#avatarFile");if(avatar)avatar.onchange=async()=>{if(!avatar.files?.[0]||!currentUser)return;try{const url=await uploadAvatar(currentUser,avatar.files[0]);store.set({profile:{...store.get().profile,avatar_url:url}})}catch(e){toast(e.message)}};
   const importFile=root.querySelector("#bulkImportFile");if(importFile)importFile.onchange=async()=>{const file=importFile.files?.[0];if(!file)return;const error=root.querySelector("#importFileError");if(!file.name.toLowerCase().endsWith(".csv")){error.textContent="ตอนนี้รองรับ CSV เท่านั้น กรุณาดาวน์โหลดเทมเพลต CSV แล้วนำข้อมูลมาวาง";error.classList.remove("hidden");return}try{const parsed=parseCsv(await file.text());if(!parsed.headers.length||!parsed.rows.length)throw new Error("ไฟล์ไม่มีข้อมูล");const limit=isPro(store.get())?PRO_LIMITS.importRows:100;if(parsed.rows.length>limit)throw new Error(`แพ็กเกจปัจจุบันนำเข้าได้สูงสุด ${limit.toLocaleString()} แถวต่อครั้ง`);bulkImportState={...bulkImportState,fileName:file.name,...parsed,step:2};openBulkImport()}catch(err){error.textContent=err.message||"อ่านไฟล์ไม่สำเร็จ";error.classList.remove("hidden")}};
   bindSwipe();
@@ -360,18 +360,40 @@ export async function createApp(root){
  function openDelete(type,id){modalHtml=modal("ยืนยันการลบ",`<div class="delete-warning"><b>การลบไม่สามารถย้อนกลับได้</b></div><div class="modal-form"><label>พิมพ์คำว่า ลบ<input id="deleteText"></label><label class="delete-check-row"><input id="deleteCheck" type="checkbox"><span>ฉันเข้าใจว่ารายการนี้จะถูกลบถาวร</span></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-danger" data-action="confirm-delete" data-type="${type}" data-id="${id}">ลบถาวร</button>`);render()}
  function confirmDelete(type,id){if(root.querySelector("#deleteText").value.trim()!=="ลบ"||!root.querySelector("#deleteCheck").checked)return;store.update(s=>{const key=type==="deck"?"decks":type==="mock"?"mocks":type;return {...s,[key]:s[key].filter(x=>x.id!==id)}});modalHtml="";render()}
 
- async function openWord(word){
+ function showWordPopover(anchor,word){
+  root.querySelector(".word-popover")?.remove();
+  const rect=anchor.getBoundingClientRect(),width=Math.min(320,window.innerWidth-24);
+  const left=Math.max(12,Math.min(window.innerWidth-width-12,rect.left+rect.width/2-width/2));
+  const top=Math.max(12,Math.min(window.innerHeight-205,rect.bottom+10));
+  const box=document.createElement("aside");
+  box.className="word-popover";box.setAttribute("role","dialog");box.setAttribute("aria-label",`คำแปล ${word}`);
+  box.style.setProperty("--word-x",`${left}px`);box.style.setProperty("--word-y",`${top}px`);box.style.setProperty("--word-width",`${width}px`);
+  box.innerHTML=`<button class="word-popover-close" aria-label="ปิด">×</button><span class="word-popover-label">READING WORD</span><strong>${escapeHtml(word)}</strong><p data-word-meaning>กำลังค้นหาคำแปล…</p><button class="word-popover-add" disabled>+ เพิ่มเข้า Flashcard</button>`;
+  root.append(box);box.querySelector(".word-popover-close").onclick=()=>box.remove();
+  return box;
+ }
+ function addReadingWord(word,meaning,anchor,box){
+  store.update(s=>{
+   const existing=s.decks.find(d=>d.id==="deck-2")||s.decks[0];
+   if(!existing)return {...s,decks:[...s.decks,{id:"deck-2",name:"Reading Words",visibility:"private",creator:s.profile?.username||"user",words:[{w:word,m:meaning||"",p:"",e:""}]}]};
+   if(existing.words.some(x=>x.w.toLowerCase()===word.toLowerCase()))return s;
+   return {...s,decks:s.decks.map(d=>d.id===existing.id?{...d,words:[...d.words,{w:word,m:meaning||"",p:"",e:""}]}:d)};
+  });
+  anchor.classList.add("saved");scheduleSync();
+  const button=box.querySelector(".word-popover-add");button.textContent="เพิ่มแล้ว ✓";button.disabled=true;
+  setTimeout(()=>box.remove(),650);
+ }
+ async function openWord(anchor){
+  const word=anchor.dataset.word,box=showWordPopover(anchor,word),meaningEl=box.querySelector("[data-word-meaning]"),add=box.querySelector(".word-popover-add");
   const local=store.get().decks.flatMap(d=>d.words).find(w=>w.w===word)?.m;
-  if(local){
-   if(!currentUser)return toast(`${word}: เข้าสู่ระบบเพื่อใช้การแปล`);
-   try{
-    if(backendEnabled)api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({word,meaning:local,target:"th"})}).catch(()=>{});
-    const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:word,target:"th",local_translation:local})});
-    return toast(`${word}: ${d.translation}`);
-   }catch(e){return toast(e.message)}
-  }
-  if(!currentUser)return toast(`${word}: เข้าสู่ระบบเพื่อใช้การแปลออนไลน์`);
-  try{const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:word,target:store.get().lang==="en"?"th":store.get().lang})});toast(`${word}: ${d.translation||"ยังไม่ได้ตั้ง Translation API"}`)}catch(e){toast(e.message)}
+  if(!currentUser){meaningEl.textContent="เข้าสู่ระบบเพื่อแปลและบันทึกคำศัพท์";return}
+  try{
+   if(local&&backendEnabled)api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({word,meaning:local,target:"th"})}).catch(()=>{});
+   const target=store.get().lang==="en"?"th":store.get().lang;
+   const d=await api("/api/translate",{method:"POST",body:JSON.stringify({text:word,target,local_translation:local||undefined})});
+   const meaning=d.translation||"";meaningEl.textContent=meaning||"ยังไม่พบคำแปล — เพิ่มคำไว้แล้วเติมความหมายภายหลังได้";
+   add.disabled=false;add.onclick=()=>addReadingWord(word,meaning,anchor,box);
+  }catch(e){meaningEl.textContent=e.message||"แปลไม่สำเร็จ";add.disabled=false;add.onclick=()=>addReadingWord(word,"",anchor,box)}
  }
  function openGame(kind,deck,words){
   if(kind==="match"){
