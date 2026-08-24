@@ -491,6 +491,12 @@ input:focus,select:focus,textarea:focus,.search-input:focus,.search-box:focus{
   background:var(--c-primary-soft);
   border-color:var(--c-primary)
 }
+.language-select-row{display:grid;grid-template-columns:42px minmax(0,1fr) minmax(190px,280px);align-items:center;gap:12px;padding:13px;border:1px solid var(--c-border);border-radius:15px;background:var(--c-panel-2)}
+.language-globe{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--c-accent-soft);color:var(--c-accent);font-size:20px;font-weight:800}
+.language-select-copy{display:grid;gap:2px}.language-select-copy b{font-size:12px}.language-select-copy small,.language-billing-note{font-size:10px;color:var(--c-muted)}
+.language-select-row select{width:100%;min-height:44px;padding:0 36px 0 13px;border:1px solid var(--c-border-strong);border-radius:11px;background:var(--c-panel);color:var(--c-text);font:inherit;font-size:12px;font-weight:700}
+.language-billing-note{margin:10px 2px 0;line-height:1.5}
+@media(max-width:620px){.language-select-row{grid-template-columns:40px minmax(0,1fr)}.language-select-row select{grid-column:1/-1}}
 .language-native{font-size:12px;font-weight:850;color:var(--c-text)!important}
 .language-name{font-size:9px;margin-top:4px}
 .language-check{
