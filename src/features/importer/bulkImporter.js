@@ -50,4 +50,3 @@ export function buildImportedContent(type,rows,creator){
 }
 
 export { TYPES };
-
