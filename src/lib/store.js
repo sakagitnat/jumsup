@@ -5,7 +5,7 @@ if(!localStorage.getItem(KEY)){
   for(const k of LEGACY_KEYS){if(localStorage.getItem(k)){localStorage.setItem(KEY,localStorage.getItem(k));break}}
 }
 const initial=()=>({
- theme:"light",lang:"th",sound:true,lastCheckin:"",xp:0,streak:0,
+ theme:"light",lang:"th",sound:true,billingCurrency:(navigator.language||"").toLowerCase().startsWith("th")?"THB":"USD",lastCheckin:"",xp:0,streak:0,
  user:null,profile:null,subscription:null,payments:[],refunds:[],backend:false,syncing:false,
  activeDeckId:"deck-1",
  decks:[
