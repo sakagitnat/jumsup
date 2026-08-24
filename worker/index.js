@@ -1,13 +1,6 @@
 import * as translate from "../functions/api/translate.js";
 import * as accountExport from "../functions/api/account/export.js";
 import * as accountDelete from "../functions/api/account/request-delete.js";
-import * as adminGift from "../functions/api/admin/gift-code.js";
-import * as adminGiftCodes from "../functions/api/admin/gift-codes.js";
-import * as adminOverview from "../functions/api/admin/overview.js";
-import * as adminDictionary from "../functions/api/admin/dictionary.js";
-import * as adminReports from "../functions/api/admin/reports.js";
-import * as adminRefundAction from "../functions/api/admin/refund-action.js";
-import * as adminRefunds from "../functions/api/admin/refunds.js";
 import * as contentPublish from "../functions/api/content/publish-confirmed.js";
 import * as contentSave from "../functions/api/content/save.js";
 import * as dictionarySuggest from "../functions/api/dictionary/suggest.js";
@@ -25,13 +18,6 @@ const routes = new Map([
   ["/api/translate", translate],
   ["/api/account/export", accountExport],
   ["/api/account/request-delete", accountDelete],
-  ["/api/admin/gift-code", adminGift],
-  ["/api/admin/gift-codes", adminGiftCodes],
-  ["/api/admin/overview", adminOverview],
-  ["/api/admin/dictionary", adminDictionary],
-  ["/api/admin/reports", adminReports],
-  ["/api/admin/refund-action", adminRefundAction],
-  ["/api/admin/refunds", adminRefunds],
   ["/api/content/publish-confirmed", contentPublish],
   ["/api/content/save", contentSave],
   ["/api/dictionary/suggest", dictionarySuggest],
