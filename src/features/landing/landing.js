@@ -1,9 +1,10 @@
-import { PLANS,money,defaultBillingCurrency } from "../../lib/plans.js";
+import { PLANS,money } from "../../lib/plans.js";
+import { languages } from "../../lib/i18n.js";
 
-export function renderLanding(){
- const currency=defaultBillingCurrency();
+export function renderLanding(lang="th"){
+ const currency=lang==="th"?"THB":"USD";
  return `<div class="landing-page">
-  <header class="landing-nav"><div class="landing-logo"><span>J</span><strong>Jumsup</strong></div><nav><button data-action="landing-features">ฟีเจอร์</button><button data-nav="pricing">ราคา</button><button class="btn" data-action="login-google">เข้าสู่ระบบ</button></nav></header>
+  <header class="landing-nav"><div class="landing-logo"><span>J</span><strong>Jumsup</strong></div><nav><button data-action="landing-features">ฟีเจอร์</button><button data-nav="pricing">ราคา</button><label class="landing-language"><span aria-hidden="true">文</span><select id="uiLanguage" aria-label="ภาษาที่แสดง">${languages.map(([id,name])=>`<option value="${id}" ${lang===id?"selected":""}>${name}</option>`).join("")}</select></label><button class="btn" data-action="login-google">เข้าสู่ระบบ</button></nav></header>
   <section class="landing-hero"><div class="landing-hero-copy"><span class="landing-pill">A-Level English Practice</span><h1>ฝึกอังกฤษครบทั้ง<br><em>ศัพท์ ทักษะ และข้อสอบ</em></h1><p>วางแผนฝึกจากจุดอ่อนของคุณ ทบทวนศัพท์ด้วย Loop และลองข้อสอบคู่ขนานที่สร้างใหม่โดยไม่คัดลอกข้อสอบจริง</p><div class="landing-actions"><button class="btn btn-primary landing-main-cta" data-action="explore-free">เริ่มฝึกฟรี</button><button class="btn" data-action="landing-demo">ลองตัวอย่าง</button></div><div class="landing-trust"><span>✓ ไม่ต้องใช้บัตร</span><span>✓ มีแพ็กเกจฟรี</span><span>✓ ใช้ได้บนมือถือ</span></div></div>
    <div class="landing-demo-card" id="landingDemo"><div class="demo-top"><span>FLASHCARD · A-LEVEL</span><small>1 / 10</small></div><div class="demo-word"><small>แตะเพื่อดูคำแปล</small><strong>significant</strong><p>/sɪɡˈnɪfɪkənt/</p><div class="demo-answer"><b>สำคัญ · มีนัยสำคัญ</b><span>The change had a significant effect.</span></div></div><div class="demo-buttons"><button data-action="demo-miss">ยังไม่จำ</button><button data-action="demo-know">จำได้</button></div></div>
   </section>
