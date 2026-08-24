@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.3 seconds
-Output:
 -- Server-enforced Free/Pro product limits, persistent exam timers and moderation.
 
 alter table public.vocab_sets add column if not exists source_type text not null default 'own'
@@ -118,4 +115,3 @@ create index if not exists usage_sessions_cooldown_idx on public.usage_sessions(
 create index if not exists vocab_sets_source_idx on public.vocab_sets(user_id,source_type);
 create index if not exists vocab_sets_moderation_idx on public.vocab_sets(visibility,moderation_status);
 create index if not exists practice_sets_moderation_idx on public.practice_sets(visibility,moderation_status);
-
