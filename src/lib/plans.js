@@ -2,15 +2,17 @@ export const SUPPORTED_BILLING_CURRENCIES=["THB","USD"];
 export function defaultBillingCurrency(){const locale=(typeof navigator!=="undefined"?navigator.language:"")||"";return locale.toLowerCase().startsWith("th")?"THB":"USD"}
 export const PLANS={
  free:{id:"free",name:"Jumsup Free",prices:{THB:0,USD:0},features:[
-  "เรียน Flashcards, Match และ Crossword ได้ไม่จำกัด",
-  "เก็บชุดคำศัพท์ส่วนตัว 3 ชุด",
+  "Flashcard สูงสุด 100 คำต่อชุด และสร้างเองได้ 3 ชุด",
+  "เก็บชุดจาก Community ได้พร้อมกัน 3 ชุด",
+  "Match 10 รอบ และ Crossword 3 รอบต่อวัน",
   "เก็บชุด Reading, Listening, Writing และ Mock ส่วนตัวอย่างละ 1 ชุด",
-  "แปลคำศัพท์ 10 คำต่อวัน",
-  "Listening, Writing และ Mock อย่างละ 1 รอบต่อวัน",
+  "Reading, Listening และ Writing ทดลองอย่างละ 1 รอบ จากนั้นพักรวม 3 วัน",
+  "Mock ทดลอง 1 รอบ จากนั้นพัก 7 วัน",
+  "คลังแปลออฟไลน์ยังไม่จำกัดระหว่างเตรียม Google API",
   "ใช้งานและแชร์ชุดใน Community"
  ]},
  monthly:{id:"monthly",name:"Jumsup Pro",prices:{THB:149,USD:4.99},period:{THB:"เดือน",USD:"month"},features:[
-  "เก็บชุดส่วนตัวได้ไม่จำกัด",
+  "สร้างและเก็บชุดได้ไม่จำกัด สูงสุด 1,000 คำต่อชุด",
   "แปลคำศัพท์ 100 คำต่อวัน",
   "ฝึก Reading, Listening, Writing และ Mock ได้ไม่จำกัด",
   "นำเข้า CSV ได้สูงสุด 1,000 แถวต่อครั้ง",
@@ -32,5 +34,5 @@ export function money(value,currency="THB"){
  return new Intl.NumberFormat(c==="THB"?"th-TH":"en-US",{style:"currency",currency:c,minimumFractionDigits:c==="THB"?0:2,maximumFractionDigits:c==="THB"?0:2}).format(value);
 }
 
-export const FREE_LIMITS={privateVocab:3,privatePractice:1,translationsPerDay:10,dailyListening:1,dailyWriting:1,dailyMock:1};
-export const PRO_LIMITS={privateVocab:Infinity,privatePractice:Infinity,translationsPerDay:100,dailyListening:Infinity,dailyWriting:Infinity,dailyMock:Infinity,importRows:1000};
+export const FREE_LIMITS={privateVocab:3,privatePractice:1,wordsPerDeck:100,communitySets:3,matchPerDay:10,crosswordPerDay:3,translationsPerDay:Infinity};
+export const PRO_LIMITS={privateVocab:Infinity,privatePractice:Infinity,wordsPerDeck:1000,communitySets:Infinity,matchPerDay:Infinity,crosswordPerDay:Infinity,translationsPerDay:1000,importRows:1000};
