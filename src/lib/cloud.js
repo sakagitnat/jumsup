@@ -1,4 +1,5 @@
 import { supabase,backendEnabled } from "./supabase.js";
+import { api } from "./api.js";
 
 const ownCreator=p=>p?.username||"user";
 
@@ -111,6 +112,17 @@ export async function pushCloudState(user,state){
   for(const [setId,p] of Object.entries(state.progress||{})){
     const {error}=await supabase.rpc("sync_learning_progress",{p_set_id:setId,p_indices:p.mastered||[]});
     if(error && !String(error.message).toLowerCase().includes("forbidden"))throw error;
+  }
+
+  // Only anonymous word/meaning pairs enter the review queue. Names, emails,
+  // deck titles and examples are deliberately excluded.
+  const target=state.lang==="en"?"th":state.lang||"th";
+  const dictionaryItems=(state.decks||[]).flatMap(deck=>deck.words||[])
+    .filter(word=>String(word?.w||"").trim()&&String(word?.m||"").trim())
+    .map(word=>({word:String(word.w).trim(),meaning:String(word.m).trim(),target}));
+  if(dictionaryItems.length){
+    try{await api("/api/dictionary/suggest",{method:"POST",body:JSON.stringify({items:dictionaryItems.slice(0,1000)})})}
+    catch(error){console.warn("Dictionary queue sync failed",error)}
   }
 }
 
