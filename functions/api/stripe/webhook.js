@@ -2,7 +2,7 @@ import { adminClient } from "../../_lib/supabase.js";
 import { stripeRequest,verifyWebhook } from "../../_lib/stripe.js";
 import { json } from "../../_lib/http.js";
 function iso(s){return s?new Date(s*1000).toISOString():null}
-function plan(env,p){return p===env.STRIPE_PRICE_PRO_YEARLY?"pro_yearly":p===env.STRIPE_PRICE_PRO_MONTHLY?"pro_monthly":"pro"}
+function plan(env,p){return [env.STRIPE_PRICE_PRO_YEARLY_GLOBAL,env.STRIPE_PRICE_PRO_YEARLY].includes(p)?"pro_yearly":[env.STRIPE_PRICE_PRO_MONTHLY_GLOBAL,env.STRIPE_PRICE_PRO_MONTHLY].includes(p)?"pro_monthly":"pro"}
 async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 async function begin(sb,e,raw){
  const {data,error}=await sb.rpc("claim_stripe_event",{p_event_id:e.id,p_event_type:e.type,p_payload_hash:await sha(raw)});
@@ -13,10 +13,10 @@ async function fail(sb,e,err){try{await sb.rpc("fail_stripe_event",{p_event_id:e
 async function userByCustomer(sb,c){if(!c)return null;const {data}=await sb.from("subscriptions").select("user_id").eq("stripe_customer_id",c).maybeSingle();return data?.user_id||null}
 async function syncSub(env,sb,o,hint){
  const c=typeof o.customer==="string"?o.customer:o.customer?.id;let uid=o.metadata?.user_id||hint||await userByCustomer(sb,c);if(!uid)return null;
- const item=o.items?.data?.[0];await sb.from("subscriptions").upsert({user_id:uid,stripe_customer_id:c||null,stripe_subscription_id:o.id,status:o.status,price_id:item?.price?.id||null,plan:plan(env,item?.price?.id),current_period_end:iso(o.current_period_end),cancel_at_period_end:!!o.cancel_at_period_end,updated_at:new Date().toISOString()},{onConflict:"user_id"});return uid
+ const item=o.items?.data?.[0];await sb.from("subscriptions").upsert({user_id:uid,stripe_customer_id:c||null,stripe_subscription_id:o.id,status:o.status,price_id:item?.price?.id||null,plan:plan(env,item?.price?.id),current_period_end:iso(o.current_period_end),cancel_at_period_end:!!o.cancel_at_period_end,payment_provider:"stripe",payment_account:o.metadata?.payment_account||"stripe_th",billing_currency:(o.currency||o.metadata?.billing_currency||item?.price?.currency||"").toLowerCase()||null,updated_at:new Date().toISOString()},{onConflict:"user_id"});return uid
 }
 async function payment(sb,e,uid,o,kind,status){
- await sb.from("payment_events").upsert({user_id:uid||null,stripe_event_id:e.id,stripe_payment_intent_id:typeof o.payment_intent==="string"?o.payment_intent:null,stripe_invoice_id:typeof o.invoice==="string"?o.invoice:null,kind,amount:o.amount_total??o.amount_paid??o.amount??null,currency:o.currency||null,status},{onConflict:"stripe_event_id"})
+ await sb.from("payment_events").upsert({user_id:uid||null,stripe_event_id:e.id,stripe_payment_intent_id:typeof o.payment_intent==="string"?o.payment_intent:null,stripe_invoice_id:typeof o.invoice==="string"?o.invoice:null,kind,amount:o.amount_total??o.amount_paid??o.amount??null,currency:(o.currency||"").toLowerCase()||null,status,payment_provider:"stripe",payment_account:o.metadata?.payment_account||"stripe_th"},{onConflict:"stripe_event_id"})
 }
 
 async function findUserByPaymentIntent(sb,paymentIntent){
