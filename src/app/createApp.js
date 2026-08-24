@@ -1,7 +1,3 @@
-Exit code: 0
-Wall time: 1.3 seconds
-Total output lines: 445
-Output:
 import { store } from "../lib/store.js";
 import { tr,localizePage } from "../lib/i18n.js";
 import { speak,todayKey,escapeHtml } from "../lib/utils.js";
@@ -202,25 +198,7 @@ export async function createApp(root){
    if(a==="speak")speak(el.dataset.word)
    if(a==="open-flash-settings")openFlashSettings()
    if(a==="save-study-settings")saveFlashSettings()
-   if(a==="next-loop"){const d=s.decks.find(x=>x.id===study.deckId),remain=d.words.length-study.poolSize;if(remain<=0)return;const n=Math.max(1,Math.min(remain,Number(prompt("เพิ่มอีกกี่คำ?","10"))||1));study.poolSize+=n;render()}
-   if(a==="new-deck")openDeckModal()
-   if(a==="open-bulk-import")return openBulkImport(el.dataset.type||"vocab")
-   if(a==="import-change-type")return openBulkImport(el.dataset.type)
-   if(a==="import-download-template")return downloadTemplate(el.dataset.type)
-   if(a==="import-next")return importNext()
-   if(a==="import-back")return importBack()
-   if(a==="edit-deck")openDeckModal(el.dataset.id)
-   if(a==="delete-deck")openDelete("deck",el.dataset.id)
-   if(a==="new-practice")openPracticeModal(el.dataset.kind)
-   if(a==="edit-practice")openPracticeModal(el.dataset.kind,el.dataset.id)
-   if(a==="delete-practice")openDelete(el.dataset.kind,el.dataset.id)
-   if(a==="open-practice"){
-    const kind=el.dataset.kind,arr=kind==="moc…4025 tokens truncated…in(max,Number(root.querySelector("#studyLoopSize").value)||1)),autoSpeak:root.querySelector("#studyAutoSpeak").checked,showMeaning:root.querySelector("#studyShowMeaning").checked,shuffle:root.querySelector("#studyShuffle").checked};
-  study.poolSize=settings.loopSize;study.mastered=study.mastered.filter(i=>i<settings.loopSize);study.cursor=0;modalHtml="";store.set({flashSettings:settings});
- }
- function openDeckModal(id){
-  const s=store.get(),d=id?s.decks.find(x=>x.id===id):null;
-  modalHtml=modal(d?"แก้ไขชุดคำศัพท์":"สร้างชุดคำศัพท์",`<div class="modal-form"><label>ชื่อชุด<input id="modalName" value="${escapeHtml(d?.name||"")}"></label><label>การมองเห็น<select id="modalVisibility"><option value="private" ${d?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${d?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-deck" data-id="${id||""}">บันทึก</button>`);render()
+   if(a==="next-loop"){const d=s.decks.find(x=>x.id===study.deckId),…4595 tokens truncated…การมองเห็น<select id="modalVisibility"><option value="private" ${d?.visibility!=="public"?"selected":""}>ส่วนตัว</option><option value="public" ${d?.visibility==="public"?"selected":""}>สาธารณะ</option></select></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-deck" data-id="${id||""}">บันทึก</button>`);render()
  }
  async function saveDeck(id){
   const name=root.querySelector("#modalName").value.trim(),visibility=root.querySelector("#modalVisibility").value;if(!name)return;
@@ -352,4 +330,3 @@ export async function createApp(root){
  }else store.set({backend:false,user:null});
  render();
 }
-
