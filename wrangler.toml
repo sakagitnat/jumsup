@@ -8,6 +8,8 @@ APP_URL = "https://jumsup.sakagitnat.workers.dev"
 SUPABASE_URL = "https://vhzpmnirzgrzyaaotcep.supabase.co"
 STRIPE_PRICE_PRO_MONTHLY = "price_1U7g9H1fOGLYXf4Cik7BbaBq"
 STRIPE_PRICE_PRO_YEARLY = "price_1U7gEC1fOGLYXf4CuFn3be94"
+STRIPE_PRICE_PRO_MONTHLY_GLOBAL = "price_1U7uRC1fOGLYXf4CDEuyqscR"
+STRIPE_PRICE_PRO_YEARLY_GLOBAL = "price_1U7uSr1fOGLYXf4CZnRzE536"
 
 [assets]
 directory = "./dist"
