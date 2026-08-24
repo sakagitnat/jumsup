@@ -21,7 +21,7 @@ import { importerModal,parseCsv,validateImport,downloadTemplate,buildImportedCon
 
 export async function createApp(root){
  let route="landing",accountTab="menu",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
- let pendingPublicSave=null,bulkImportState=null,adminData={};const activeUsageSessions={};
+ let pendingPublicSave=null,bulkImportState=null;const activeUsageSessions={};
  let currentUser=null;
 
  const nav=()=>[
@@ -74,7 +74,7 @@ export async function createApp(root){
   else if(route==="mock-play")html=renderMock(selected);
   else if(route==="practice-result")html=renderPracticeResult(selected,practiceAttempt);
   else if(route==="community")html=renderCommunity(s,communityQuery,communityTab);
-  else if(route==="account")html=renderAccount(s,accountTab,adminData);
+  else if(route==="account")html=renderAccount(s,accountTab);
   else if(route==="pricing")html=s.user?renderAccount(s,"plan"):renderPricing(s);
   else html=renderHome(s);
   const detailRoutes=["study","reading-play","listening-play","writing-play","mock-play","practice-result"];
@@ -141,7 +141,7 @@ export async function createApp(root){
 
  function bind(){
   root.querySelectorAll("[data-nav]").forEach(el=>el.onclick=()=>{route=el.dataset.nav;if(route==="pricing"&&store.get().user){route="account";accountTab="plan"}selected=null;study=null;if(route==="community")refreshCommunity();render()});
-  root.querySelectorAll("[data-account-tab]").forEach(el=>el.onclick=async()=>{accountTab=el.dataset.accountTab;route="account";render();if(accountTab==="admin")await loadAdminCenter()});
+  root.querySelectorAll("[data-account-tab]").forEach(el=>el.onclick=()=>{accountTab=el.dataset.accountTab;route="account";render()});
   root.querySelectorAll("[data-account-back]").forEach(el=>el.onclick=()=>{accountTab="menu";render()});
   root.querySelectorAll("[data-action]").forEach(el=>el.onclick=e=>handleAction(el.dataset.action,el,e));
   root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>{store.set({lang:el.dataset.lang});scheduleSync()});
@@ -245,18 +245,10 @@ export async function createApp(root){
    if(a==="request-account-delete"){const d=await api("/api/account/request-delete",{method:"POST",body:"{}"});return toast(`ส่งคำขอลบบัญชีแล้ว กำหนดดำเนินการหลัง ${new Date(d.execute_after).toLocaleDateString()}`)}
    if(a==="open-refund-request")openRefundRequest()
    if(a==="submit-refund-request"){const reason=root.querySelector("#refundReason")?.value||"";const cancel=root.querySelector("#refundCancelSub")?.checked!==false;await api("/api/refund/request",{method:"POST",body:JSON.stringify({reason,cancel_subscription:cancel})});modalHtml="";await hydrateFromCloud(currentUser);return toast("ส่งคำขอคืนเงินแล้ว ผู้ดูแลจะตรวจสอบก่อนดำเนินการ")}
-   if(a==="admin-load-refunds")await loadAdminRefunds()
-   if(a==="admin-refresh")await loadAdminCenter()
-   if(a==="admin-dictionary-approve"||a==="admin-dictionary-reject"){const input=root.querySelector(`[data-dictionary-meaning="${el.dataset.id}"]`);await api("/api/admin/dictionary",{method:"POST",body:JSON.stringify({id:Number(el.dataset.id),action:a.endsWith("approve")?"approve":"reject",meaning:input?.value})});await loadAdminCenter()}
-   if(a==="admin-report-resolve"||a==="admin-report-dismiss"){await api("/api/admin/reports",{method:"POST",body:JSON.stringify({id:el.dataset.id,status:a.endsWith("resolve")?"resolved":"dismissed"})});await loadAdminCenter()}
-   if(a==="admin-gift-revoke"){if(!confirm("ปิด Gift Code นี้ทันที? ผู้ใช้ใหม่จะใช้โค้ดไม่ได้อีก"))return;await api("/api/admin/gift-codes",{method:"POST",body:JSON.stringify({action:"revoke",id:el.dataset.id})});await loadAdminCenter()}
-   if(a==="admin-approve-refund"){if(!confirm("ยืนยันคืนเงินจริงผ่าน Stripe? คำสั่งนี้ย้อนกลับไม่ได้"))return;const amount=el.dataset.amount?Number(el.dataset.amount):null;await api("/api/admin/refund-action",{method:"POST",body:JSON.stringify({action:"approve",refund_request_id:el.dataset.id,amount})});await loadAdminRefunds();return toast("ส่งคำสั่งคืนเงินไปยัง Stripe แล้ว")}
-   if(a==="admin-reject-refund"){const note=prompt("เหตุผลที่ปฏิเสธ","ไม่เข้าเงื่อนไขนโยบายคืนเงิน")||"Rejected";await api("/api/admin/refund-action",{method:"POST",body:JSON.stringify({action:"reject",refund_request_id:el.dataset.id,admin_note:note})});await loadAdminRefunds();return toast("ปฏิเสธคำขอแล้ว")}
    if(a==="checkout-monthly"||a==="checkout-yearly"){const d=await api("/api/stripe/create-checkout",{method:"POST",body:JSON.stringify({plan:a==="checkout-yearly"?"yearly":"monthly",currency:store.get().lang==="th"?"thb":"usd"})});location.href=d.url}
    if(a==="billing-portal"){const d=await api("/api/stripe/create-portal",{method:"POST",body:"{}"});location.href=d.url}
    if(a==="redeem-gift"){const code=root.querySelector("#giftCode")?.value;await api("/api/gift/redeem",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("แลก Gift Code สำเร็จ")}
    if(a==="claim-referral"){const code=root.querySelector("#referralCode")?.value;await api("/api/referral/claim",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("ใช้ Referral สำเร็จ")}
-   if(a==="admin-create-gift"){const code=root.querySelector("#adminGiftCode")?.value,days=Number(root.querySelector("#adminGiftDays")?.value),max_uses=Number(root.querySelector("#adminGiftUses")?.value),expiry_days=Number(root.querySelector("#adminGiftExpiry")?.value);await api("/api/admin/gift-code",{method:"POST",body:JSON.stringify({code,days,max_uses,expiry_days})});await loadAdminCenter();return}
   }catch(err){console.error(err);toast(err.message||"เกิดข้อผิดพลาด")}
  }
  function openBulkImport(type){
@@ -301,16 +293,6 @@ export async function createApp(root){
   if(!last)return toast("ยังไม่พบรายการชำระเงินที่คืนได้");
   const amount=last.amount!=null?`${(last.amount/100).toFixed(2)} ${String(last.currency||"").toUpperCase()}`:"รายการล่าสุด";
   modalHtml=modal("ขอคืนเงิน",`<div class="modal-form"><div class="modal-note">คำขอนี้จะส่งให้ผู้ดูแลตรวจสอบก่อน ไม่มีการคืนเงินอัตโนมัติ<br>รายการล่าสุด: ${amount}</div><label>เหตุผลในการขอคืนเงิน<textarea id="refundReason" rows="4" maxlength="1000" placeholder="กรุณาอธิบายเหตุผลอย่างน้อย 5 ตัวอักษร"></textarea></label><label class="delete-check-row"><input id="refundCancelSub" type="checkbox" checked><span>ถ้าเป็นการคืนเต็มจำนวน ให้ยกเลิกสมาชิกที่เกี่ยวข้องด้วย</span></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="submit-refund-request">ส่งคำขอ</button>`);render()
- }
- async function loadAdminRefunds(){
-  const d=await api("/api/admin/refunds");const host=root.querySelector("#adminRefundQueue");if(!host)return;
-  host.innerHTML=(d.refunds||[]).map(r=>`<div class="refund-admin-row"><div><b>@${escapeHtml(r.profiles?.username||"user")}</b><small>${escapeHtml(r.reason)}</small><small>${r.payment_events?.amount!=null?(r.payment_events.amount/100).toFixed(2)+" "+String(r.payment_events.currency||"").toUpperCase():""}</small></div><div class="actions"><button class="btn btn-primary" data-action="admin-approve-refund" data-id="${r.id}">คืนเต็มจำนวน</button><button class="btn btn-danger" data-action="admin-reject-refund" data-id="${r.id}">ปฏิเสธ</button></div></div>`).join("")||"<p class='tool-note'>ไม่มีคำขอรอตรวจ</p>";
-  host.querySelectorAll("[data-action]").forEach(el=>el.onclick=e=>handleAction(el.dataset.action,el,e));
- }
- async function loadAdminCenter(){
-  if(store.get().profile?.role!=="admin")return;
-  const [overview,dictionary,reports,gifts]=await Promise.all([api("/api/admin/overview"),api("/api/admin/dictionary"),api("/api/admin/reports"),api("/api/admin/gift-codes")]);
-  adminData={overview,dictionary:dictionary.items||[],reports:reports.items||[],gifts:gifts.items||[]};render();
  }
  function openFlashSettings(){
   const s=store.get(),deck=study?s.decks.find(d=>d.id===study.deckId):null,max=Math.max(1,deck?.words.length||1);
