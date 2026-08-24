@@ -19,6 +19,8 @@
 .word-popover-label{display:block;margin:0 34px 5px 0;color:var(--blue,#6ea4d2);font-size:10px;font-weight:800;letter-spacing:.08em}
 .word-popover strong{display:block;padding-right:34px;font-size:22px;line-height:1.2}
 .word-popover p{margin:8px 0 12px;color:var(--muted,#667085);font-size:14px;line-height:1.45}
+.word-deck-picker{display:grid;gap:5px;margin:0 0 10px;color:var(--muted,#667085);font-size:11px;font-weight:700}
+.word-deck-picker select{width:100%;min-height:36px;border:1px solid var(--line,#e4ddd6);border-radius:9px;background:var(--surface,#fff);color:inherit;padding:6px 9px;font:inherit}
 .word-popover-add{width:100%;min-height:38px;border:0;border-radius:11px;background:var(--blue,#73a8d4);color:#fff;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
 .word-popover-add:hover{filter:brightness(.96)}
 @media(max-width:480px){.word-popover{border-radius:14px;padding:13px 13px 11px}.word-popover strong{font-size:20px}}
