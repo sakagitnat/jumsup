@@ -20,9 +20,10 @@ import { modal } from "../components/modal.js";
 import { importerModal,parseCsv,validateImport,downloadTemplate,buildImportedContent,TYPES } from "../features/importer/bulkImporter.js";
 
 export async function createApp(root){
- let route="landing",accountTab="menu",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,hydrating=false;
- let pendingPublicSave=null,bulkImportState=null;const activeUsageSessions={};
+ let route="landing",accountTab="menu",study=null,selected=null,practiceAttempt=null,practiceKind=null,communityTab="vocab",communityQuery="",modalHtml="",syncTimer=null,examTimer=null,renderFrame=0,hydrating=false;
+ let pendingPublicSave=null,bulkImportState=null,lastSyncedSnapshot="",syncingCloud=false,syncPending=false;const activeUsageSessions={};
  let currentUser=null;
+ const syncSnapshot=s=>JSON.stringify({theme:s.theme,lang:s.lang,sound:s.sound,profile:s.profile,decks:s.decks,progress:s.progress,reading:s.reading,listening:s.listening,writing:s.writing,mocks:s.mocks});
 
  const nav=()=>[
   ["flash","Aa","flash"],["match","↔","match"],["crossword","+","cross"],
@@ -55,6 +56,7 @@ export async function createApp(root){
  }
 
  function render(){
+  if(renderFrame){cancelAnimationFrame(renderFrame);renderFrame=0}
   const s=store.get();document.documentElement.dataset.theme=s.theme;document.documentElement.lang=s.lang==="zh"?"zh-CN":s.lang==="pt"?"pt-BR":s.lang;
   let html;
   if(route==="landing"&&!s.user)html=renderLanding(s.lang);
@@ -111,7 +113,7 @@ export async function createApp(root){
     await pushCloudState(user,store.get());
     const again=await loadCloudState(user);store.set({...again,backend:true,syncing:false});
    }
-   await refreshCommunity();
+   lastSyncedSnapshot=syncSnapshot(store.get());await refreshCommunity();
   }catch(e){console.error(e);store.set({syncing:false,user,backend:true})}
   hydrating=false;
  }
@@ -135,11 +137,12 @@ export async function createApp(root){
  function scheduleSync(){
   if(hydrating||!currentUser||!backendEnabled)return;
   clearTimeout(syncTimer);
-  syncTimer=setTimeout(async()=>{
-   store.set({syncing:true});
-   try{await pushCloudState(currentUser,store.get())}
-   catch(e){console.error("Sync failed",e)}
-   finally{store.set({syncing:false})}
+  syncTimer=setTimeout(()=>{
+   const run=async()=>{const snapshot=syncSnapshot(store.get());if(snapshot===lastSyncedSnapshot)return;if(syncingCloud){syncPending=true;return}syncingCloud=true;
+   try{await pushCloudState(currentUser,store.get());lastSyncedSnapshot=snapshot}
+   catch(e){console.error("Sync failed",e)}finally{syncingCloud=false;if(syncPending){syncPending=false;scheduleSync()}}
+   };
+   if("requestIdleCallback" in window)requestIdleCallback(run,{timeout:2000});else setTimeout(run,0);
   },900);
  }
 
@@ -157,7 +160,8 @@ export async function createApp(root){
   root.querySelectorAll(".choice").forEach(el=>el.onclick=()=>{
    const host=el.closest(".question");
    host.querySelectorAll(".choice").forEach(x=>x.classList.remove("selected","correct","wrong"));
-   el.classList.add("selected",Number(el.dataset.answer)===Number(el.dataset.correct)?"correct":"wrong");
+   host.querySelectorAll(".choice").forEach(x=>x.setAttribute("aria-pressed","false"));
+   el.classList.add("selected");el.setAttribute("aria-pressed","true");
    host.dataset.answered="true";if(practiceAttempt)practiceAttempt.answers[el.dataset.question]=Number(el.dataset.answer);
    const answered=root.querySelectorAll('.question[data-answered="true"]').length,total=root.querySelectorAll(".question").length,count=root.querySelector("#answeredCount");
    if(count)count.textContent=`${answered}/${total}${route==="mock-play"?" ตัวอย่าง":""}`;
@@ -218,7 +222,7 @@ export async function createApp(root){
       try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id,minutes:Number(selected.minutes||10)});activeUsageSessions[kind]=usage.existing_session_key||sessionKey;endsAt=usage.ends_at?new Date(usage.ends_at).getTime():endsAt}
       catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup("ยังเริ่มรอบใหม่ไม่ได้",kind==="mock"?"Free ใช้ Mock รอบถัดไปได้ทุก 7 วัน":"Reading, Listening และ Writing ใช้โควต้าร่วมกัน รอบถัดไปเปิดทุก 3 วัน");throw err}
     }
-    selected={...selected,_endsAt:endsAt};practiceKind=kind;const questions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);practiceAttempt={answers:{},questions,startedAt:Date.now(),endsAt};
+    selected={...selected,_endsAt:endsAt};practiceKind=kind;const rawQuestions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);const questions=rawQuestions.map((q,i)=>({...q,_attemptKey:q.id||(kind==="mock"?`mock-${q.number||i+1}`:`${kind}-${i+1}`)}));practiceAttempt={answers:{},questions,startedAt:Date.now(),endsAt};
     route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"mock-play";render()
    }
    if(a==="speak-script")speak(el.dataset.script,root.querySelector("#listenAccent")?.value||"en-US",root.querySelector("#listenRate")?.value||.9);
@@ -365,16 +369,17 @@ export async function createApp(root){
   const box=document.createElement("aside");
   box.className="word-popover";box.setAttribute("role","dialog");box.setAttribute("aria-label",`คำแปล ${word}`);
   box.style.setProperty("--word-x",`${left}px`);box.style.setProperty("--word-y",`${top}px`);box.style.setProperty("--word-width",`${width}px`);
-  box.innerHTML=`<button class="word-popover-close" aria-label="ปิด">×</button><span class="word-popover-label">READING WORD</span><strong>${escapeHtml(word)}</strong><p data-word-meaning>กำลังค้นหาคำแปล…</p><button class="word-popover-add" disabled>+ เพิ่มเข้า Flashcard</button>`;
+  const decks=store.get().decks||[];
+  box.innerHTML=`<button class="word-popover-close" aria-label="ปิด">×</button><span class="word-popover-label">READING WORD</span><strong>${escapeHtml(word)}</strong><p data-word-meaning>กำลังค้นหาคำแปล…</p><label class="word-deck-picker"><span>บันทึกลงชุด</span><select data-word-deck>${decks.map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`).join("")}</select></label><button class="word-popover-add" disabled>+ เพิ่มเข้า Flashcard</button>`;
   root.append(box);box.querySelector(".word-popover-close").onclick=()=>box.remove();
   return box;
  }
  function addReadingWord(word,meaning,anchor,box){
-  const s0=store.get(),existing0=s0.decks.find(d=>d.id==="deck-2")||s0.decks[0],limit=isPro(s0)?PRO_LIMITS.wordsPerDeck:FREE_LIMITS.wordsPerDeck;
+  const deckId=box.querySelector("[data-word-deck]")?.value,s0=store.get(),existing0=s0.decks.find(d=>d.id===deckId)||s0.decks[0],limit=isPro(s0)?PRO_LIMITS.wordsPerDeck:FREE_LIMITS.wordsPerDeck;
   if(existing0&&(existing0.words?.length||0)>=limit){box.remove();return proPopup("คำศัพท์ในชุดเต็มแล้ว",`แพ็กเกจปัจจุบันเก็บได้สูงสุด ${limit.toLocaleString()} คำต่อชุด`)}
   store.update(s=>{
-   const existing=s.decks.find(d=>d.id==="deck-2")||s.decks[0];
-   if(!existing)return {...s,decks:[...s.decks,{id:"deck-2",name:"Reading Words",visibility:"private",creator:s.profile?.username||"user",words:[{w:word,m:meaning||"",p:"",e:""}]}]};
+   const existing=s.decks.find(d=>d.id===deckId)||s.decks[0];
+   if(!existing)return s;
    if(existing.words.some(x=>x.w.toLowerCase()===word.toLowerCase()))return s;
    return {...s,decks:s.decks.map(d=>d.id===existing.id?{...d,words:[...d.words,{w:word,m:meaning||"",p:"",e:""}]}:d)};
   });
@@ -433,7 +438,7 @@ export async function createApp(root){
   const tick=()=>{const remaining=Math.max(0,Math.ceil((endsAt-Date.now())/1000)),m=Math.floor(remaining/60),s=remaining%60;el.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;el.parentElement?.classList.toggle("warning",remaining>0&&remaining<=300);if(!remaining){clearInterval(examTimer);examTimer=null;el.parentElement?.classList.add("expired");if(practiceAttempt){route="practice-result";render()}}};tick();if(examTimer===null&&endsAt>Date.now())examTimer=setInterval(tick,1000);
  }
 
- store.subscribe(()=>{render();scheduleSync()});
+ store.subscribe(()=>{scheduleSync();if(!renderFrame)renderFrame=requestAnimationFrame(()=>{renderFrame=0;render()})});
 
  if(backendEnabled){
   const session=await getSession();currentUser=session?.user||null;
