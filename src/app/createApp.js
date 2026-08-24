@@ -1,3 +1,7 @@
+Exit code: 0
+Wall time: 1.3 seconds
+Total output lines: 445
+Output:
 import { store } from "../lib/store.js";
 import { tr,localizePage } from "../lib/i18n.js";
 import { speak,todayKey,escapeHtml } from "../lib/utils.js";
@@ -192,7 +196,7 @@ export async function createApp(root){
      store.set({lastCheckin:todayKey(),streak:data.streak,xp:data.xp});
     }else if(s.lastCheckin!==todayKey())store.set({lastCheckin:todayKey(),streak:s.streak+1,xp:s.xp+20});
    }
-   if(a==="start-deck"){const d=s.decks.find(x=>x.id===el.dataset.id);if(el.dataset.mode!=="flash"){const game=el.dataset.mode==="match"?"match":"crossword";if(currentUser&&backendEnabled){try{await startDailyFeature(game,`${game}:${crypto.randomUUID()}`,{content_id:d.id})}catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup(`${game==="match"?"Match":"Crossword"} ครบโควต้าแล้ว`,game==="match"?"Free เล่น Match ได้ 10 รอบต่อวัน":"Free เล่น Crossword ได้ 3 รอบต่อวัน");throw err}}const p=s.progress[d.id]||{mastered:[]};const m=masteredWords(s,d.id,p);return openGame(game,d,m)}study={deckId:d.id,poolSize:Math.min(s.flashSettings.loopSize,d.words.length),mastered:[...((s.progress[d.id]||{}).mastered||[])],cursor:0};route="study";render()}
+   if(a==="start-deck"){const d=s.decks.find(x=>x.id===el.dataset.id);if(el.dataset.mode!=="flash"){const game=el.dataset.mode==="match"?"match":"crossword",p=s.progress[d.id]||{mastered:[]},m=masteredWords(s,d.id,p),minimum=game==="match"?4:3;if(m.length<minimum)return openGame(game,d,m);if(currentUser&&backendEnabled){try{await startDailyFeature(game,`${game}:${crypto.randomUUID()}`,{content_id:d.id})}catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup(`${game==="match"?"Match":"Crossword"} ครบโควต้าแล้ว`,game==="match"?"Free เล่น Match ได้ 10 รอบต่อวัน":"Free เล่น Crossword ได้ 3 รอบต่อวัน");throw err}}return openGame(game,d,m)}study={deckId:d.id,poolSize:Math.min(s.flashSettings.loopSize,d.words.length),mastered:[...((s.progress[d.id]||{}).mastered||[])],cursor:0};route="study";render()}
    if(a==="know-word"){await markKnown(Number(el.dataset.index));study.cursor=0}
    if(a==="miss-word"){study.cursor++;render()}
    if(a==="speak")speak(el.dataset.word)
@@ -211,101 +215,7 @@ export async function createApp(root){
    if(a==="edit-practice")openPracticeModal(el.dataset.kind,el.dataset.id)
    if(a==="delete-practice")openDelete(el.dataset.kind,el.dataset.id)
    if(a==="open-practice"){
-    const kind=el.dataset.kind,arr=kind==="mock"?s.mocks:s[kind];selected=arr.find(x=>x.id===el.dataset.id);
-    let endsAt=Date.now()+Math.max(1,Number(selected.minutes||10))*60000;
-    if(currentUser&&backendEnabled&&["reading","listening","writing","mock"].includes(kind)){
-      const sessionKey=activeUsageSessions[kind]||`${kind}:${selected.id}:${crypto.randomUUID()}`;
-      try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id,minutes:Number(selected.minutes||10)});activeUsageSessions[kind]=usage.existing_session_key||sessionKey;endsAt=usage.ends_at?new Date(usage.ends_at).getTime():endsAt}
-      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup("ยังเริ่มรอบใหม่ไม่ได้",kind==="mock"?"Free ใช้ Mock รอบถัดไปได้ทุก 7 วัน":"Reading, Listening และ Writing ใช้โควต้าร่วมกัน รอบถัดไปเปิดทุก 3 วัน");throw err}
-    }
-    selected={...selected,_endsAt:endsAt};practiceKind=kind;const questions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);practiceAttempt={answers:{},questions,startedAt:Date.now(),endsAt};
-    route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"mock-play";render()
-   }
-   if(a==="speak-script")speak(el.dataset.script,root.querySelector("#listenAccent")?.value||"en-US",root.querySelector("#listenRate")?.value||.9);
-   if(a==="pause-speech")speechSynthesis?.pause();
-   if(a==="resume-speech")speechSynthesis?.resume();
-   if(a==="stop-speech")speechSynthesis?.cancel();
-   if(a==="submit-practice"){if(!practiceAttempt)return;clearInterval(examTimer);examTimer=null;const key=activeUsageSessions[practiceKind];if(key&&backendEnabled)api("/api/usage/save",{method:"POST",body:JSON.stringify({session_key:key,state:{content_id:selected?.id,answers:practiceAttempt.answers},complete:true})}).catch(console.error);route="practice-result";return render()}
-   if(a==="retry-practice"){route=practiceKind||"home";practiceAttempt=null;selected=null;return proPopup("เริ่มรอบใหม่","เลือกรอบใหม่จากหน้ารายการ ระบบจะตรวจสิทธิ์ทดลองหรือเวลาพักให้อัตโนมัติ")}
-   if(a==="back-practice-list"){route=practiceKind||"home";selected=null;practiceAttempt=null;return render()}
-   if(a==="community-search"){communityQuery=root.querySelector("#communitySearch").value;await refreshCommunity();render()}
-   if(a==="community-refresh"){await refreshCommunity();render()}
-   if(a==="import-community"){
-    const item=s.community.find(x=>x.id===el.dataset.id);
-    if(!backendEnabled){localCommunityImport(item);return toast("นำเข้าเป็นสำเนาใหม่ในโหมดทดสอบแล้ว")}
-    if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนนำเข้า Community");
-    try{await importCommunityItem(currentUser,item)}catch(err){if(String(err.message).includes("COMMUNITY_SET_LIMIT_REACHED"))return proPopup("เก็บชุด Community ครบ 3 ชุดแล้ว","ลบชุด Community เดิมก่อนเลือกชุดใหม่ หรืออัปเกรดเป็น Pro เพื่อเก็บได้ไม่จำกัด");throw err}await hydrateFromCloud(currentUser);return toast("นำเข้าเป็นสำเนาใหม่แล้ว");
-   }
-   if(a==="like-community"){const id=el.dataset.id,item=s.community.find(x=>x.id===id);if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนกดถูกใจ");await toggleCommunityLike(currentUser,item)}else store.set({communityLikes:{...(s.communityLikes||{}),[id]:!s.communityLikes?.[id]}});await refreshCommunity();return}
-   if(a==="review-community")return openCommunityReview(el.dataset.id)
-   if(a==="save-community-review"){const id=el.dataset.id,rating=Number(root.querySelector("#reviewRating")?.value),body=root.querySelector("#reviewBody")?.value.trim()||"",item=s.community.find(x=>x.id===id);if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนให้คะแนน");await saveCommunityReview(currentUser,item,rating,body)}else store.set({communityReviews:{...(s.communityReviews||{}),[id]:{rating,body,createdAt:new Date().toISOString()}}});modalHtml="";await refreshCommunity();return toast("บันทึกคะแนนและรีวิวแล้ว")}
-   if(a==="report-community")return openCommunityReport(el.dataset.id)
-   if(a==="send-community-report"){const item=s.community.find(x=>x.id===el.dataset.id),reason=root.querySelector("#reportReason")?.value||"รายงานเนื้อหา";if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนรายงานเนื้อหา");await reportCommunityContent(currentUser,item,reason)}modalHtml="";return toast("ส่งรายงานให้ผู้ดูแลตรวจสอบแล้ว")}
-   if(a==="close-modal"){modalHtml="";render()}
-   if(a==="confirm-delete")confirmDelete(el.dataset.type,el.dataset.id)
-   if(a==="save-deck")saveDeck(el.dataset.id||null)
-   if(a==="save-practice")savePractice(el.dataset.kind,el.dataset.id||null)
-   if(a==="confirm-public-save"){if(pendingPublicSave){const fn=pendingPublicSave;pendingPublicSave=null;await fn();modalHtml="";render()}}
-   if(a==="export-account"){const d=await api("/api/account/export");const blob=new Blob([JSON.stringify(d,null,2)],{type:"application/json"});const u=URL.createObjectURL(blob);const x=document.createElement("a");x.href=u;x.download="jumsup-data.json";x.click();URL.revokeObjectURL(u)}
-   if(a==="request-account-delete"){const d=await api("/api/account/request-delete",{method:"POST",body:"{}"});return toast(`ส่งคำขอลบบัญชีแล้ว กำหนดดำเนินการหลัง ${new Date(d.execute_after).toLocaleDateString()}`)}
-   if(a==="open-refund-request")openRefundRequest()
-   if(a==="submit-refund-request"){const reason=root.querySelector("#refundReason")?.value||"";const cancel=root.querySelector("#refundCancelSub")?.checked!==false;await api("/api/refund/request",{method:"POST",body:JSON.stringify({reason,cancel_subscription:cancel})});modalHtml="";await hydrateFromCloud(currentUser);return toast("ส่งคำขอคืนเงินแล้ว ผู้ดูแลจะตรวจสอบก่อนดำเนินการ")}
-   if(a==="checkout-monthly"||a==="checkout-yearly"){const d=await api("/api/stripe/create-checkout",{method:"POST",body:JSON.stringify({plan:a==="checkout-yearly"?"yearly":"monthly",currency:store.get().lang==="th"?"thb":"usd"})});location.href=d.url}
-   if(a==="billing-portal"){const d=await api("/api/stripe/create-portal",{method:"POST",body:"{}"});location.href=d.url}
-   if(a==="redeem-gift"){const code=root.querySelector("#giftCode")?.value;await api("/api/gift/redeem",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("แลก Gift Code สำเร็จ")}
-   if(a==="claim-referral"){const code=root.querySelector("#referralCode")?.value;await api("/api/referral/claim",{method:"POST",body:JSON.stringify({code})});await hydrateFromCloud(currentUser);return toast("ใช้ Referral สำเร็จ")}
-  }catch(err){console.error(err);toast(err.message||"เกิดข้อผิดพลาด")}
- }
- function openBulkImport(type){
-  const nextType=type||bulkImportState?.type||"vocab";
-  if(!bulkImportState||bulkImportState.type!==nextType)bulkImportState={type:nextType,step:1,headers:[],rows:[]};
-  const step=bulkImportState.step||1;
-  modalHtml=modal("นำเข้าข้อมูลจำนวนมาก",importerModal(nextType,step,bulkImportState),`<button class="btn" data-action="close-modal">ยกเลิก</button>${step>1?`<button class="btn" data-action="import-back">ย้อนกลับ</button>`:""}${step===1?"":`<button class="btn btn-primary" data-action="import-next">${step===2?"ตรวจข้อมูล":step===3?"ไปขั้นยืนยัน":"ยืนยันนำเข้า"}</button>`}`);render()
- }
- function importBack(){if(!bulkImportState)return;bulkImportState.step=Math.max(1,(bulkImportState.step||1)-1);openBulkImport()}
- function importNext(){
-  if(!bulkImportState)return;const type=bulkImportState.type;
-  if(bulkImportState.step===2){const mapping={};root.querySelectorAll("[data-import-map]").forEach(x=>mapping[x.dataset.importMap]=x.value);const missing=TYPES[type].required.filter(h=>!mapping[h]);if(missing.length)return toast(`กรุณาจับคู่คอลัมน์ที่จำเป็น: ${missing.join(", ")}`);bulkImportState.mapping=mapping;bulkImportState.checked=validateImport(type,bulkImportState.rows,mapping);bulkImportState.step=3;return openBulkImport()}
-  if(bulkImportState.step===3){if(!bulkImportState.checked?.valid?.length)return toast("ยังไม่มีรายการที่พร้อมนำเข้า");bulkImportState.step=4;return openBulkImport()}
-  if(bulkImportState.step===4){const built=buildImportedContent(type,bulkImportState.checked.valid,store.get().profile?.username||"guest");store.update(s=>({...s,[built.key]:[...(s[built.key]||[]),built.value]}));scheduleSync();bulkImportState=null;modalHtml="";route=type==="vocab"?"flash":type;render();return toast("นำเข้าเป็นฉบับร่างส่วนตัวเรียบร้อยแล้ว")}
- }
-
- function localCommunityImport(item){
-  if(!item)return;
-  const id=`import-${crypto.randomUUID()}`;
-  store.update(s=>{
-   const counts={...(s.communityImportCounts||{}),[item.id]:(s.communityImportCounts?.[item.id]||0)+1};
-   if(item.type==="vocab"){
-    const source=s.decks.find(x=>x.id===item.id);if(!source)return {...s,communityImportCounts:counts};
-    return {...s,communityImportCounts:counts,decks:[...s.decks,{...structuredClone(source),id,name:`${source.name} · สำเนา`,visibility:"private",creator:"guest"}]};
-   }
-   const key=item.sourceKind==="mock"?"mocks":item.sourceKind,source=(s[key]||[]).find(x=>x.id===item.id);if(!source)return {...s,communityImportCounts:counts};
-   return {...s,communityImportCounts:counts,[key]:[...s[key],{...structuredClone(source),id:`${item.sourceKind}-${id}`,title:`${source.title} · สำเนา`,visibility:"private",creator:"guest"}]};
-  });
- }
-
- function openCommunityReview(id){
-  const previous=store.get().communityReviews?.[id];
-  modalHtml=modal("ให้คะแนนชุดฝึก",`<div class="modal-form"><label>คะแนน<select id="reviewRating"><option value="5" ${previous?.rating===5?"selected":""}>5 - ดีมาก</option><option value="4" ${previous?.rating===4?"selected":""}>4 - ดี</option><option value="3" ${previous?.rating===3?"selected":""}>3 - ปานกลาง</option><option value="2" ${previous?.rating===2?"selected":""}>2 - ควรปรับปรุง</option><option value="1" ${previous?.rating===1?"selected":""}>1 - มีปัญหา</option></select></label><label>รีวิว<textarea id="reviewBody" rows="4" maxlength="1000" placeholder="บอกสิ่งที่เป็นประโยชน์กับผู้เรียนคนอื่น">${escapeHtml(previous?.body||"")}</textarea></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-community-review" data-id="${id}">บันทึก</button>`);render()
- }
-
- function openCommunityReport(id){
-  modalHtml=modal("รายงานเนื้อหา",`<div class="modal-form"><label>เหตุผล<select id="reportReason"><option>ข้อมูลหรือเฉลยไม่ถูกต้อง</option><option>ละเมิดลิขสิทธิ์</option><option>Spam หรือโฆษณา</option><option>เนื้อหาไม่เหมาะสม</option></select></label><label>รายละเอียด<textarea rows="4" maxlength="1000" placeholder="อธิบายสิ่งที่พบ"></textarea></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-danger" data-action="send-community-report" data-id="${id}">ส่งรายงาน</button>`);render()
- }
-
- function openRefundRequest(){
-  const s=store.get(),last=s.payments?.find(p=>p.status==="succeeded");
-  if(!last)return toast("ยังไม่พบรายการชำระเงินที่คืนได้");
-  const amount=last.amount!=null?`${(last.amount/100).toFixed(2)} ${String(last.currency||"").toUpperCase()}`:"รายการล่าสุด";
-  modalHtml=modal("ขอคืนเงิน",`<div class="modal-form"><div class="modal-note">คำขอนี้จะส่งให้ผู้ดูแลตรวจสอบก่อน ไม่มีการคืนเงินอัตโนมัติ<br>รายการล่าสุด: ${amount}</div><label>เหตุผลในการขอคืนเงิน<textarea id="refundReason" rows="4" maxlength="1000" placeholder="กรุณาอธิบายเหตุผลอย่างน้อย 5 ตัวอักษร"></textarea></label><label class="delete-check-row"><input id="refundCancelSub" type="checkbox" checked><span>ถ้าเป็นการคืนเต็มจำนวน ให้ยกเลิกสมาชิกที่เกี่ยวข้องด้วย</span></label></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="submit-refund-request">ส่งคำขอ</button>`);render()
- }
- function openFlashSettings(){
-  const s=store.get(),deck=study?s.decks.find(d=>d.id===study.deckId):null,max=Math.max(1,deck?.words.length||1);
-  modalHtml=modal("ตั้งค่า Flashcard",`<div class="flash-study-settings-modal"><div class="flash-setting-section"><div class="flash-setting-heading"><div><b>จำนวนคำใน Loop</b><small>กำหนดจำนวนคำที่จะวนซ้ำในรอบนี้</small></div></div><div class="loop-input-row"><input id="studyLoopSize" type="number" min="1" max="${max}" value="${Math.min(study?.poolSize||s.flashSettings.loopSize,max)}"></div></div><div class="flash-setting-list"><label class="flash-setting-row"><span><b>อ่านเสียงอัตโนมัติ</b></span><span class="switch"><input id="studyAutoSpeak" type="checkbox" ${s.flashSettings.autoSpeak?"checked":""}><span></span></span></label><label class="flash-setting-row"><span><b>แสดงคำแปลทันที</b></span><span class="switch"><input id="studyShowMeaning" type="checkbox" ${s.flashSettings.showMeaning?"checked":""}><span></span></span></label><label class="flash-setting-row"><span><b>สุ่มลำดับคำ</b></span><span class="switch"><input id="studyShuffle" type="checkbox" ${s.flashSettings.shuffle?"checked":""}><span></span></span></label></div></div>`,`<button class="btn" data-action="close-modal">ยกเลิก</button><button class="btn btn-primary" data-action="save-study-settings">บันทึก</button>`);render()
- }
- function saveFlashSettings(){
-  if(!study)return;const s=store.get(),deck=s.decks.find(d=>d.id===study.deckId),max=Math.max(1,deck.words.length);
-  const settings={loopSize:Math.max(1,Math.min(max,Number(root.querySelector("#studyLoopSize").value)||1)),autoSpeak:root.querySelector("#studyAutoSpeak").checked,showMeaning:root.querySelector("#studyShowMeaning").checked,shuffle:root.querySelector("#studyShuffle").checked};
+    const kind=el.dataset.kind,arr=kind==="moc…4025 tokens truncated…in(max,Number(root.querySelector("#studyLoopSize").value)||1)),autoSpeak:root.querySelector("#studyAutoSpeak").checked,showMeaning:root.querySelector("#studyShowMeaning").checked,shuffle:root.querySelector("#studyShuffle").checked};
   study.poolSize=settings.loopSize;study.mastered=study.mastered.filter(i=>i<settings.loopSize);study.cursor=0;modalHtml="";store.set({flashSettings:settings});
  }
  function openDeckModal(id){
@@ -442,3 +352,4 @@ export async function createApp(root){
  }else store.set({backend:false,user:null});
  render();
 }
+
