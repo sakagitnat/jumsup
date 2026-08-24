@@ -1,3 +1,6 @@
+Exit code: 0
+Wall time: 1.3 seconds
+Output:
 -- Server-enforced Free/Pro product limits, persistent exam timers and moderation.
 
 alter table public.vocab_sets add column if not exists source_type text not null default 'own'
@@ -60,6 +63,20 @@ begin
    'resume',true,'existing_session_key',r.session_key,'ends_at',r.ends_at,'remaining_seconds',greatest(0,extract(epoch from (r.ends_at-now()))::integer));
  end if;
 
+ -- Reopening or refreshing an active timed exercise must resume the original
+ -- server timer instead of consuming a new trial/cooldown session.
+ if p_feature in ('reading','listening','writing','mock') and coalesce(p_state->>'content_id','')<>'' then
+  select * into r from usage_sessions
+   where user_id=uid and feature=p_feature and ends_at>now()
+    and state->>'content_id'=p_state->>'content_id'
+   order by started_at desc limit 1;
+  if found then
+   return jsonb_build_object('allowed',true,'pro',pro,'session_id',r.id,'resume',true,
+    'existing_session_key',r.session_key,'ends_at',r.ends_at,
+    'remaining_seconds',greatest(0,extract(epoch from (r.ends_at-now()))::integer));
+  end if;
+ end if;
+
  if pro then
   insert into usage_sessions(user_id,feature,usage_date,session_key,state,ends_at)
   values(uid,p_feature,d,p_session_key,coalesce(p_state,'{}'::jsonb),now()+make_interval(mins=>mins)) returning * into r;
@@ -101,3 +118,4 @@ create index if not exists usage_sessions_cooldown_idx on public.usage_sessions(
 create index if not exists vocab_sets_source_idx on public.vocab_sets(user_id,source_type);
 create index if not exists vocab_sets_moderation_idx on public.vocab_sets(visibility,moderation_status);
 create index if not exists practice_sets_moderation_idx on public.practice_sets(visibility,moderation_status);
+
