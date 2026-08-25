@@ -48,7 +48,7 @@ export const store={
  get:()=>state,
  set(patch){state={...state,...patch};persist();listeners.forEach(fn=>fn(state))},
  update(fn){state=fn(state);persist();listeners.forEach(fn=>fn(state))},
- replace(next){state={...initial(),...next};persist();listeners.forEach(fn=>fn(state))},
+ replace(next){state=mergeSamples(next);persist();listeners.forEach(fn=>fn(state))},
  reset(){state=initial();persist();listeners.forEach(fn=>fn(state))},
  subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)}
 };

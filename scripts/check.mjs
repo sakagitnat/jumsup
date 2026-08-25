@@ -14,8 +14,10 @@ for(const marker of ["revoke update on public.profiles","claim_stripe_event","ma
 const app=fs.readFileSync("src/app/createApp.js","utf8");
 if(/root\.innerHTML\s*=/.test(app)){console.error("Direct root.innerHTML rendering bypasses localization and causes visible page flashes");process.exit(1)}
 for(const marker of ["mount(layout(html))","localizePage(next.content","root.replaceChildren(next.content)"]){if(!app.includes(marker)){console.error("Missing unified render marker",marker);process.exit(1)}}
-const regressionSources=[app,fs.readFileSync("src/features/importer/bulkImporter.js","utf8"),fs.readFileSync("src/styles/themes/application-themes.css","utf8")].join("\n");
+const cloud=fs.readFileSync("src/lib/cloud.js","utf8");
+const regressionSources=[app,cloud,fs.readFileSync("src/features/importer/bulkImporter.js","utf8"),fs.readFileSync("src/styles/themes/application-themes.css","utf8")].join("\n");
 for(const marker of ["function deckWordRow","function bindDeckEditor","function practiceSectionEditor","function bindPracticeEditor","data-import-drop","word-popover","floating-exam-timer","FREE_LIMITS"]){if(!regressionSources.includes(marker)){console.error("Regression: approved feature is missing",marker);process.exit(1)}}
+for(const marker of ["filter(deck=>!deck.official)","filter(x=>!x.official)"]){if(!cloud.includes(marker)){console.error("Regression: official catalog would be synced as user data",marker);process.exit(1)}}
 const i18n=fs.readFileSync("src/lib/i18n.js","utf8");
 for(const lang of ["th","en","zh","ja","ko","pt","de","ru","hi"]){if(!i18n.includes(`[\"${lang}\"`)){console.error("Missing supported language",lang);process.exit(1)}}
 const fail=message=>{console.error(`Content validation: ${message}`);process.exit(1)};

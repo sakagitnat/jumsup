@@ -71,7 +71,10 @@ export async function pushCloudState(user,state){
   const {error:ppe}=await supabase.from("profiles").update(profilePatch).eq("user_id",user.id);
   if(ppe)throw ppe;
 
-  const remoteDeckIds=(state.decks||[]).map(d=>d.id);
+  // Official catalog items are read-only application data. Never copy their
+  // global IDs into a user's private namespace or count them against quotas.
+  const syncDecks=(state.decks||[]).filter(deck=>!deck.official);
+  const remoteDeckIds=syncDecks.map(d=>d.id);
   const {data:existingSets,error:ese}=await supabase.from("vocab_sets").select("id").eq("user_id",user.id);
   if(ese)throw ese;
   const deleted=(existingSets||[]).map(x=>x.id).filter(id=>!remoteDeckIds.includes(id));
@@ -79,7 +82,7 @@ export async function pushCloudState(user,state){
     const {error}=await supabase.from("vocab_sets").delete().in("id",deleted).eq("user_id",user.id);
     if(error)throw error;
   }
-  for(const deck of state.decks||[]){
+  for(const deck of syncDecks){
     const {error}=await supabase.from("vocab_sets").upsert({
       id:deck.id,user_id:user.id,name:deck.name,visibility:deck.visibility||"private",source_type:deck.sourceType||"own",updated_at:new Date().toISOString()
     },{onConflict:"id"});
@@ -88,10 +91,10 @@ export async function pushCloudState(user,state){
   }
 
   const allPractice=[
-    ...(state.reading||[]).map(x=>["reading",x]),
-    ...(state.listening||[]).map(x=>["listening",x]),
-    ...(state.writing||[]).map(x=>["writing",x]),
-    ...(state.mocks||[]).map(x=>["mock",x])
+    ...(state.reading||[]).filter(x=>!x.official).map(x=>["reading",x]),
+    ...(state.listening||[]).filter(x=>!x.official).map(x=>["listening",x]),
+    ...(state.writing||[]).filter(x=>!x.official).map(x=>["writing",x]),
+    ...(state.mocks||[]).filter(x=>!x.official).map(x=>["mock",x])
   ];
   const keep=allPractice.map(([,x])=>x.id);
   const {data:existingPractice,error:epe}=await supabase.from("practice_sets").select("id").eq("user_id",user.id);
@@ -229,3 +232,4 @@ export async function uploadAvatar(user,file){
   if(ue)throw ue;
   return url;
 }
+
