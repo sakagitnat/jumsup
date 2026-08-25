@@ -45,9 +45,27 @@ writingSections.push({id:"wO",part:"paragraph_organization",title:"Paragraph Org
 export const defaultWriting=[{id:"jumsup-alevel-writing-1",title:"A-Level Writing คู่ขนาน · ชุดทางการ 1",type:"Full section",minutes:25,itemCount:20,creator:"Jumsup Official",visibility:"public",official:true,sections:writingSections}];
 
 const numbered=(items,start)=>items.map((x,i)=>({...x,number:start+i}));
+const responseSpecs=[
+ ["Could you send me the revised schedule?","Certainly. I will email it this afternoon."],
+ ["How often does the shuttle leave?","Every thirty minutes."],
+ ["Would you mind lowering the volume?","Not at all. Sorry about that."],
+ ["Why was the workshop postponed?","The instructor was ill."],
+ ["Where can I return this equipment?","At the service desk downstairs."],
+ ["What did you think of the exhibition?","The final section was especially impressive."],
+ ["May I use your charger for a moment?","Of course. It is beside my laptop."],
+ ["How long have you lived in this area?","For nearly three years."],
+ ["Which route is faster during rush hour?","The train is usually faster."],
+ ["When should we submit the consent form?","By noon on Friday."]
+];
+const responseQuestions=responseSpecs.map((x,i)=>Q(`tgat-s${i+1}`,x[0],[x[1],"Yes, I have seen it before.","It belongs to the main office.","The weather was unusually warm."],0,`The response directly answers the question: ${x[1]}`));
+const tgatCompletion=writingSections.slice(0,3).flatMap(section=>section.questions);
+const tgatReading=readingSections.flatMap(section=>section.questions).slice(0,15);
 export const defaultMocks=[{id:"jumsup-alevel-mock-1",title:"A-Level 82 English Mock คู่ขนาน · ชุดทางการ 1",visibility:"public",creator:"Jumsup Official",official:true,questions:80,itemCount:80,minutes:90,sections:[
  {title:"Listening and Speaking Skills",type:"listening",description:"Items 1-20",questions:numbered([...shortSections.flatMap(s=>s.questions),...longSection.questions],1)},
  {title:"Reading Skill",type:"reading",description:"Items 21-60",questions:numbered(readingSections.flatMap(s=>s.questions),21)},
  {title:"Writing Skill",type:"writing",description:"Items 61-80",questions:numbered(writingSections.flatMap(s=>s.questions),61)}
+] },{id:"jumsup-tgat1-mock-1",title:"TGAT1 English Communication Mock คู่ขนาน · ชุดทางการ 1",visibility:"public",creator:"Jumsup Official",official:true,questions:60,itemCount:60,minutes:60,sections:[
+ {title:"Speaking Skill",type:"listening",description:"Question-response, short and long conversations · Items 1-30",questions:numbered([...responseQuestions,...shortSections.flatMap(s=>s.questions),...longSection.questions],1)},
+ {title:"Reading Skill",type:"reading",description:"Text completion and reading comprehension · Items 31-60",questions:numbered([...tgatCompletion,...tgatReading],31)}
 ] }];
 

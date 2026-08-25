@@ -26,8 +26,9 @@ const vocab=[...frequentExamWords,...shouldKnowWords],normalized=vocab.map(x=>x.
 if(frequentExamWords.length!==80||shouldKnowWords.length!==80)fail("vocabulary groups must contain 80 words each");
 if(new Set(normalized).size!==normalized.length)fail("duplicate vocabulary word");
 for(const word of vocab)if(!word.w||!word.m||!/^[a-z-]+$/.test(word.w))fail(`invalid vocabulary row ${word.w}`);
-const expected=[[defaultListening,20],[defaultReading,40],[defaultWriting,20],[defaultMocks,80]];
-for(const [sets,count] of expected){for(const set of sets){const questions=(set.sections||[]).flatMap(section=>section.questions||[]);if(questions.length!==count)fail(`${set.id} expected ${count} questions, found ${questions.length}`);const ids=new Set();for(const q of questions){if(ids.has(q.id))fail(`${set.id} duplicate question id ${q.id}`);ids.add(q.id);if(!q.prompt||q.choices?.length!==4||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)fail(`${set.id}/${q.id} malformed choices or answer`);if(new Set(q.choices.map(String)).size!==4)fail(`${set.id}/${q.id} duplicate choice`)}}}
+const expected=[[defaultListening,20],[defaultReading,40],[defaultWriting,20],[defaultMocks,null]];
+for(const [sets,fixedCount] of expected){for(const set of sets){const count=fixedCount??set.itemCount,questions=(set.sections||[]).flatMap(section=>section.questions||[]);if(questions.length!==count)fail(`${set.id} expected ${count} questions, found ${questions.length}`);const ids=new Set();for(const q of questions){if(ids.has(q.id))fail(`${set.id} duplicate question id ${q.id}`);ids.add(q.id);if(!q.prompt||q.choices?.length!==4||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)fail(`${set.id}/${q.id} malformed choices or answer`);if(new Set(q.choices.map(String)).size!==4)fail(`${set.id}/${q.id} duplicate choice`)}}}
+if(defaultMocks.find(x=>x.id==="jumsup-tgat1-mock-1")?.sections.map(x=>x.questions.length).join("/")!=="30/30")fail("TGAT1 blueprint must be 30 Speaking and 30 Reading");
 const trialMigration=fs.readFileSync("supabase/migrations/013_three_practice_trials.sql","utf8");
 for(const marker of ["used>=3","interval '3 days'","'remaining',2-used","'retry_at',cooldown"]){if(!trialMigration.includes(marker))fail(`missing three-trial marker ${marker}`)}
 console.log("Jumsup V6 audited structure OK");
