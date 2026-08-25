@@ -107,11 +107,11 @@ export async function createApp(root){
    const local=store.get();
    const remoteHasData=(remote.decks?.length||0)+(remote.reading?.length||0)+(remote.listening?.length||0)+(remote.writing?.length||0)+(remote.mocks?.length||0)>0;
    if(remoteHasData){
-    store.set({...remote,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
+    store.replace({...remote,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
    }else{
     store.set({user,profile:remote.profile,subscription:remote.subscription,backend:true,syncing:false});
     await pushCloudState(user,store.get());
-    const again=await loadCloudState(user);store.set({...again,backend:true,syncing:false});
+    const again=await loadCloudState(user);store.replace({...again,backend:true,syncing:false});
    }
    lastSyncedSnapshot=syncSnapshot(store.get());await refreshCommunity();
   }catch(e){console.error(e);store.set({syncing:false,user,backend:true})}

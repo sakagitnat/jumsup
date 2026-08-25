@@ -48,7 +48,7 @@ export const store={
  get:()=>state,
  set(patch){state={...state,...patch};persist();listeners.forEach(fn=>fn(state))},
  update(fn){state=fn(state);persist();listeners.forEach(fn=>fn(state))},
- replace(next){state=mergeSamples(next);persist();listeners.forEach(fn=>fn(state))},
+ replace(next){const merged=mergeSamples(next);state={...merged,user:next.user||null,profile:next.profile||merged.profile,subscription:next.subscription||null,payments:next.payments||[],refunds:next.refunds||[],backend:!!next.backend,syncing:!!next.syncing};persist();listeners.forEach(fn=>fn(state))},
  reset(){state=initial();persist();listeners.forEach(fn=>fn(state))},
  subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)}
 };
