@@ -1,5 +1,5 @@
-import { defaultWords,defaultReading,defaultListening,defaultWriting,defaultMocks } from "../data/defaultData.js";
-const KEY="jumsup.production.v3";
+import { frequentExamWords,shouldKnowWords,defaultReading,defaultListening,defaultWriting,defaultMocks } from "../data/defaultData.js";
+const KEY="jumsup.production.v4";
 const LEGACY_KEYS=["jumsup.production.v1","vantage.production.v1"];
 if(!localStorage.getItem(KEY)){
   for(const k of LEGACY_KEYS){if(localStorage.getItem(k)){localStorage.setItem(KEY,localStorage.getItem(k));break}}
@@ -9,8 +9,8 @@ const initial=()=>({
  user:null,profile:null,subscription:null,payments:[],refunds:[],backend:false,syncing:false,
  activeDeckId:"deck-1",
  decks:[
-  {id:"deck-1",name:"Core Vocabulary",visibility:"private",creator:"guest",words:defaultWords},
-  {id:"deck-2",name:"Reading Words",visibility:"private",creator:"guest",words:defaultWords.slice(5,15)}
+  {id:"jumsup-tcas-frequent",name:"TCAS English · ออกบ่อย",visibility:"public",creator:"Jumsup Official",official:true,words:frequentExamWords},
+  {id:"jumsup-tcas-should-know",name:"TCAS English · ควรรู้",visibility:"public",creator:"Jumsup Official",official:true,words:shouldKnowWords}
  ],
  progress:{},
  flashSettings:{loopSize:10,autoSpeak:false,showMeaning:true,shuffle:false},
@@ -20,7 +20,12 @@ const initial=()=>({
 });
 function mergeSamples(saved){
  const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false};
- const savedDecks=Array.isArray(next.decks)?next.decks:[];
+ const retiredDeckIds=new Set(["deck-1","deck-2","core-vocabulary","reading-words"]);
+ const savedDecks=(Array.isArray(next.decks)?next.decks:[]).filter(deck=>{
+  if(retiredDeckIds.has(deck?.id))return false;
+  if(deck?.creator==="Jumsup Official"&&!base.decks.some(sample=>sample.id===deck.id))return false;
+  return true;
+ });
  const starters=base.decks.map(sample=>{
   const savedDeck=savedDecks.find(deck=>deck.id===sample.id);
   return savedDeck?.words?.length?savedDeck:{...sample,...savedDeck,words:sample.words};
@@ -47,3 +52,4 @@ export const store={
  reset(){state=initial();persist();listeners.forEach(fn=>fn(state))},
  subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)}
 };
+

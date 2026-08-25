@@ -121,7 +121,8 @@ export async function createApp(root){
  async function refreshCommunity(){
   if(!currentUser||!backendEnabled){store.set({community:buildDemoCommunity(store.get())});return}
   try{
-   const items=await loadCommunity(communityQuery,communityTab);
+   const remote=await loadCommunity(communityQuery,communityTab),official=buildDemoCommunity(store.get()).filter(item=>item.official&&(communityTab==="vocab"?item.type==="vocab":item.type==="skill"));
+   const items=[...official,...remote.filter(item=>!official.some(seed=>seed.id===item.id))];
    store.set({community:items});
   }catch(e){console.error(e)}
  }
@@ -223,7 +224,7 @@ export async function createApp(root){
     if(currentUser&&backendEnabled&&["reading","listening","writing","mock"].includes(kind)){
       const sessionKey=activeUsageSessions[kind]||`${kind}:${selected.id}:${crypto.randomUUID()}`;
       try{const usage=await startDailyFeature(kind,sessionKey,{content_id:selected.id,minutes:Number(selected.minutes||10)});activeUsageSessions[kind]=usage.existing_session_key||sessionKey;endsAt=usage.ends_at?new Date(usage.ends_at).getTime():endsAt}
-      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED"))return proPopup("ยังเริ่มรอบใหม่ไม่ได้",kind==="mock"?"Free ใช้ Mock รอบถัดไปได้ทุก 7 วัน":"Reading, Listening และ Writing ใช้โควต้าร่วมกัน รอบถัดไปเปิดทุก 3 วัน");throw err}
+      catch(err){if(String(err.message).includes("DAILY_LIMIT_REACHED")){const seconds=Math.max(0,Number(err.details?.remaining_seconds||0)),days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.max(1,Math.ceil(seconds%3600/60)),wait=days?`${days} วัน ${hours} ชั่วโมง`:hours?`${hours} ชั่วโมง ${minutes} นาที`:`${minutes} นาที`;return proPopup("ใช้สิทธิ์ทดลองครบ 3 ครั้งแล้ว",`แพ็กเกจ Free จะปลดล็อก ${kind.toUpperCase()} อีกครั้งใน ${wait} หรืออัปเกรดเป็น Pro เพื่อใช้งานได้ทันที`) }throw err}
     }
     selected={...selected,_endsAt:endsAt};practiceKind=kind;const rawQuestions=selected.sections?.length?selected.sections.flatMap(section=>section.questions||[]):(selected.questions||[{id:selected.id,prompt:selected.question||"Question",choices:selected.choices||[],answer:selected.answer}]);const questions=rawQuestions.map((q,i)=>({...q,_attemptKey:q.id||(kind==="mock"?`mock-${q.number||i+1}`:`${kind}-${i+1}`)}));practiceAttempt={answers:{},questions,startedAt:Date.now(),endsAt};
     route=kind==="reading"?"reading-play":kind==="listening"?"listening-play":kind==="writing"?"writing-play":"mock-play";render()
@@ -238,9 +239,10 @@ export async function createApp(root){
    if(a==="community-search"){communityQuery=root.querySelector("#communitySearch").value;await refreshCommunity();render()}
    if(a==="community-refresh"){await refreshCommunity();render()}
    if(a==="import-community"){
-    const item=s.community.find(x=>x.id===el.dataset.id);
-    if(!backendEnabled){localCommunityImport(item);return toast("นำเข้าเป็นสำเนาใหม่ในโหมดทดสอบแล้ว")}
-    if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนนำเข้า Community");
+   const item=s.community.find(x=>x.id===el.dataset.id);
+   if(!backendEnabled){localCommunityImport(item);return toast("นำเข้าเป็นสำเนาใหม่ในโหมดทดสอบแล้ว")}
+   if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนนำเข้า Community");
+   if(item?.official){localCommunityImport(item);scheduleSync();return toast("นำเข้าชุดทางการของ Jumsup แล้ว")}
     try{await importCommunityItem(currentUser,item)}catch(err){if(String(err.message).includes("COMMUNITY_SET_LIMIT_REACHED"))return proPopup("เก็บชุด Community ครบ 3 ชุดแล้ว","ลบชุด Community เดิมก่อนเลือกชุดใหม่ หรืออัปเกรดเป็น Pro เพื่อเก็บได้ไม่จำกัด");throw err}await hydrateFromCloud(currentUser);return toast("นำเข้าเป็นสำเนาใหม่แล้ว");
    }
    if(a==="like-community"){const id=el.dataset.id,item=s.community.find(x=>x.id===id);if(backendEnabled){if(!currentUser)return toast("กรุณาเข้าสู่ระบบก่อนกดถูกใจ");await toggleCommunityLike(currentUser,item)}else store.set({communityLikes:{...(s.communityLikes||{}),[id]:!s.communityLikes?.[id]}});await refreshCommunity();return}
@@ -454,3 +456,4 @@ export async function createApp(root){
  }else store.set({backend:false,user:null});
  render();
 }
+

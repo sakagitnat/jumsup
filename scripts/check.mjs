@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import { frequentExamWords,shouldKnowWords } from "../src/data/vocabulary/coreWords.js";
+import { defaultReading,defaultListening,defaultWriting,defaultMocks } from "../src/data/practice/alevelParallel2026.js";
 const req=[
  "index.html","package.json","src/main.js","src/app/createApp.js","src/lib/policy.js","src/lib/plans.js","src/features/pricing/pricing.js","src/features/landing/landing.js","src/features/onboarding/onboarding.js","supabase/migrations/010_learning_onboarding.sql",
  "functions/_lib/security.js","functions/api/stripe/webhook.js","functions/api/refund/request.js",
@@ -16,4 +18,14 @@ const regressionSources=[app,fs.readFileSync("src/features/importer/bulkImporter
 for(const marker of ["function deckWordRow","function bindDeckEditor","function practiceSectionEditor","function bindPracticeEditor","data-import-drop","word-popover","floating-exam-timer","FREE_LIMITS"]){if(!regressionSources.includes(marker)){console.error("Regression: approved feature is missing",marker);process.exit(1)}}
 const i18n=fs.readFileSync("src/lib/i18n.js","utf8");
 for(const lang of ["th","en","zh","ja","ko","pt","de","ru","hi"]){if(!i18n.includes(`[\"${lang}\"`)){console.error("Missing supported language",lang);process.exit(1)}}
+const fail=message=>{console.error(`Content validation: ${message}`);process.exit(1)};
+const vocab=[...frequentExamWords,...shouldKnowWords],normalized=vocab.map(x=>x.w.trim().toLowerCase());
+if(frequentExamWords.length!==80||shouldKnowWords.length!==80)fail("vocabulary groups must contain 80 words each");
+if(new Set(normalized).size!==normalized.length)fail("duplicate vocabulary word");
+for(const word of vocab)if(!word.w||!word.m||!/^[a-z-]+$/.test(word.w))fail(`invalid vocabulary row ${word.w}`);
+const expected=[[defaultListening,20],[defaultReading,40],[defaultWriting,20],[defaultMocks,80]];
+for(const [sets,count] of expected){for(const set of sets){const questions=(set.sections||[]).flatMap(section=>section.questions||[]);if(questions.length!==count)fail(`${set.id} expected ${count} questions, found ${questions.length}`);const ids=new Set();for(const q of questions){if(ids.has(q.id))fail(`${set.id} duplicate question id ${q.id}`);ids.add(q.id);if(!q.prompt||q.choices?.length!==4||!Number.isInteger(q.answer)||q.answer<0||q.answer>3)fail(`${set.id}/${q.id} malformed choices or answer`);if(new Set(q.choices.map(String)).size!==4)fail(`${set.id}/${q.id} duplicate choice`)}}}
+const trialMigration=fs.readFileSync("supabase/migrations/013_three_practice_trials.sql","utf8");
+for(const marker of ["used>=3","interval '3 days'","'remaining',2-used","'retry_at',cooldown"]){if(!trialMigration.includes(marker))fail(`missing three-trial marker ${marker}`)}
 console.log("Jumsup V6 audited structure OK");
+

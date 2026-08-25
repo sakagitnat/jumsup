@@ -1,5 +1,9 @@
 // Fresh Jumsup-authored A-Level parallel suite. No exam wording is copied.
-const Q=(id,prompt,choices,answer=0,explanation="")=>({id,prompt,choices,answer,explanation});
+const Q=(id,prompt,choices,answer=0,explanation="")=>{
+ const correct=choices[answer],offset=[1,3,2,0][[...id].reduce((n,c)=>n+c.charCodeAt(0),0)%4];
+ const shuffled=choices.map((_,i)=>choices[(i+offset)%choices.length]);
+ return {id,prompt,choices:shuffled,answer:shuffled.indexOf(correct),explanation};
+};
 const wrong=["A detail not stated in the passage","The opposite of the stated information","An unrelated idea"];
 
 const conversations=[
@@ -11,7 +15,7 @@ const shortSections=conversations.map((c,si)=>({id:`short-${si+1}`,part:"short_c
 const longSection={id:"long-1",part:"long_conversation",title:"Improving an evening market",situation:"A coordinator reviews a trial market with a volunteer.",script:"Coordinator: Last Saturday attracted more visitors than expected, but the entrance confused people arriving from the bus stop. Volunteer: We could place a map beside the stop and move the information desk nearer the gate. Coordinator: Good. Some stalls also ran out of recycling bags. Volunteer: The city lends sorting bins to community events for free. I can request twelve and ask whether the city collects them afterward. Coordinator: Please do. Shop owners also said the stage was too loud. We will face the speakers toward the courtyard and finish performances by eight. Volunteer: I will update the event notice. Coordinator: Let us review every change on Thursday before contacting stall owners.",questions:[
  Q("l13","What confused some visitors?",["The route from the bus stop",...wrong]),Q("l14","Where should the information desk move?",["Nearer the gate",...wrong]),Q("l15","What will the city provide?",["Sorting bins",...wrong]),Q("l16","How many bins will be requested?",["Twelve",...wrong]),Q("l17","What concerned shop owners?",["The loud stage",...wrong]),Q("l18","How will the noise issue be addressed?",["Turn the speakers and finish by eight",...wrong]),Q("l19","What will the volunteer update?",["The event notice",...wrong]),Q("l20","What happens on Thursday?",["The changes will be reviewed",...wrong])
 ]};
-export const defaultListening=[{id:"listening-parallel-2026",title:"A-Level Parallel Listening - New Suite",type:"Full section",minutes:25,itemCount:20,creator:"Jumsup Official",visibility:"private",sections:[...shortSections,longSection]}];
+export const defaultListening=[{id:"jumsup-alevel-listening-1",title:"A-Level Listening คู่ขนาน · ชุดทางการ 1",type:"Full section",minutes:25,itemCount:20,creator:"Jumsup Official",visibility:"public",official:true,sections:[...shortSections,longSection]}];
 
 const readingSpecs=[
  ["Tool lockers","Notice","Residents can borrow repair tools from secure lockers beside the district library. Membership is free after a safety orientation. Items may be reserved through the council app for two days. Late returns suspend borrowing temporarily, while damaged equipment must be reported.",["provide shared repair tools","complete a safety orientation","the council app","two days","temporary suspension","report damaged tools","district library","responsible shared use"]],
@@ -22,7 +26,7 @@ const readingSpecs=[
 ];
 const prompts=["What is the main purpose?","What prompted the activity?","Which feature is stated?","Which condition is mentioned?","What result or limitation appears?","What action is recommended?","Who or where is associated with it?","Which statement best summarizes it?"];
 const readingSections=readingSpecs.map((s,si)=>({id:`reading-${si+1}`,part:s[1].toLowerCase().replaceAll(" ","_"),title:s[0],category:s[1],text:s[2],questions:prompts.map((p,i)=>Q(`r${si*8+i+1}`,p,[s[3][i],...wrong],0,`Supported by the passage: ${s[3][i]}.`))}));
-export const defaultReading=[{id:"reading-parallel-2026",title:"A-Level Parallel Reading - New Suite",category:"Full section",minutes:40,itemCount:40,creator:"Jumsup Official",visibility:"private",sections:readingSections}];
+export const defaultReading=[{id:"jumsup-alevel-reading-1",title:"A-Level Reading คู่ขนาน · ชุดทางการ 1",category:"Full section",minutes:40,itemCount:40,creator:"Jumsup Official",visibility:"public",official:true,sections:readingSections}];
 
 const completion=(id,title,passage,answers)=>({id,part:"text_completion",title,directions:"Choose the best answer for each blank.",passage,questions:answers.map((a,i)=>Q(`${id}-${i+1}`,`Choose the best answer for blank (${a[0]}).`,a[1],a[2]))});
 const writingSections=[
@@ -38,11 +42,12 @@ const org=[
  ["A. Responses are grouped. B. A council publishes a survey. C. Engineers prepare options. D. Residents compare the options.","B-A-C-D"]
 ];
 writingSections.push({id:"wO",part:"paragraph_organization",title:"Paragraph Organization",directions:"Arrange the statements into a logical paragraph.",passage:"Use topic sentences, references, sequence and conclusions.",questions:org.map((x,i)=>Q(`w${16+i}`,`${x[0]} Choose the logical order.`,[x[1],"A-B-D-C","D-C-B-A","C-D-A-B"]))});
-export const defaultWriting=[{id:"writing-parallel-2026",title:"A-Level Parallel Writing - New Suite",type:"Full section",minutes:25,itemCount:20,creator:"Jumsup Official",visibility:"private",sections:writingSections}];
+export const defaultWriting=[{id:"jumsup-alevel-writing-1",title:"A-Level Writing คู่ขนาน · ชุดทางการ 1",type:"Full section",minutes:25,itemCount:20,creator:"Jumsup Official",visibility:"public",official:true,sections:writingSections}];
 
 const numbered=(items,start)=>items.map((x,i)=>({...x,number:start+i}));
-export const defaultMocks=[{id:"mock-parallel-2026",title:"Jumsup A-Level Parallel Mock - New Suite",visibility:"private",creator:"Jumsup Official",questions:80,itemCount:80,minutes:90,sections:[
+export const defaultMocks=[{id:"jumsup-alevel-mock-1",title:"A-Level 82 English Mock คู่ขนาน · ชุดทางการ 1",visibility:"public",creator:"Jumsup Official",official:true,questions:80,itemCount:80,minutes:90,sections:[
  {title:"Listening and Speaking Skills",type:"listening",description:"Items 1-20",questions:numbered([...shortSections.flatMap(s=>s.questions),...longSection.questions],1)},
  {title:"Reading Skill",type:"reading",description:"Items 21-60",questions:numbered(readingSections.flatMap(s=>s.questions),21)},
  {title:"Writing Skill",type:"writing",description:"Items 61-80",questions:numbered(writingSections.flatMap(s=>s.questions),61)}
 ] }];
+

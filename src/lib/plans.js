@@ -6,8 +6,8 @@ export const PLANS={
   "เก็บชุดจาก Community ได้พร้อมกัน 3 ชุด",
   "Match 10 รอบ และ Crossword 3 รอบต่อวัน",
   "เก็บชุด Reading, Listening, Writing และ Mock ส่วนตัวอย่างละ 1 ชุด",
-  "Reading, Listening และ Writing ทดลองอย่างละ 1 รอบ จากนั้นพักรวม 3 วัน",
-  "Mock ทดลอง 1 รอบ จากนั้นพัก 7 วัน",
+  "Reading, Listening, Writing และ Mock ทดลองอย่างละ 3 รอบต่อช่วง 3 วัน",
+  "เมื่อครบโควต้า ระบบแสดงวันและชั่วโมงจนกว่าจะปลดล็อก",
   "คลังแปลออฟไลน์ยังไม่จำกัดระหว่างเตรียม Google API",
   "ใช้งานและแชร์ชุดใน Community"
  ]},
@@ -36,3 +36,4 @@ export function money(value,currency="THB"){
 
 export const FREE_LIMITS={privateVocab:3,privatePractice:1,wordsPerDeck:100,communitySets:3,matchPerDay:10,crosswordPerDay:3,translationsPerDay:Infinity};
 export const PRO_LIMITS={privateVocab:Infinity,privatePractice:Infinity,wordsPerDeck:1000,communitySets:Infinity,matchPerDay:Infinity,crosswordPerDay:Infinity,translationsPerDay:1000,importRows:1000};
+

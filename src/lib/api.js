@@ -14,6 +14,7 @@ export async function api(path,options={}){
   const text=await res.text();
   let data=null;
   try{data=text?JSON.parse(text):null}catch{data={message:text}}
-  if(!res.ok)throw new Error(data?.error||data?.message||`HTTP ${res.status}`);
+  if(!res.ok){const error=new Error(data?.error||data?.message||`HTTP ${res.status}`);error.details=data;error.status=res.status;throw error}
   return data;
 }
+
