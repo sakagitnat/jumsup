@@ -21,10 +21,12 @@ if(hydrateSource.includes("pushCloudState")){console.error("Regression: an empty
 const cloud=fs.readFileSync("src/lib/cloud.js","utf8");
 const regressionSources=[app,cloud,fs.readFileSync("src/features/importer/bulkImporter.js","utf8"),fs.readFileSync("src/styles/themes/application-themes.css","utf8")].join("\n");
 for(const marker of ["function deckWordRow","function bindDeckEditor","function practiceSectionEditor","function bindPracticeEditor","data-import-drop","word-popover","floating-exam-timer","FREE_LIMITS"]){if(!regressionSources.includes(marker)){console.error("Regression: approved feature is missing",marker);process.exit(1)}}
+for(const marker of ["function buildCrossword","cross-grid-pro","data-crossword-entries","direction===\"across\""]){if(!app.includes(marker)){console.error("Regression: real intersecting crossword is missing",marker);process.exit(1)}}
 for(const [file,source] of [["flashcards",fs.readFileSync("src/features/flashcards/flashcards.js","utf8")],["practice",fs.readFileSync("src/features/practice/practice.js","utf8")]]){if(!source.includes('x.official?')&&!source.includes('d.official?')){console.error(`Regression: ${file} official items are editable`);process.exit(1)}}
 for(const marker of ["filter(deck=>!deck.official)","filter(x=>!x.official)"]){if(!cloud.includes(marker)){console.error("Regression: official catalog would be synced as user data",marker);process.exit(1)}}
 const i18n=fs.readFileSync("src/lib/i18n.js","utf8");
 for(const lang of ["th","en","zh","ja","ko","pt","de","ru","hi"]){if(!i18n.includes(`[\"${lang}\"`)){console.error("Missing supported language",lang);process.exit(1)}}
+if(i18n.includes('"เปิด":"On"')){console.error("Regression: feature navigation would say On instead of Open");process.exit(1)}
 const fail=message=>{console.error(`Content validation: ${message}`);process.exit(1)};
 const vocab=[...frequentExamWords,...shouldKnowWords],normalized=vocab.map(x=>x.w.trim().toLowerCase());
 if(frequentExamWords.length!==80||shouldKnowWords.length!==80)fail("vocabulary groups must contain 80 words each");

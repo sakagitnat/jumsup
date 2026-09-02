@@ -404,6 +404,38 @@ export async function createApp(root){
    add.disabled=false;add.onclick=()=>addReadingWord(word,meaning,anchor,box);
   }catch(e){meaningEl.textContent=e.message||"แปลไม่สำเร็จ";add.disabled=false;add.onclick=()=>addReadingWord(word,"",anchor,box)}
  }
+ function buildCrossword(words,maxWords=10){
+  const candidates=words.filter(x=>/^[a-z]+$/i.test(x.w)).slice(0,maxWords).sort((a,b)=>b.w.length-a.w.length),grid=new Map(),entries=[];
+  const key=(r,c)=>`${r},${c}`,cell=(r,c)=>grid.get(key(r,c));
+  const canPlace=(word,row,col,direction,requireCross=true)=>{
+   const dr=direction==="down"?1:0,dc=direction==="across"?1:0;
+   if(cell(row-dr,col-dc)||cell(row+dr*word.length,col+dc*word.length))return false;
+   let crosses=0;
+   for(let i=0;i<word.length;i++){
+    const r=row+dr*i,c=col+dc*i,existing=cell(r,c);
+    if(existing&&existing.letter!==word[i])return false;
+    if(existing)crosses++;
+    else if(direction==="across"&&(cell(r-1,c)||cell(r+1,c)))return false;
+    else if(direction==="down"&&(cell(r,c-1)||cell(r,c+1)))return false;
+   }
+   return !requireCross||crosses>0;
+  };
+  const place=(item,row,col,direction)=>{const id=entries.length,word=item.w.toUpperCase(),dr=direction==="down"?1:0,dc=direction==="across"?1:0;entries.push({id,item,row,col,direction});for(let i=0;i<word.length;i++){const r=row+dr*i,c=col+dc*i,k=key(r,c),current=grid.get(k);grid.set(k,{letter:word[i],entryIds:[...(current?.entryIds||[]),id]})}};
+  if(!candidates.length)return null;
+  place(candidates[0],0,0,"across");
+  for(const item of candidates.slice(1)){
+   const word=item.w.toUpperCase();let placed=false;
+   for(let i=0;i<word.length&&!placed;i++)for(const [position,current] of grid)if(!placed&&current.letter===word[i]){
+    const [r,c]=position.split(",").map(Number),directions=[...new Set(current.entryIds.map(id=>entries[id].direction==="across"?"down":"across"))];
+    for(const direction of directions){const row=r-(direction==="down"?i:0),col=c-(direction==="across"?i:0);if(canPlace(word,row,col,direction)){place(item,row,col,direction);placed=true;break}}
+   }
+  }
+  if(entries.length<3)return null;
+  const rows=[...grid.keys()].map(x=>Number(x.split(",")[0])),cols=[...grid.keys()].map(x=>Number(x.split(",")[1])),minRow=Math.min(...rows),minCol=Math.min(...cols),maxRow=Math.max(...rows),maxCol=Math.max(...cols);
+  entries.forEach((entry,index)=>{entry.number=index+1;entry.row-=minRow;entry.col-=minCol});
+  const normalized=new Map([...grid].map(([position,value])=>{const [r,c]=position.split(",").map(Number);return [key(r-minRow,c-minCol),value]}));
+  return {entries,grid:normalized,rows:maxRow-minRow+1,cols:maxCol-minCol+1};
+ }
  function openGame(kind,deck,words){
   if(kind==="match"){
    if(words.length<4){modalHtml=modal("Match","ต้องจำศัพท์อย่างน้อย 4 คำก่อนเล่น");return render()}
@@ -411,7 +443,11 @@ export async function createApp(root){
    mount(layout(`<div class="content-header"><div><p class="content-eyebrow">VOCABULARY GAME</p><h1 class="content-title">Match · ${escapeHtml(deck.name)}</h1><p class="content-desc">จับคู่คำศัพท์กับความหมายให้ครบโดยใช้จำนวนครั้งให้น้อยที่สุด</p></div><span class="content-mode">Mastered words</span></div><div class="match-toolbar"><div>เวลา <strong id="matchTime">0:00</strong></div><div>ครั้ง <strong id="matchMoves">0</strong></div><div>คู่ <strong id="matchPairs">0/${pairs.length}</strong></div></div><div class="match-board quizlet-match">${tiles.map(t=>`<button class="match-tile" data-pair="${t.pair}">${escapeHtml(t.text)}</button>`).join("")}</div>`));bind();let first=null,moves=0,matched=0,seconds=0;const clock=setInterval(()=>{seconds++;const el=root.querySelector("#matchTime");if(el)el.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;else clearInterval(clock)},1000);root.querySelectorAll(".match-tile").forEach(t=>t.onclick=()=>{if(t.classList.contains("matched"))return;if(!first){first=t;t.classList.add("selected");return}if(first===t)return;moves++;root.querySelector("#matchMoves").textContent=moves;if(first.dataset.pair===t.dataset.pair){first.classList.add("matched");t.classList.add("matched");matched++;root.querySelector("#matchPairs").textContent=`${matched}/${pairs.length}`;first=null;if(matched===pairs.length){clearInterval(clock);setTimeout(()=>toast(`จบ Match ใน ${seconds} วินาที · ${moves} ครั้ง`),250)}}else{const old=first;first=null;t.classList.add("wrong");setTimeout(()=>{old.classList.remove("selected");t.classList.remove("wrong")},350)}});return
   }
   if(words.length<3){modalHtml=modal("Crossword","ต้องจำศัพท์อย่างน้อย 3 คำก่อนเล่น");return render()}
-  const selectedWords=words.filter(w=>/^[a-z]+$/i.test(w.w)).slice(0,5);mount(layout(`<div class="content-header"><div><p class="content-eyebrow">VOCABULARY GAME</p><h1 class="content-title">Crossword · ${escapeHtml(deck.name)}</h1><p class="content-desc">เติมคำจากคำใบ้โดยใช้เฉพาะคำที่จำแล้ว</p></div><span class="content-mode" id="crossTime">0:00</span></div><div class="crossword-layout"><div class="crossword-main">${selectedWords.map((w,wi)=>`<div class="cross-word-row"><b>${wi+1}</b><div class="cross-letter-row">${[...w.w].map(c=>`<input class="cross-cell" maxlength="1" data-a="${escapeHtml(c.toUpperCase())}" aria-label="คำที่ ${wi+1}">`).join("")}</div></div>`).join("")}<div class="actions"><button class="btn btn-primary" id="checkCross">ตรวจคำตอบ</button><button class="btn" id="clearCross">ล้างคำตอบ</button></div></div><aside class="clue-panel"><h3>คำใบ้</h3>${selectedWords.map((w,i)=>`<div class="clue-item"><b>${i+1}. ${escapeHtml(w.m)}</b><small>${w.w.length} ตัวอักษร</small></div>`).join("")}</aside></div>`));bind();let seconds=0;const clock=setInterval(()=>{seconds++;const el=root.querySelector("#crossTime");if(el)el.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;else clearInterval(clock)},1000);root.querySelectorAll(".cross-cell").forEach((x,i,all)=>x.oninput=()=>{x.value=x.value.replace(/[^a-z]/gi,"").toUpperCase();if(x.value)all[i+1]?.focus()});root.querySelector("#clearCross").onclick=()=>root.querySelectorAll(".cross-cell").forEach(x=>{x.value="";x.classList.remove("wrong")});root.querySelector("#checkCross").onclick=()=>{const cells=[...root.querySelectorAll(".cross-cell")];cells.forEach(x=>x.classList.toggle("wrong",x.value.toUpperCase()!==x.dataset.a));if(cells.every(x=>x.value.toUpperCase()===x.dataset.a)){clearInterval(clock);toast(`ถูกทั้งหมด · ใช้เวลา ${seconds} วินาที`)}}
+  const puzzle=buildCrossword(words);if(!puzzle){modalHtml=modal("Crossword","คำที่จำแล้วต้องมีตัวอักษรร่วมกันอย่างน้อย 3 คำ กรุณาจำคำเพิ่มแล้วลองอีกครั้ง");return render()}
+  const numberAt=new Map(puzzle.entries.map(x=>[`${x.row},${x.col}`,x.number]));
+  const cells=Array.from({length:puzzle.rows},(_,r)=>Array.from({length:puzzle.cols},(_,c)=>{const value=puzzle.grid.get(`${r},${c}`);if(!value)return `<span class="cross-block" aria-hidden="true"></span>`;const number=numberAt.get(`${r},${c}`);return `<label class="cross-cell-wrap">${number?`<small>${number}</small>`:""}<input class="cross-cell" maxlength="1" data-a="${value.letter}" aria-label="ช่องคำไขว้ แถว ${r+1} คอลัมน์ ${c+1}"></label>`}).join("")).join("");
+  const clues=direction=>puzzle.entries.filter(x=>x.direction===direction).map(x=>`<div class="clue-item"><b>${x.number}. ${escapeHtml(x.item.m)}</b><small>${x.item.w.length} ตัวอักษร</small></div>`).join("")||`<p class="empty">ไม่มีคำในแนวนี้</p>`;
+  mount(layout(`<div class="content-header"><div><p class="content-eyebrow">VOCABULARY GAME</p><h1 class="content-title">Crossword · ${escapeHtml(deck.name)}</h1><p class="content-desc">เติมคำแนวนอนและแนวตั้งที่ตัดกันจากคำใบ้</p></div><span class="content-mode" id="crossTime">0:00</span></div><div class="crossword-layout"><div class="crossword-main"><div class="cross-grid-pro" style="--cols:${puzzle.cols}" data-crossword-entries="${puzzle.entries.length}">${cells}</div><div class="actions"><button class="btn btn-primary" id="checkCross">ตรวจคำตอบ</button><button class="btn" id="clearCross">ล้างคำตอบ</button></div></div><aside class="clue-panel"><h3>แนวนอน</h3>${clues("across")}<h3>แนวตั้ง</h3>${clues("down")}</aside></div>`));bind();let seconds=0;const clock=setInterval(()=>{seconds++;const el=root.querySelector("#crossTime");if(el)el.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;else clearInterval(clock)},1000);root.querySelectorAll(".cross-cell").forEach((x,i,all)=>{x.oninput=()=>{x.value=x.value.replace(/[^a-z]/gi,"").toUpperCase();if(x.value)all[i+1]?.focus()};x.onkeydown=e=>{if(e.key==="Backspace"&&!x.value)all[i-1]?.focus()}});root.querySelector("#clearCross").onclick=()=>root.querySelectorAll(".cross-cell").forEach(x=>{x.value="";x.classList.remove("wrong")});root.querySelector("#checkCross").onclick=()=>{const inputs=[...root.querySelectorAll(".cross-cell")];inputs.forEach(x=>x.classList.toggle("wrong",x.value.toUpperCase()!==x.dataset.a));if(inputs.every(x=>x.value.toUpperCase()===x.dataset.a)){clearInterval(clock);toast(`ถูกทั้งหมด · ใช้เวลา ${seconds} วินาที`)}}
  }
  async function markKnown(i){
   if(!study)return;
