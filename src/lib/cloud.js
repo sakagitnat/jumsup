@@ -174,7 +174,9 @@ export async function toggleCommunityLike(user,item){
   if(!user||!item)throw new Error("Login required");
   const key={user_id:user.id,content_type:item.type,content_id:item.id};
   if(item.liked){const {error}=await supabase.from("content_likes").delete().match(key);if(error)throw error;return false}
-  const {error}=await supabase.from("content_likes").insert(key);if(error)throw error;return true;
+  // idempotent: a stale item.liked=false must not blow up if the row already exists
+  const {error}=await supabase.from("content_likes").upsert(key,{onConflict:"user_id,content_type,content_id",ignoreDuplicates:true});
+  if(error)throw error;return true;
 }
 
 export async function saveCommunityReview(user,item,rating,body=""){

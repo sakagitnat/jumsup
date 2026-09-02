@@ -194,6 +194,7 @@ export async function importCommunity(item: CommunityItem, refresh: () => void) 
 
 export async function likeCommunity(item: CommunityItem, refresh: () => void) {
   const user = getCurrentUser();
+  const next = !item.liked;
   if (backendEnabled) {
     if (!user) return toast("กรุณาเข้าสู่ระบบก่อนกดถูกใจ");
     try {
@@ -201,12 +202,14 @@ export async function likeCommunity(item: CommunityItem, refresh: () => void) {
     } catch (e) {
       return toast(friendly(e));
     }
-  } else {
-    const s = store.get();
-    store.set({
-      communityLikes: { ...(s.communityLikes || {}), [item.id]: !s.communityLikes?.[item.id] },
-    });
   }
+  // Mirror the new like-state locally. Official catalog items are rebuilt from
+  // this map by buildDemoCommunity, so without this their `liked` flag would go
+  // stale and the next click would re-insert an existing row.
+  const s = store.get();
+  store.set({
+    communityLikes: { ...(s.communityLikes || {}), [item.id]: next },
+  });
   refresh();
 }
 
