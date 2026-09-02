@@ -15,6 +15,15 @@ import type { AppState, CommunityItem } from "../store/types";
 
 type Tab = "vocab" | "skill";
 
+/** Friendlier message when a community table hasn't been created in Supabase yet
+ *  (migration 005_community_engagement.sql not run). */
+function friendly(e: unknown): string {
+  const m = (e as Error)?.message || "";
+  if (/schema cache|could not find the table|does not exist/i.test(m))
+    return "ระบบให้คะแนน/ถูกใจของ Community ยังไม่พร้อมใช้งาน (ผู้ดูแลต้องตั้งค่าฐานข้อมูลเพิ่ม)";
+  return m || "ทำรายการไม่สำเร็จ";
+}
+
 /** Synthesize the official catalog entries from local seed data. */
 function buildDemoCommunity(s: AppState): CommunityItem[] {
   const likes = s.communityLikes || {};
@@ -177,7 +186,7 @@ export async function importCommunity(item: CommunityItem, refresh: () => void) 
         "ลบชุด Community เดิมก่อนเลือกชุดใหม่ หรืออัปเกรดเป็น Pro เพื่อเก็บได้ไม่จำกัด",
       );
     }
-    return toast((err as Error).message || "นำเข้าไม่สำเร็จ");
+    return toast(friendly(err));
   }
   await hydrateFromCloud(user);
   toast("นำเข้าเป็นสำเนาใหม่แล้ว");
@@ -190,7 +199,7 @@ export async function likeCommunity(item: CommunityItem, refresh: () => void) {
     try {
       await toggleCommunityLike(user, item);
     } catch (e) {
-      return toast((e as Error).message || "กดถูกใจไม่สำเร็จ");
+      return toast(friendly(e));
     }
   } else {
     const s = store.get();
@@ -213,7 +222,7 @@ export async function reviewCommunity(
     try {
       await saveCommunityReview(user, item, rating, body);
     } catch (e) {
-      return toast((e as Error).message || "บันทึกคะแนนไม่สำเร็จ");
+      return toast(friendly(e));
     }
   } else {
     const s = store.get();
@@ -235,7 +244,7 @@ export async function reportCommunity(item: CommunityItem, reason: string) {
     try {
       await reportCommunityContent(user, item, reason);
     } catch (e) {
-      return toast((e as Error).message || "ส่งรายงานไม่สำเร็จ");
+      return toast(friendly(e));
     }
   }
   toast("ส่งรายงานให้ผู้ดูแลตรวจสอบแล้ว");
