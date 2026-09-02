@@ -47,6 +47,7 @@ export function saveCommunityReview(
 export function deleteCommunityReview(user: User, item: CommunityItem): Promise<void>;
 
 export interface ContentReview {
+  id: string;
   rating: number;
   body: string;
   anonymous: boolean;
@@ -54,8 +55,19 @@ export interface ContentReview {
   updatedAt: string;
   isMine: boolean;
   displayName: string;
+  helpfulCount: number;
+  helpfulByMe: boolean;
+  imported: boolean;
+  creatorReply: string;
+  creatorRepliedAt: string | null;
 }
-export function loadContentReviews(type: string, id: string): Promise<ContentReview[]>;
+export function loadContentReviews(
+  type: string,
+  id: string,
+  sort?: "recent" | "top" | "helpful",
+): Promise<ContentReview[]>;
+export function toggleReviewHelpful(reviewId: string): Promise<number>;
+export function replyToReview(reviewId: string, reply: string): Promise<void>;
 export function reportCommunityContent(
   user: User,
   item: CommunityItem,

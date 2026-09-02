@@ -6,6 +6,8 @@ import {
   saveCommunityReview,
   deleteCommunityReview,
   loadContentReviews,
+  toggleReviewHelpful,
+  replyToReview,
   reportCommunityContent,
   loadCommunityPreview,
   type CommunityPreview,
@@ -265,12 +267,16 @@ export async function deleteReview(item: CommunityItem, refresh: () => void) {
 
 export type { ContentReview };
 
-export async function getReviews(item: CommunityItem): Promise<ContentReview[]> {
+export async function getReviews(
+  item: CommunityItem,
+  sort: "recent" | "top" | "helpful" = "recent",
+): Promise<ContentReview[]> {
   if (!backendEnabled) {
     const r = store.get().communityReviews?.[item.id];
     return r
       ? [
           {
+            id: "local",
             rating: r.rating,
             body: r.body,
             anonymous: false,
@@ -278,14 +284,37 @@ export async function getReviews(item: CommunityItem): Promise<ContentReview[]> 
             updatedAt: r.createdAt,
             isMine: true,
             displayName: store.get().profile?.username || "คุณ",
+            helpfulCount: 0,
+            helpfulByMe: false,
+            imported: false,
+            creatorReply: "",
+            creatorRepliedAt: null,
           },
         ]
       : [];
   }
   try {
-    return await loadContentReviews(item.type, item.id);
+    return await loadContentReviews(item.type, item.id, sort);
   } catch {
     return [];
+  }
+}
+
+export async function voteHelpful(reviewId: string) {
+  if (!getCurrentUser()) return toast("เข้าสู่ระบบเพื่อโหวต");
+  try {
+    await toggleReviewHelpful(reviewId);
+  } catch (e) {
+    toast(friendly(e));
+  }
+}
+
+export async function replyReview(reviewId: string, text: string) {
+  try {
+    await replyToReview(reviewId, text);
+    toast(text.trim() ? "ตอบกลับแล้ว" : "ลบคำตอบกลับแล้ว");
+  } catch (e) {
+    toast(friendly(e));
   }
 }
 

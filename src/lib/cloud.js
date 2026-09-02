@@ -191,15 +191,32 @@ export async function deleteCommunityReview(user,item){
   if(error)throw error;
 }
 
-export async function loadContentReviews(type,id){
+export async function loadContentReviews(type,id,sort="recent"){
   if(!backendEnabled)return [];
-  const {data,error}=await supabase.rpc("get_content_reviews",{p_type:type,p_id:id});
+  const {data,error}=await supabase.rpc("get_content_reviews",{p_type:type,p_id:id,p_sort:sort});
   if(error)throw error;
   return (data||[]).map(r=>({
+    id:r.id,
     rating:r.rating,body:r.body||"",anonymous:!!r.anonymous,
     createdAt:r.created_at,updatedAt:r.updated_at,
-    isMine:!!r.is_mine,displayName:r.display_name||""
+    isMine:!!r.is_mine,displayName:r.display_name||"",
+    helpfulCount:r.helpful_count||0,helpfulByMe:!!r.helpful_by_me,
+    imported:!!r.imported,
+    creatorReply:r.creator_reply||"",creatorRepliedAt:r.creator_replied_at||null
   }));
+}
+
+export async function toggleReviewHelpful(reviewId){
+  if(!backendEnabled)return 0;
+  const {data,error}=await supabase.rpc("toggle_review_helpful",{p_review_id:reviewId});
+  if(error)throw error;
+  return data||0;
+}
+
+export async function replyToReview(reviewId,reply){
+  if(!backendEnabled)return;
+  const {error}=await supabase.rpc("reply_to_review",{p_review_id:reviewId,p_reply:reply});
+  if(error)throw error;
 }
 
 export async function reportCommunityContent(user,item,reason){
