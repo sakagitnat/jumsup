@@ -58,26 +58,68 @@ export function Study() {
     return () => window.removeEventListener("keydown", onKey);
   }, [know, miss]);
 
-  // swipe
+  // swipe — transform writes are rAF-batched and the card is promoted to its own
+  // compositor layer while dragging so the drop shadow is rasterized once instead
+  // of repainting every frame (that repaint was the source of the stutter).
   const cardRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; dx: number } | null>(null);
+  const drag = useRef<{ x: number; dx: number; raf: number } | null>(null);
+
+  const paint = (dx: number) => {
+    const el = cardRef.current;
+    if (el) el.style.transform = `translate3d(${dx}px,0,0) rotate(${dx / 28}deg)`;
+  };
+  const relax = () => {
+    const el = cardRef.current;
+    if (!el) return;
+    const done = () => {
+      el.style.willChange = "";
+      el.style.transition = "";
+      el.removeEventListener("transitionend", done);
+    };
+    el.addEventListener("transitionend", done);
+    el.style.transition = "transform .18s ease-out";
+    el.style.transform = "translate3d(0,0,0)";
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
-    drag.current = { x: e.clientX, dx: 0 };
-    cardRef.current?.setPointerCapture?.(e.pointerId);
+    const el = cardRef.current;
+    if (!el) return;
+    drag.current = { x: e.clientX, dx: 0, raf: 0 };
+    el.style.transition = "none";
+    el.style.willChange = "transform";
+    el.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag.current) return;
-    drag.current.dx = e.clientX - drag.current.x;
-    if (cardRef.current)
-      cardRef.current.style.transform = `translateX(${drag.current.dx}px) rotate(${drag.current.dx / 25}deg)`;
+    const d = drag.current;
+    if (!d) return;
+    d.dx = e.clientX - d.x;
+    if (!d.raf)
+      d.raf = requestAnimationFrame(() => {
+        d.raf = 0;
+        paint(d.dx);
+      });
   };
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
-    if (cardRef.current) cardRef.current.style.transform = "";
     if (!d) return;
-    if (Math.abs(d.dx) > 90) (d.dx > 0 ? know() : miss());
+    if (d.raf) cancelAnimationFrame(d.raf);
+    const el = cardRef.current;
+    if (el && Math.abs(d.dx) > 90) {
+      const dir = d.dx > 0 ? 1 : -1;
+      el.style.transition = "transform .17s ease-in";
+      el.style.transform = `translate3d(${dir * window.innerWidth}px,0,0) rotate(${dir * 12}deg)`;
+      window.setTimeout(() => {
+        el.style.transition = "none";
+        el.style.transform = "translate3d(0,0,0)";
+        el.style.willChange = "";
+        if (dir > 0) void know();
+        else miss();
+      }, 160);
+    } else {
+      relax();
+    }
   };
 
   if (!deck) {
@@ -147,7 +189,8 @@ export function Study() {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              className="flex min-h-[300px] touch-pan-y flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card"
+              onPointerCancel={onPointerUp}
+              className="flex min-h-[300px] touch-pan-y select-none flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card [transform:translate3d(0,0,0)]"
             >
               <div className="mb-3 flex gap-2 self-end">
                 <button
