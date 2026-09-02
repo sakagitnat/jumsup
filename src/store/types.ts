@@ -135,7 +135,6 @@ export interface AppState {
   refunds: Array<Record<string, unknown>>;
   backend: boolean;
   syncing: boolean;
-  activeDeckId: string;
   decks: Deck[];
   progress: Record<string, { mastered: number[] }>;
   flashSettings: FlashSettings;

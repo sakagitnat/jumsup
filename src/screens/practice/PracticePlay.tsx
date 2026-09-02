@@ -10,10 +10,10 @@ import { Button, Card, Tag, cx } from "../../ui";
 import type { PracticeSection } from "../../store/types";
 
 const kindMeta: Record<PracticeKind, { eyebrow: string; title: string }> = {
-  reading: { eyebrow: "SECTION II", title: "Reading Skill" },
-  listening: { eyebrow: "SECTION I", title: "Listening & Speaking" },
-  writing: { eyebrow: "SECTION III", title: "Writing Skill" },
-  mock: { eyebrow: "FULL SIMULATION", title: "Mock Exam" },
+  reading: { eyebrow: "READING", title: "Reading" },
+  listening: { eyebrow: "LISTENING", title: "Listening" },
+  writing: { eyebrow: "WRITING", title: "Writing" },
+  mock: { eyebrow: "MOCK EXAM", title: "Mock Exam" },
 };
 
 function paragraphs(text: string) {

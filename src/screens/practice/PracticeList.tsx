@@ -18,13 +18,6 @@ const titles: Record<PracticeKind, string> = {
   mock: "Mock Exam",
 };
 
-const specs: Record<PracticeKind, string[]> = {
-  reading: ["Advertisements & visuals", "Reviews & news", "General articles"],
-  listening: ["Short conversations", "Long conversation", "Speaking in context"],
-  writing: ["Text completion", "Grammar in context", "Paragraph organization"],
-  mock: ["20 Listening", "40 Reading", "20 Writing"],
-};
-
 export function PracticeList({ kind }: { kind: PracticeKind }) {
   const navigate = useNavigate();
   const all = useStore((s) => (kind === "mock" ? s.mocks : s[kind])) as PracticeSet[];
@@ -57,19 +50,6 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
           </>
         }
       />
-
-      <Card soft className="mb-4">
-        <Tag tone="info">SKILL PRACTICE</Tag>
-        <h2 className="mt-2 text-lg font-semibold">{titles[kind]}</h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {specs[kind].map((x, i) => (
-            <div key={x} className="rounded-xl border border-line bg-surface px-3 py-2 text-center">
-              <strong className="block">{i + 1}</strong>
-              <small className="text-xs text-muted">{x}</small>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       {all.length > 0 && (
         <div className="mb-3">

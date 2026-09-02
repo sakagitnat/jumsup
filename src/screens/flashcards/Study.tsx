@@ -22,7 +22,17 @@ export function Study() {
   const [flipped, setFlipped] = useState(false);
 
   const pool = Math.min(poolSize, deck?.words.length ?? 0);
-  const activeIndices = useMemo(() => Array.from({ length: pool }, (_, i) => i), [pool]);
+  const activeIndices = useMemo(() => {
+    const arr = Array.from({ length: pool }, (_, i) => i);
+    if (flashSettings.shuffle) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pool, deckId, flashSettings.shuffle]);
   const remaining = activeIndices.filter((i) => !mastered.includes(i));
   const idx = remaining.length ? remaining[cursor % remaining.length] : -1;
   const word = idx >= 0 ? deck?.words[idx] : undefined;
