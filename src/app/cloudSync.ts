@@ -54,6 +54,9 @@ export async function hydrateFromCloud(user: User) {
       theme: remote.profile?.ui_theme || local.theme,
       lang: remote.profile?.ui_language || local.lang,
       sound: remote.profile?.sound_enabled ?? local.sound,
+      // Review schedule is device-local (official starter decks have no server
+      // progress row anyway) — keep it across sign-in instead of dropping it.
+      srs: local.srs,
       backend: true,
       syncing: false,
     });

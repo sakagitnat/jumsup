@@ -1,6 +1,9 @@
 /* Shape of the state held by src/lib/store.js. Kept in sync by hand — the store
    module stays plain JS so its migration/merge logic is untouched by the rewrite. */
 
+import type { SrsCard } from "../lib/srs";
+export type { SrsCard };
+
 export interface Word {
   w: string;
   m: string;
@@ -150,6 +153,7 @@ export interface AppState {
   syncing: boolean;
   decks: Deck[];
   progress: Record<string, { mastered: number[] }>;
+  srs: Record<string, Record<number, SrsCard>>;
   practiceHistory: PracticeAttempt[];
   flashSettings: FlashSettings;
   reading: PracticeSet[];

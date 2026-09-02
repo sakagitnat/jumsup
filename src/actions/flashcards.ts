@@ -1,6 +1,7 @@
 import { supabase, backendEnabled } from "../lib/supabase.js";
 import { store } from "../store/store";
 import { getCurrentUser } from "../app/cloudSync";
+import { schedule, type Grade } from "../lib/srs";
 
 /**
  * Mark word `index` of `deckId` as mastered and return the updated mastered
@@ -41,4 +42,26 @@ export async function markWordMastered(deckId: string, index: number): Promise<n
     xp: s.xp + (fresh ? 10 : 0),
   }));
   return mastered;
+}
+
+/** Record a spaced-repetition grade for word `index` of `deckId`.
+ *  Stored device-locally under `srs[deckId][index]`; a "good" grade also runs
+ *  the existing mastery/XP path so Stats and games are unaffected. */
+export async function gradeWord(
+  deckId: string,
+  index: number,
+  grade: Grade,
+): Promise<number[]> {
+  const prev = store.get().srs[deckId]?.[index];
+  const nextCard = schedule(prev, grade);
+  store.update((s) => ({
+    ...s,
+    srs: {
+      ...s.srs,
+      [deckId]: { ...(s.srs[deckId] ?? {}), [index]: nextCard },
+    },
+  }));
+
+  if (grade === "good") return markWordMastered(deckId, index);
+  return store.get().progress[deckId]?.mastered ?? [];
 }

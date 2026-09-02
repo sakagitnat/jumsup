@@ -8,6 +8,7 @@ import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
 import { PageHeader, Card, Tag, Button, LinkButton } from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
+import { dueCount } from "../../lib/srs";
 
 type Mode = "flash" | Game;
 
@@ -24,7 +25,9 @@ const headMeta: Record<Mode, { title: string; desc: string }> = {
 
 export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
   const decks = useStore((s) => s.decks);
+  const srs = useStore((s) => s.srs);
   const navigate = useNavigate();
+  const totalDue = decks.reduce((n, d) => n + dueCount(srs[d.id]), 0);
   const [editor, setEditor] = useState<{ open: boolean; id: string | null }>({
     open: false,
     id: null,
@@ -56,9 +59,19 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
         }
       />
 
+      {mode === "flash" && totalDue > 0 && (
+        <Card soft className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <b className="text-sm">ครบกำหนดทบทวนวันนี้ {totalDue} คำ</b>
+            <p className="text-xs text-muted">ทบทวนตามรอบช่วยให้จำได้นานขึ้น</p>
+          </div>
+        </Card>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         {decks.map((d) => {
           const official = d.official || d.visibility === "public";
+          const deckDue = dueCount(srs[d.id]);
           return (
             <Card key={d.id} className="flex flex-col">
               <div className="flex items-start justify-between gap-3">
@@ -78,11 +91,22 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                   )}
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {mode === "flash" ? (
-                  <LinkButton variant="primary" size="sm" to={`/flash/study/${d.id}`}>
-                    เริ่ม Flashcards
-                  </LinkButton>
+                  <>
+                    <LinkButton variant="primary" size="sm" to={`/flash/study/${d.id}`}>
+                      เริ่ม Flashcards
+                    </LinkButton>
+                    {deckDue > 0 && (
+                      <LinkButton
+                        variant="success"
+                        size="sm"
+                        to={`/flash/study/${d.id}?due=1`}
+                      >
+                        ทบทวน {deckDue} คำ
+                      </LinkButton>
+                    )}
+                  </>
                 ) : (
                   <Button variant="primary" size="sm" onClick={() => start(d.id)}>
                     เริ่ม {modeLabel[mode]}

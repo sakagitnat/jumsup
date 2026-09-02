@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { speak, englishVoices } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
-import { markWordMastered } from "../../actions/flashcards";
+import { gradeWord } from "../../actions/flashcards";
+import { isDue, nextReviewHint } from "../../lib/srs";
 import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast, cx } from "../../ui";
 
 function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "line" | "primary" }) {
@@ -42,10 +43,13 @@ function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "
 export function Study() {
   const { deckId = "" } = useParams();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const dueMode = params.get("due") === "1";
 
   const deck = useStore((s) => s.decks.find((d) => d.id === deckId));
   const flashSettings = useStore((s) => s.flashSettings);
   const storedMastered = useStore((s) => s.progress[deckId]?.mastered ?? []);
+  const deckSrs = useStore((s) => s.srs[deckId]);
 
   const [poolSize, setPoolSize] = useState(() =>
     Math.min(flashSettings.loopSize, deck?.words.length ?? flashSettings.loopSize),
@@ -55,6 +59,22 @@ export function Study() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [pop, setPop] = useState(false);
+
+  // --- due-review session (only when dueMode) ---
+  const [dueQueue, setDueQueue] = useState<number[]>([]);
+  const [duePos, setDuePos] = useState(0);
+  const [dueTotal, setDueTotal] = useState(0);
+  const [dueCleared, setDueCleared] = useState(0);
+  const dueInit = useRef(false);
+  useEffect(() => {
+    if (!dueMode || !deck || dueInit.current) return;
+    dueInit.current = true;
+    const q = deck.words
+      .map((_, i) => i)
+      .filter((i) => deckSrs?.[i] && isDue(deckSrs[i]));
+    setDueQueue(q);
+    setDueTotal(q.length);
+  }, [dueMode, deck, deckSrs]);
 
   const toggleFlip = useCallback(() => {
     setFlipped((f) => !f);
@@ -75,7 +95,12 @@ export function Study() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, deckId, flashSettings.shuffle]);
   const remaining = activeIndices.filter((i) => !mastered.includes(i));
-  const idx = remaining.length ? remaining[cursor % remaining.length] : -1;
+
+  const idx = dueMode
+    ? (dueQueue[duePos] ?? -1)
+    : remaining.length
+      ? remaining[cursor % remaining.length]
+      : -1;
   const word = idx >= 0 ? deck?.words[idx] : undefined;
 
   const [voices, setVoices] = useState(() => englishVoices());
@@ -96,20 +121,36 @@ export function Study() {
   // a new card always starts on the term side
   useEffect(() => {
     setFlipped(false);
-  }, [idx]);
+  }, [idx, duePos]);
 
   const know = useCallback(async () => {
     if (idx < 0) return;
+    if (dueMode) {
+      void gradeWord(deckId, idx, "good");
+      setDueCleared((n) => n + 1);
+      setDuePos((p) => p + 1);
+      return;
+    }
     try {
-      const next = await markWordMastered(deckId, idx);
+      const next = await gradeWord(deckId, idx, "good");
       setMastered(next);
       setCursor(0);
     } catch (e) {
       toast((e as Error).message || "บันทึกความก้าวหน้าไม่สำเร็จ");
     }
-  }, [deckId, idx]);
+  }, [deckId, idx, dueMode]);
 
-  const miss = useCallback(() => setCursor((c) => c + 1), []);
+  const miss = useCallback(() => {
+    if (idx < 0) return;
+    if (dueMode) {
+      void gradeWord(deckId, idx, "again");
+      setDueQueue((q) => [...q, idx]); // resurface later this session
+      setDuePos((p) => p + 1);
+      return;
+    }
+    void gradeWord(deckId, idx, "again");
+    setCursor((c) => c + 1);
+  }, [deckId, idx, dueMode]);
 
   // keyboard
   useEffect(() => {
@@ -224,8 +265,18 @@ export function Study() {
     );
   }
 
-  const done = remaining.length === 0;
+  const done = dueMode ? duePos >= dueQueue.length : remaining.length === 0;
   const maxWords = Math.max(1, deck.words.length);
+
+  const progressDone = dueMode ? dueCleared : pool - remaining.length;
+  const progressTotal = dueMode ? Math.max(1, dueTotal) : pool;
+  const progressLeft = dueMode ? Math.max(0, dueQueue.length - duePos) : remaining.length;
+
+  const doneHint = dueMode
+    ? nextReviewHint(
+        deck.words.map((_, i) => deckSrs?.[i]).filter((c): c is NonNullable<typeof c> => !!c),
+      )
+    : "";
 
   return (
     <>
@@ -235,19 +286,32 @@ export function Study() {
 
       {done ? (
         <>
-          <PageHeader eyebrow="FLASHCARDS" title={deck.name} description="จำครบ Loop นี้แล้ว" />
+          <PageHeader
+            eyebrow="FLASHCARDS"
+            title={deck.name}
+            description={dueMode ? "ทบทวนครบรอบนี้แล้ว" : "จำครบ Loop นี้แล้ว"}
+          />
           <Card soft className="text-center">
-            <h2 className="text-xl font-semibold">จำครบ {pool} คำแล้ว</h2>
+            <h2 className="text-xl font-semibold">
+              {dueMode
+                ? dueTotal === 0
+                  ? "ยังไม่มีคำที่ครบกำหนดทบทวน"
+                  : `ทบทวนครบ ${dueTotal} คำแล้ว`
+                : `จำครบ ${pool} คำแล้ว`}
+            </h2>
+            {dueMode && doneHint && (
+              <p className="mt-1 text-sm text-muted">ครบกำหนดรอบถัดไป {doneHint}</p>
+            )}
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button
-                variant="primary"
-                disabled={deck.words.length - pool <= 0}
-                onClick={() =>
-                  setPoolSize((p) => Math.min(deck.words.length, p + 10))
-                }
-              >
-                เพิ่มอีก 10 คำ
-              </Button>
+              {!dueMode && (
+                <Button
+                  variant="primary"
+                  disabled={deck.words.length - pool <= 0}
+                  onClick={() => setPoolSize((p) => Math.min(deck.words.length, p + 10))}
+                >
+                  เพิ่มอีก 10 คำ
+                </Button>
+              )}
               <Button onClick={() => navigate("/flash")}>กลับหน้าเลือกชุด</Button>
             </div>
           </Card>
@@ -257,7 +321,11 @@ export function Study() {
           <PageHeader
             eyebrow="FLASHCARDS"
             title={deck.name}
-            description="แตะการ์ดเพื่อพลิกดูคำแปล · ปัดขวา = จำได้ · ปัดซ้าย = ยังไม่จำ"
+            description={
+              dueMode
+                ? "ทบทวนคำที่ครบกำหนด · จำได้ = เลื่อนออกไป · ยังไม่จำ = เจอใหม่รอบนี้"
+                : "แตะการ์ดเพื่อพลิกดูคำแปล · ปัดขวา = จำได้ · ปัดซ้าย = ยังไม่จำ"
+            }
             actions={
               <Button size="sm" onClick={() => setSettingsOpen(true)}>
                 ⚙ ตั้งค่า
@@ -268,11 +336,13 @@ export function Study() {
           <div className="mx-auto max-w-xl">
             <div className="mb-3 flex items-center justify-between text-sm">
               <span className="font-semibold tabular-nums">
-                {pool - remaining.length} / {pool}
+                {progressDone} / {progressTotal}
               </span>
-              <span className="text-muted">เหลืออีก {remaining.length} คำ</span>
+              <span className="text-muted">
+                {dueMode ? "เหลือทบทวน" : "เหลืออีก"} {progressLeft} คำ
+              </span>
             </div>
-            <Progress value={((pool - remaining.length) / pool) * 100} className="mb-4" />
+            <Progress value={(progressDone / progressTotal) * 100} className="mb-4" />
 
             <div
               ref={cardRef}
