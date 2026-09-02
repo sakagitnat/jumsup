@@ -61,11 +61,6 @@ export function Community() {
       );
   }, [community, tab, query, sort, kindFilter]);
 
-  const totalImports = items.reduce((n, x) => n + (x.importCount || 0), 0);
-  const avgRating = items.length
-    ? (items.reduce((n, x) => n + (x.rating || 0), 0) / items.length).toFixed(1)
-    : "-";
-
   return (
     <>
       <PageHeader
@@ -73,19 +68,6 @@ export function Community() {
         title="Community Search"
         description="ค้นหา เปรียบเทียบ และนำเข้าชุดฝึกจากผู้สร้างคนอื่น"
       />
-
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        {[
-          [String(items.length), "ชุดที่พบ"],
-          [String(totalImports), "การนำเข้า"],
-          [String(avgRating), "คะแนนเฉลี่ย"],
-        ].map(([v, l]) => (
-          <Card key={l} soft className="text-center">
-            <strong className="block text-lg">{v}</strong>
-            <small className="text-xs text-muted">{l}</small>
-          </Card>
-        ))}
-      </div>
 
       <div className="mb-3 inline-flex rounded-xl border border-line bg-surface-2 p-1">
         {(["vocab", "skill"] as const).map((t) => (
@@ -161,6 +143,9 @@ export function Community() {
         </Card>
       )}
 
+      {items.length > 0 && (
+        <p className="mb-2 text-sm text-muted">พบ {items.length} ชุด</p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         {items.length === 0 && <EmptyState>ยังไม่พบผลลัพธ์</EmptyState>}
         {items.map((x) => (
