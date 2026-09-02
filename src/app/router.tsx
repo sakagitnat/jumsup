@@ -8,6 +8,9 @@ import { Study } from "../screens/flashcards/Study";
 import { PracticeList } from "../screens/practice/PracticeList";
 import { PracticePlay } from "../screens/practice/PracticePlay";
 import { Result } from "../screens/practice/Result";
+import { MatchGame } from "../screens/games/MatchGame";
+import { CrosswordGame } from "../screens/games/CrosswordGame";
+import { Onboarding } from "../screens/onboarding/Onboarding";
 import { Community } from "../screens/community/Community";
 import { Account } from "../screens/account/Account";
 import { AccountProfile } from "../screens/account/AccountProfile";
@@ -16,7 +19,6 @@ import { AccountPrivacy } from "../screens/account/AccountPrivacy";
 import { Settings } from "../screens/account/Settings";
 import { AccountShell } from "../screens/account/AccountShell";
 import { Pricing } from "../screens/pricing/Pricing";
-import { Stub } from "../screens/Stub";
 
 export const router = createBrowserRouter([
   {
@@ -29,8 +31,10 @@ export const router = createBrowserRouter([
           { path: "/home", element: <Home /> },
           { path: "/flash", element: <Flashcards /> },
           { path: "/flash/study/:deckId", element: <Study /> },
-          { path: "/match", element: <Stub title="Match" /> },
-          { path: "/crossword", element: <Stub title="Crossword" /> },
+          { path: "/match", element: <Flashcards mode="match" /> },
+          { path: "/match/play/:deckId", element: <MatchGame /> },
+          { path: "/crossword", element: <Flashcards mode="crossword" /> },
+          { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
 
           { path: "/reading", element: <PracticeList kind="reading" /> },
           { path: "/reading/play/:id", element: <PracticePlay kind="reading" /> },
@@ -58,7 +62,7 @@ export const router = createBrowserRouter([
           },
 
           { path: "/pricing", element: <Pricing /> },
-          { path: "/onboarding", element: <Stub title="ตั้งค่าแผนการเรียน" /> },
+          { path: "/onboarding", element: <Onboarding /> },
         ],
       },
       { path: "*", element: <Root /> },

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAttempt, type PracticeKind } from "./session";
 import { useExamTimer } from "./useExamTimer";
 import { QuestionBlock } from "./QuestionBlock";
+import { WordText } from "./WordText";
 import { submitPracticeUsage } from "../../actions/practice";
 import { speakScript, pauseSpeech, resumeSpeech, stopSpeech } from "./tts";
 import { Button, Card, Tag, cx } from "../../ui";
@@ -22,12 +23,12 @@ function paragraphs(text: string) {
     .filter(Boolean);
 }
 
-function SectionText({ text }: { text: string }) {
+function SectionText({ text, tappable }: { text: string; tappable?: boolean }) {
   return (
     <div className="space-y-3 text-[15px] leading-8 text-text">
-      {paragraphs(text).map((p, i) => (
-        <p key={i}>{p}</p>
-      ))}
+      {paragraphs(text).map((p, i) =>
+        tappable ? <WordText key={i} text={p} /> : <p key={i}>{p}</p>,
+      )}
     </div>
   );
 }
@@ -215,7 +216,7 @@ export function PracticePlay({ kind }: { kind: PracticeKind }) {
                   </div>
                 ) : kind !== "listening" && body ? (
                   <div className="mb-4">
-                    <SectionText text={body} />
+                    <SectionText text={body} tappable={kind === "reading"} />
                   </div>
                 ) : null}
 

@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { startPracticeSession } from "../../actions/practice";
-import { PageHeader, Card, Tag, Button, EmptyState, toast } from "../../ui";
+import { deleteContent } from "../../actions/content";
+import { PracticeEditor } from "./PracticeEditor";
+import { DeleteDialog } from "../common/DeleteDialog";
+import { BulkImport } from "../import/BulkImport";
+import { PageHeader, Card, Tag, Button, EmptyState } from "../../ui";
 import type { PracticeKind } from "./session";
 import type { PracticeSet } from "../../store/types";
 
@@ -19,11 +24,15 @@ const specs: Record<PracticeKind, string[]> = {
   mock: ["20 Listening", "40 Reading", "20 Writing"],
 };
 
-const soon = () => toast("การสร้าง/แก้ไข/นำเข้าชุดฝึก จะพร้อมใน PR ถัดไป");
-
 export function PracticeList({ kind }: { kind: PracticeKind }) {
   const navigate = useNavigate();
   const list = useStore((s) => (kind === "mock" ? s.mocks : s[kind])) as PracticeSet[];
+  const [editor, setEditor] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  });
+  const [del, setDel] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const start = async (id: string) => {
     if (await startPracticeSession(kind, id)) navigate(`/${kind}/play/${id}`);
@@ -37,10 +46,10 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
         description="เลือกชุดก่อนเข้าสู่หน้าฝึกจริง หรือสร้างชุดของคุณเอง"
         actions={
           <>
-            <Button variant="primary" onClick={soon}>
+            <Button variant="primary" onClick={() => setEditor({ open: true, id: null })}>
               + สร้างชุดใหม่
             </Button>
-            <Button onClick={soon}>นำเข้าจาก CSV</Button>
+            <Button onClick={() => setImporting(true)}>นำเข้าจาก CSV</Button>
             <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
           </>
         }
@@ -86,10 +95,10 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
                 </Button>
                 {!official && (
                   <>
-                    <Button size="sm" onClick={soon}>
+                    <Button size="sm" onClick={() => setEditor({ open: true, id: x.id })}>
                       แก้ไข
                     </Button>
-                    <Button size="sm" variant="danger" onClick={soon}>
+                    <Button size="sm" variant="danger" onClick={() => setDel(x.id)}>
                       ลบ
                     </Button>
                   </>
@@ -99,6 +108,25 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
           );
         })}
       </div>
+
+      {editor.open && (
+        <PracticeEditor
+          kind={kind}
+          id={editor.id}
+          onClose={() => setEditor({ open: false, id: null })}
+        />
+      )}
+      <DeleteDialog
+        open={del !== null}
+        onClose={() => setDel(null)}
+        onConfirm={() => {
+          if (del) deleteContent(kind, del);
+          setDel(null);
+        }}
+      />
+      {importing && (
+        <BulkImport kind={kind} onClose={() => setImporting(false)} onDone={() => {}} />
+      )}
     </>
   );
 }
