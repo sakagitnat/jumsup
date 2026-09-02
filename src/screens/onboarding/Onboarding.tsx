@@ -2,7 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { saveOnboarding } from "../../actions/onboarding";
-import { Button, cx } from "../../ui";
+import { Button, cx, toast } from "../../ui";
+
+const localToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+};
 
 const goals: Array<[string, string, string]> = [
   ["alevel", "A-Level English", "เตรียมสอบเข้ามหาวิทยาลัย"],
@@ -27,11 +34,26 @@ export function Onboarding() {
   const [examDate, setExamDate] = useState(profile?.exam_date || "");
   const [saving, setSaving] = useState(false);
   const editing = Boolean(profile?.onboarding_completed_at);
+  const today = localToday();
+
+  const examDateLabel =
+    examDate && !Number.isNaN(new Date(`${examDate}T00:00:00`).getTime())
+      ? new Date(`${examDate}T00:00:00`).toLocaleDateString("th-TH", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "";
+  const examDatePast = Boolean(examDate) && examDate < today;
 
   const toggleSkill = (id: string) =>
     setSkills((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const submit = async () => {
+    if (examDatePast) {
+      toast("วันที่สอบต้องเป็นวันนี้หรือหลังจากนี้");
+      return;
+    }
     setSaving(true);
     const ok = await saveOnboarding({ goal, minutes, skills, examDate: examDate || null });
     setSaving(false);
@@ -137,18 +159,33 @@ export function Onboarding() {
           วันที่สอบ <small className="font-normal text-subtle">(ไม่บังคับ)</small>
           <input
             type="date"
-            min={new Date().toISOString().slice(0, 10)}
+            min={today}
             value={examDate}
             onChange={(e) => setExamDate(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+            className={cx(
+              "mt-1 w-full rounded-xl border bg-surface px-3 py-2 text-sm",
+              examDatePast ? "border-danger" : "border-line",
+            )}
           />
+          {examDateLabel && (
+            <span
+              className={cx(
+                "mt-1 block text-xs font-normal",
+                examDatePast ? "text-danger" : "text-subtle",
+              )}
+            >
+              {examDatePast
+                ? `${examDateLabel} — เป็นวันที่ผ่านมาแล้ว เลือกวันในอนาคต`
+                : `= ${examDateLabel}`}
+            </span>
+          )}
         </label>
 
         <Button
           variant="primary"
           block
           className="mt-6"
-          disabled={saving || skills.length === 0}
+          disabled={saving || skills.length === 0 || examDatePast}
           onClick={submit}
         >
           {saving ? "กำลังบันทึก…" : editing ? "บันทึกแผน" : "สร้างแผนของฉัน"}

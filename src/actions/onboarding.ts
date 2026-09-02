@@ -27,7 +27,14 @@ export async function saveOnboarding(input: OnboardingInput): Promise<boolean> {
     store.set({ profile: { ...store.get().profile, ...data } });
     return true;
   } catch (e) {
-    toast((e as Error).message || "บันทึกแผนไม่สำเร็จ");
+    const raw = (e as Error).message || "";
+    const messages: Record<string, string> = {
+      INVALID_EXAM_DATE: "วันที่สอบต้องเป็นวันนี้หรือหลังจากนี้",
+      INVALID_EXAM_GOAL: "เป้าหมายการสอบไม่ถูกต้อง",
+      INVALID_DAILY_MINUTES: "เวลาต่อวันต้องเป็น 5, 10 หรือ 20 นาที",
+      UNAUTHORIZED: "กรุณาเข้าสู่ระบบใหม่",
+    };
+    toast(messages[raw] || raw || "บันทึกแผนไม่สำเร็จ");
     return false;
   }
 }
