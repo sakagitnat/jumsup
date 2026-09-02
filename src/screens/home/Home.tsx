@@ -3,6 +3,8 @@ import { todayKey } from "../../lib/utils.js";
 import { useStore } from "../../store/useStore";
 import { dailyCheckin } from "../../actions/session";
 import { loginGoogle } from "../../actions/auth";
+import { dueCount } from "../../lib/srs";
+import { examLabel, skillLabel } from "../../lib/taxonomy";
 import { PageHeader, Card, Tag, Button, LinkButton } from "../../ui";
 
 const skillCards: Array<[string, string, string, string]> = [
@@ -16,19 +18,25 @@ const skillCards: Array<[string, string, string, string]> = [
   ["/community", "◇", "Community", "ค้นหาชุดจากผู้ใช้อื่น"],
 ];
 
-const planLabels: Record<string, string> = {
-  vocabulary: "ทบทวนคำศัพท์",
-  reading: "ฝึก Reading",
-  listening: "ฝึก Listening",
-  writing: "ฝึก Writing",
-};
+const skillRoute = (s: string) => (s === "vocabulary" ? "/flash" : `/${s}`);
+const skillName = (s: string) => (s === "vocabulary" ? "คำศัพท์" : skillLabel(s) || s);
+
+interface PlanStep {
+  key: string;
+  text: string;
+  cta: string;
+  to?: string;
+  action?: () => void;
+  done?: boolean;
+}
 
 export function Home() {
-  const { xp, streak, decks, reading, listening, writing, mocks, lastCheckin, profile, user } =
+  const { xp, streak, decks, srs, reading, listening, writing, mocks, lastCheckin, profile, user } =
     useStore((s) => ({
       xp: s.xp,
       streak: s.streak,
       decks: s.decks,
+      srs: s.srs,
       reading: s.reading,
       listening: s.listening,
       writing: s.writing,
@@ -39,12 +47,57 @@ export function Home() {
     }));
 
   const checked = lastCheckin === todayKey();
-  const weak = profile?.weak_skills?.[0] || "vocabulary";
-  const planRoute = weak === "vocabulary" ? "/flash" : `/${weak}`;
   const minutes = profile?.daily_minutes || 10;
   const ownSets =
     decks.filter((d) => !d.official).length +
     [...reading, ...listening, ...writing, ...mocks].filter((x) => !x.official).length;
+
+  const totalDue = decks.reduce((n, d) => n + dueCount(srs[d.id]), 0);
+  const weakSkills = profile?.weak_skills?.length ? profile.weak_skills : ["vocabulary"];
+  const daysToExam = profile?.exam_date
+    ? Math.ceil(
+        (new Date(`${profile.exam_date}T00:00:00`).getTime() - Date.now()) / 86_400_000,
+      )
+    : null;
+  const examText =
+    daysToExam === null || daysToExam < 0
+      ? null
+      : daysToExam === 0
+        ? `วันนี้สอบ ${examLabel(profile?.exam_goal) || "แล้ว"} — เต็มที่นะ`
+        : `เหลืออีก ${daysToExam} วัน ถึง ${examLabel(profile?.exam_goal) || "วันสอบ"}`;
+
+  const planSteps: PlanStep[] = [];
+  planSteps.push(
+    checked
+      ? { key: "checkin", text: "เช็คอินแล้ววันนี้", cta: "เสร็จ", done: true }
+      : {
+          key: "checkin",
+          text: "เช็คอินรับ +20 XP และรักษา Streak",
+          cta: "เช็คอิน",
+          action: dailyCheckin,
+        },
+  );
+  if (totalDue > 0)
+    planSteps.push({
+      key: "review",
+      text: `ทบทวนคำศัพท์ที่ครบกำหนด ${totalDue} คำ`,
+      cta: "ทบทวน",
+      to: "/flash",
+    });
+  for (const s of weakSkills.slice(0, 2))
+    planSteps.push({
+      key: `skill-${s}`,
+      text: `ฝึก${skillName(s)} ประมาณ ${minutes} นาที`,
+      cta: "เริ่ม",
+      to: skillRoute(s),
+    });
+  if (daysToExam !== null && daysToExam >= 0 && daysToExam <= 14 && mocks.length)
+    planSteps.push({
+      key: "mock",
+      text: "จับเวลาทำ Mock สักชุดก่อนสอบ",
+      cta: "ทำ Mock",
+      to: "/mock",
+    });
 
   return (
     <>
@@ -80,17 +133,41 @@ export function Home() {
           </LinkButton>
         </Card>
       ) : (
-        <Card className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <Card className="mb-4">
+          <div className="flex flex-wrap items-center gap-2">
             <Tag tone="success">แผนวันนี้ · {minutes} นาที</Tag>
-            <h2 className="mt-2 text-lg font-semibold">{planLabels[weak] || "เริ่มฝึกตามแผน"}</h2>
-            <p className="mt-1 text-sm text-muted">
-              เริ่มจากทักษะที่คุณเลือกไว้ แล้วกลับมาทบทวนต่อได้ทุกวัน
-            </p>
+            {examText && <span className="text-sm font-medium text-muted">{examText}</span>}
           </div>
-          <LinkButton to={planRoute} variant="primary" className="shrink-0">
-            เริ่มแผนวันนี้
-          </LinkButton>
+          <ol className="mt-3 space-y-2">
+            {planSteps.map((step, i) => (
+              <li
+                key={step.key}
+                className="flex items-center gap-3 rounded-xl border border-line bg-surface-2/40 px-3 py-2"
+              >
+                <span
+                  className={
+                    step.done
+                      ? "grid h-6 w-6 shrink-0 place-items-center rounded-full bg-success-soft text-xs font-bold text-success"
+                      : "grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary"
+                  }
+                >
+                  {step.done ? "✓" : i + 1}
+                </span>
+                <span className="min-w-0 flex-1 text-sm">{step.text}</span>
+                {step.done ? (
+                  <span className="shrink-0 text-xs text-subtle">{step.cta}</span>
+                ) : step.action ? (
+                  <Button size="sm" variant="primary" onClick={step.action}>
+                    {step.cta}
+                  </Button>
+                ) : (
+                  <LinkButton size="sm" variant="primary" to={step.to ?? "/home"}>
+                    {step.cta}
+                  </LinkButton>
+                )}
+              </li>
+            ))}
+          </ol>
         </Card>
       )}
 
