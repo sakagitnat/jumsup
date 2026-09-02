@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useStore, store } from "../../store/useStore";
 import {
   refreshCommunity,
@@ -9,7 +10,7 @@ import {
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
 import { CommunityPreviewModal } from "./CommunityPreview";
-import { PageHeader, Card, Tag, Button, EmptyState, Modal, StarRating, cx } from "../../ui";
+import { PageHeader, Card, Tag, Button, EmptyState, Modal, StarRating, toast, cx } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
 type Tab = "vocab" | "skill";
@@ -21,7 +22,8 @@ export function Community() {
 
   const [tab, setTab] = useState<Tab>("vocab");
   const [query, setQuery] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [kindFilter, setKindFilter] = useState("");
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reviewFor, setReviewFor] = useState<CommunityItem | null>(null);
   const [reportFor, setReportFor] = useState<CommunityItem | null>(null);
   const [previewFor, setPreviewFor] = useState<CommunityItem | null>(null);
@@ -31,7 +33,12 @@ export function Community() {
   useEffect(() => {
     refreshCommunity(query, tab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, query]);
+
+  const onSearchChange = (v: string) => {
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => setQuery(v), 300);
+  };
 
   const items = useMemo(() => {
     const q = query.toLowerCase();
@@ -41,6 +48,7 @@ export function Community() {
       .filter(
         (x) =>
           x.type === tab &&
+          (tab !== "skill" || !kindFilter || x.kind === kindFilter) &&
           (!q || x.title.toLowerCase().includes(q) || x.creator.toLowerCase().includes(q)),
       )
       .sort((a, b) =>
@@ -50,7 +58,7 @@ export function Community() {
             ? (b.rating || 0) - (a.rating || 0)
             : score(b) - score(a),
       );
-  }, [community, tab, query, sort]);
+  }, [community, tab, query, sort, kindFilter]);
 
   const totalImports = items.reduce((n, x) => n + (x.importCount || 0), 0);
   const avgRating = items.length
@@ -94,15 +102,12 @@ export function Community() {
         ))}
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         <input
-          ref={searchRef}
           defaultValue={query}
-          placeholder="ค้นหาชื่อชุด หรือ username ผู้สร้าง..."
+          placeholder="ค้นหาชื่อชุด หรือ username ผู้สร้าง…"
           className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") setQuery(searchRef.current?.value || "");
-          }}
+          onChange={(e) => onSearchChange(e.target.value)}
         />
         <select
           value={sort}
@@ -115,9 +120,34 @@ export function Community() {
           <option value="rating">คะแนนสูงสุด</option>
           <option value="new">ใหม่ล่าสุด</option>
         </select>
-        <Button onClick={() => setQuery(searchRef.current?.value || "")}>ค้นหา</Button>
         <Button onClick={reload}>รีเฟรช</Button>
       </div>
+
+      {tab === "skill" && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {[
+            ["", "ทั้งหมด"],
+            ["reading", "Reading"],
+            ["listening", "Listening"],
+            ["writing", "Writing"],
+            ["mock", "Mock"],
+          ].map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setKindFilter(v)}
+              className={cx(
+                "rounded-full border px-3 py-1 text-xs font-semibold",
+                kindFilter === v
+                  ? "border-primary-border bg-primary-soft text-primary"
+                  : "border-line text-muted hover:bg-surface-2",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!user && (
         <Card soft className="mb-4">
@@ -148,7 +178,14 @@ export function Community() {
               {x.title}
             </button>
             <p className="text-sm text-muted">
-              {x.count || 1} รายการ · สร้างโดย <b>@{x.creator}</b>
+              {x.count || 1} รายการ · สร้างโดย{" "}
+              {x.official ? (
+                <b>@{x.creator}</b>
+              ) : (
+                <Link to={`/u/${encodeURIComponent(x.creator)}`} className="font-semibold text-primary hover:underline">
+                  @{x.creator}
+                </Link>
+              )}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="inline-flex items-center gap-1">
@@ -181,6 +218,16 @@ export function Community() {
               </Button>
               <Button size="sm" onClick={() => setPreviewFor(x)}>
                 ดูตัวอย่าง
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const k = x.type === "vocab" ? "vocab" : x.sourceKind || x.kind || "reading";
+                  navigator.clipboard?.writeText(`${window.location.origin}/s/${k}/${x.id}`);
+                  toast("คัดลอกลิงก์แชร์แล้ว");
+                }}
+              >
+                แชร์
               </Button>
               <button
                 type="button"

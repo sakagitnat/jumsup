@@ -6,7 +6,7 @@ import { DeckEditor } from "../flashcards/DeckEditor";
 import { PracticeEditor } from "../practice/PracticeEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
-import { PageHeader, Card, Button, LinkButton, EmptyState, Modal } from "../../ui";
+import { PageHeader, Card, Button, LinkButton, EmptyState, Modal, toast } from "../../ui";
 import type { PracticeKind } from "../practice/session";
 
 type DeckDialog = { open: boolean; id: string | null };
@@ -26,12 +26,14 @@ function Row({
   onOpen,
   onEdit,
   onDelete,
+  onShare,
 }: {
   title: string;
   meta: string;
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onShare?: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 border-t border-line py-3 first:border-t-0">
@@ -39,6 +41,17 @@ function Row({
         <b className="block truncate text-sm">{title}</b>
         <small className="text-xs text-muted">{meta}</small>
       </button>
+      {onShare && (
+        <button
+          type="button"
+          aria-label="แชร์"
+          title="คัดลอกลิงก์แชร์"
+          onClick={onShare}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
+        >
+          ⤴
+        </button>
+      )}
       <button
         type="button"
         aria-label="แก้ไข"
@@ -134,6 +147,14 @@ export function Library() {
               onOpen={() => navigate(`/flash/study/${d.id}`)}
               onEdit={() => setDeckDialog({ open: true, id: d.id })}
               onDelete={() => setDel({ type: "deck", id: d.id })}
+              onShare={
+                d.visibility === "public"
+                  ? () => {
+                      navigator.clipboard?.writeText(`${window.location.origin}/s/vocab/${d.id}`);
+                      toast("คัดลอกลิงก์แชร์แล้ว");
+                    }
+                  : undefined
+              }
             />
           ))}
         </Card>
@@ -160,6 +181,16 @@ export function Library() {
                 onOpen={() => navigate(`/${kind}`)}
                 onEdit={() => setPracticeDialog({ open: true, kind, id: x.id })}
                 onDelete={() => setDel({ type: kind, id: x.id })}
+                onShare={
+                  x.visibility === "public"
+                    ? () => {
+                        navigator.clipboard?.writeText(
+                          `${window.location.origin}/s/${kind}/${x.id}`,
+                        );
+                        toast("คัดลอกลิงก์แชร์แล้ว");
+                      }
+                    : undefined
+                }
               />
             ))}
           </Card>

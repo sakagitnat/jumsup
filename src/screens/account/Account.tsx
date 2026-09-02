@@ -10,6 +10,11 @@ const tabs: Array<[string, string, string]> = [
   ["privacy", "ข้อมูลและความเป็นส่วนตัว", "ดาวน์โหลดข้อมูลหรือจัดการบัญชี"],
 ];
 
+const links: Array<[string, string, string]> = [
+  ["/stats", "สถิติการเรียน", "ความก้าวหน้าและคำที่ยังไม่แม่น"],
+  ["/library", "คลังของฉัน", "ชุดที่คุณสร้างหรือนำเข้า"],
+];
+
 export function Account() {
   const user = useStore((s) => s.user);
 
@@ -23,6 +28,15 @@ export function Account() {
             to={`/account/${id}`}
             className="flex items-center gap-4 px-4 py-4 hover:bg-surface-2"
           >
+            <div className="min-w-0 flex-1">
+              <b className="block text-sm">{label}</b>
+              <small className="text-xs text-muted">{desc}</small>
+            </div>
+            <span className="text-subtle">›</span>
+          </Link>
+        ))}
+        {links.map(([to, label, desc]) => (
+          <Link key={to} to={to} className="flex items-center gap-4 px-4 py-4 hover:bg-surface-2">
             <div className="min-w-0 flex-1">
               <b className="block text-sm">{label}</b>
               <small className="text-xs text-muted">{desc}</small>

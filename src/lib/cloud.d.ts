@@ -24,6 +24,17 @@ export interface CommunityPreview {
   }>;
 }
 export function loadCommunityPreview(item: CommunityItem): Promise<CommunityPreview | null>;
+
+export interface PublicSet extends CommunityPreview {
+  id: string;
+  creator: string;
+}
+export function loadPublicSet(kind: string, id: string): Promise<PublicSet | null>;
+
+export function loadCreatorSets(username: string): Promise<{
+  vocab: Array<{ id: string; title: string; count: number }>;
+  skill: Array<{ id: string; title: string; kind: string }>;
+}>;
 export function uploadAvatar(user: User, file: File): Promise<string>;
 export function toggleCommunityLike(user: User, item: CommunityItem): Promise<boolean>;
 export function saveCommunityReview(

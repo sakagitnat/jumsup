@@ -116,6 +116,12 @@ export function Home() {
         </Link>
       </div>
 
+      <div className="mt-2 text-right">
+        <Link to="/stats" className="text-sm font-semibold text-primary hover:underline">
+          ดูสถิติการเรียนทั้งหมด →
+        </Link>
+      </div>
+
       {user && ownSets === 0 && (
         <Card soft className="mt-4">
           <h3 className="text-base font-semibold">ยังไม่มีชุดของคุณเอง</h3>

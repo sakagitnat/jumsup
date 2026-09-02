@@ -253,3 +253,40 @@ export async function loadCommunityPreview(item){
   if(error)throw error;
   return {type:"skill",kind:data.kind,title:data.title,...(data.payload||{})};
 }
+
+export async function loadPublicSet(kind,id){
+  if(!backendEnabled)return null;
+  if(kind==="vocab"){
+    const {data,error}=await supabase.from("vocab_sets")
+      .select("id,name,profiles!vocab_sets_user_id_fkey(username),vocab_words(word,stress,meaning,example,sort_order)")
+      .eq("id",id).eq("visibility","public").single();
+    if(error)throw error;
+    return {type:"vocab",id:data.id,title:data.name,creator:data.profiles?.username||"member",
+      words:(data.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order)
+        .map(w=>({w:w.word,p:w.stress||"",m:w.meaning||"",e:w.example||""}))};
+  }
+  const {data,error}=await supabase.from("practice_sets")
+    .select("id,title,kind,payload,profiles!practice_sets_user_id_fkey(username)")
+    .eq("id",id).eq("visibility","public").single();
+  if(error)throw error;
+  return {type:"skill",id:data.id,kind:data.kind,title:data.title,creator:data.profiles?.username||"member",...(data.payload||{})};
+}
+
+export async function loadCreatorSets(username){
+  if(!backendEnabled||!username)return {vocab:[],skill:[]};
+  const [{data:v,error:ve},{data:p,error:pe}]=await Promise.all([
+    supabase.from("vocab_sets")
+      .select("id,name,vocab_words(id),profiles!vocab_sets_user_id_fkey!inner(username)")
+      .eq("visibility","public").eq("moderation_status","visible")
+      .eq("profiles.username",username).limit(60),
+    supabase.from("practice_sets")
+      .select("id,title,kind,profiles!practice_sets_user_id_fkey!inner(username)")
+      .eq("visibility","public").eq("moderation_status","visible")
+      .eq("profiles.username",username).limit(60)
+  ]);
+  if(ve)throw ve;if(pe)throw pe;
+  return {
+    vocab:(v||[]).map(x=>({id:x.id,title:x.name,count:x.vocab_words?.length||0})),
+    skill:(p||[]).map(x=>({id:x.id,title:x.title,kind:x.kind}))
+  };
+}

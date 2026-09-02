@@ -13,6 +13,9 @@ import { CrosswordGame } from "../screens/games/CrosswordGame";
 import { Onboarding } from "../screens/onboarding/Onboarding";
 import { Community } from "../screens/community/Community";
 import { Library } from "../screens/library/Library";
+import { SharedSet } from "../screens/share/SharedSet";
+import { CreatorProfile } from "../screens/creator/CreatorProfile";
+import { Stats } from "../screens/stats/Stats";
 import { Account } from "../screens/account/Account";
 import { AccountProfile } from "../screens/account/AccountProfile";
 import { AccountBilling } from "../screens/account/AccountBilling";
@@ -48,7 +51,10 @@ export const router = createBrowserRouter([
           { path: "/practice/result", element: <Result /> },
 
           { path: "/library", element: <Library /> },
+          { path: "/stats", element: <Stats /> },
           { path: "/community", element: <Community /> },
+          { path: "/s/:kind/:id", element: <SharedSet /> },
+          { path: "/u/:username", element: <CreatorProfile /> },
 
           { path: "/account", element: <Account /> },
           { path: "/account/profile", element: <AccountProfile /> },
