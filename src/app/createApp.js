@@ -105,14 +105,9 @@ export async function createApp(root){
    const remote=await loadCloudState(user);
    if(!remote.profile?.onboarding_completed_at)route="onboarding";
    const local=store.get();
-   const remoteHasData=(remote.decks?.length||0)+(remote.reading?.length||0)+(remote.listening?.length||0)+(remote.writing?.length||0)+(remote.mocks?.length||0)>0;
-   if(remoteHasData){
-    store.replace({...remote,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
-   }else{
-    store.set({user,profile:remote.profile,subscription:remote.subscription,backend:true,syncing:false});
-    await pushCloudState(user,store.get());
-    const again=await loadCloudState(user);store.replace({...again,backend:true,syncing:false});
-   }
+   // The server is authoritative after sign-in, even when it intentionally has
+   // no user content. Uploading the browser cache here resurrected deleted sets.
+   store.replace({...remote,theme:remote.profile?.ui_theme||local.theme,lang:remote.profile?.ui_language||local.lang,sound:remote.profile?.sound_enabled??local.sound,backend:true,syncing:false});
    lastSyncedSnapshot=syncSnapshot(store.get());await refreshCommunity();
   }catch(e){console.error(e);store.set({syncing:false,user,backend:true})}
   hydrating=false;
@@ -213,11 +208,11 @@ export async function createApp(root){
    if(a==="import-download-template")return downloadTemplate(el.dataset.type)
    if(a==="import-next")return importNext()
    if(a==="import-back")return importBack()
-   if(a==="edit-deck")openDeckModal(el.dataset.id)
-   if(a==="delete-deck")openDelete("deck",el.dataset.id)
+   if(a==="edit-deck"){const deck=s.decks.find(x=>x.id===el.dataset.id);if(deck?.official)return toast("ชุดทางการเป็นแบบอ่านอย่างเดียว กรุณานำเข้าเป็นสำเนาก่อนแก้ไข");openDeckModal(el.dataset.id)}
+   if(a==="delete-deck"){const deck=s.decks.find(x=>x.id===el.dataset.id);if(deck?.official)return toast("ไม่สามารถลบชุดทางการได้");openDelete("deck",el.dataset.id)}
    if(a==="new-practice")openPracticeModal(el.dataset.kind)
-   if(a==="edit-practice")openPracticeModal(el.dataset.kind,el.dataset.id)
-   if(a==="delete-practice")openDelete(el.dataset.kind,el.dataset.id)
+   if(a==="edit-practice"){const key=el.dataset.kind==="mock"?"mocks":el.dataset.kind,item=(s[key]||[]).find(x=>x.id===el.dataset.id);if(item?.official)return toast("ชุดทางการเป็นแบบอ่านอย่างเดียว กรุณานำเข้าเป็นสำเนาก่อนแก้ไข");openPracticeModal(el.dataset.kind,el.dataset.id)}
+   if(a==="delete-practice"){const key=el.dataset.kind==="mock"?"mocks":el.dataset.kind,item=(s[key]||[]).find(x=>x.id===el.dataset.id);if(item?.official)return toast("ไม่สามารถลบชุดทางการได้");openDelete(el.dataset.kind,el.dataset.id)}
    if(a==="open-practice"){
     const kind=el.dataset.kind,arr=kind==="mock"?s.mocks:s[kind];selected=arr.find(x=>x.id===el.dataset.id);
     let endsAt=Date.now()+Math.max(1,Number(selected.minutes||10))*60000;
