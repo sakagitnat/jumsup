@@ -147,6 +147,7 @@ export async function createApp(root){
   root.querySelectorAll("[data-account-tab]").forEach(el=>el.onclick=()=>{accountTab=el.dataset.accountTab;route="account";render()});
   root.querySelectorAll("[data-account-back]").forEach(el=>el.onclick=()=>{accountTab="menu";render()});
   root.querySelectorAll("[data-action]").forEach(el=>el.onclick=e=>handleAction(el.dataset.action,el,e));
+  root.querySelectorAll("[data-modal-card]").forEach(el=>el.onclick=e=>e.stopPropagation());
   root.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>{store.set({lang:el.dataset.lang});scheduleSync()});
   const uiLanguage=root.querySelector("#uiLanguage");if(uiLanguage)uiLanguage.onchange=()=>{store.set({lang:uiLanguage.value});scheduleSync()};
   root.querySelectorAll("[data-theme-choice]").forEach(el=>el.onclick=()=>store.set({theme:el.dataset.themeChoice}));

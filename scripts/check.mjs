@@ -14,6 +14,7 @@ for(const marker of ["revoke update on public.profiles","claim_stripe_event","ma
 const app=fs.readFileSync("src/app/createApp.js","utf8");
 if(/root\.innerHTML\s*=/.test(app)){console.error("Direct root.innerHTML rendering bypasses localization and causes visible page flashes");process.exit(1)}
 for(const marker of ["mount(layout(html))","localizePage(next.content","root.replaceChildren(next.content)"]){if(!app.includes(marker)){console.error("Missing unified render marker",marker);process.exit(1)}}
+if(!app.includes('root.querySelectorAll("[data-modal-card]").forEach(el=>el.onclick=e=>e.stopPropagation())')){console.error("Regression: clicks inside a modal would bubble to the backdrop and close it");process.exit(1)}
 const hydrateSource=app.slice(app.indexOf("async function hydrateFromCloud"),app.indexOf("async function refreshCommunity"));
 if(!hydrateSource.includes("store.replace({...remote")){console.error("Regression: cloud hydration would hide the official catalog");process.exit(1)}
 if(hydrateSource.includes("pushCloudState")){console.error("Regression: an empty cloud would resurrect stale browser data");process.exit(1)}
