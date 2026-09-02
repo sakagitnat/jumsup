@@ -5,6 +5,40 @@ import { useStore, store } from "../../store/useStore";
 import { markWordMastered } from "../../actions/flashcards";
 import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast, cx } from "../../ui";
 
+function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "line" | "primary" }) {
+  return (
+    <button
+      type="button"
+      data-nodrag
+      aria-label="ฟังเสียง"
+      onClick={(e) => {
+        e.stopPropagation();
+        onSpeak();
+      }}
+      className={cx(
+        "absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-lg border",
+        tone === "primary"
+          ? "border-primary-border text-primary hover:bg-primary/10"
+          : "border-line text-muted hover:bg-surface-2 hover:text-text",
+      )}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-4 w-4"
+      >
+        <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+        <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+      </svg>
+    </button>
+  );
+}
+
 export function Study() {
   const { deckId = "" } = useParams();
   const navigate = useNavigate();
@@ -258,30 +292,7 @@ export function Study() {
                   <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-subtle">
                     คำศัพท์
                   </span>
-                  <button
-                    type="button"
-                    data-nodrag
-                    aria-label="ฟังเสียง"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      speakWord();
-                    }}
-                    className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M11 5 6 9H2v6h4l5 4V5Z" />
-                      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
-                    </svg>
-                  </button>
+                  <SpeakButton onSpeak={speakWord} />
                   <h2 className="text-4xl font-semibold">{word?.w}</h2>
                   {(word?.p || word?.stress) && (
                     <div className="mt-2 text-sm text-subtle">{word?.p || word?.stress}</div>
@@ -293,6 +304,9 @@ export function Study() {
                   <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-primary">
                     ความหมาย
                   </span>
+                  {word?.e && (
+                    <SpeakButton onSpeak={() => word?.e && speak(word.e)} tone="primary" />
+                  )}
                   <p className="text-2xl font-semibold">{word?.m || "—"}</p>
                   {word?.e && (
                     <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">{word.e}</p>
