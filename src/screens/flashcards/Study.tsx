@@ -79,11 +79,17 @@ export function Study() {
     return () => window.removeEventListener("keydown", onKey);
   }, [know, miss]);
 
-  // swipe — transform writes are rAF-batched and the card is promoted to its own
-  // compositor layer while dragging so the drop shadow is rasterized once instead
-  // of repainting every frame (that repaint was the source of the stutter).
+  // swipe / tap. Pointer capture is taken *only* once a real drag starts, so a
+  // plain tap still delivers a click (that capture-on-pointerdown was swallowing
+  // the flip and the speaker button). Transform writes are rAF-batched.
   const cardRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; dx: number; raf: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; dx: number; raf: number; captured: boolean } | null>(
+    null,
+  );
+
+  const speakWord = () => {
+    if (word) speak(word.w);
+  };
 
   const paint = (dx: number) => {
     const el = cardRef.current;
@@ -103,30 +109,36 @@ export function Study() {
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest("button")) return;
+    if ((e.target as HTMLElement).closest("[data-nodrag]")) return;
     const el = cardRef.current;
     if (!el) return;
-    drag.current = { x: e.clientX, dx: 0, raf: 0 };
+    drag.current = { x: e.clientX, y: e.clientY, dx: 0, raf: 0, captured: false };
     el.style.transition = "none";
-    el.style.willChange = "transform";
-    el.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
     d.dx = e.clientX - d.x;
-    if (!d.raf)
+    if (!d.captured && Math.abs(d.dx) > 8) {
+      d.captured = true;
+      const el = cardRef.current;
+      el?.setPointerCapture?.(e.pointerId);
+      if (el) el.style.willChange = "transform";
+    }
+    if (d.captured && !d.raf)
       d.raf = requestAnimationFrame(() => {
         d.raf = 0;
         paint(d.dx);
       });
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e: React.PointerEvent) => {
     const d = drag.current;
     drag.current = null;
     if (!d) return;
     if (d.raf) cancelAnimationFrame(d.raf);
     const el = cardRef.current;
+    const moved = Math.max(Math.abs(d.dx), Math.abs(e.clientY - d.y));
+
     if (el && Math.abs(d.dx) > 90) {
       const dir = d.dx > 0 ? 1 : -1;
       el.style.transition = "transform .17s ease-in";
@@ -138,9 +150,13 @@ export function Study() {
         if (dir > 0) void know();
         else miss();
       }, 160);
-    } else {
-      relax();
+      return;
     }
+
+    if (moved < 10) {
+      setFlipped((f) => !f);
+    }
+    relax();
   };
 
   if (!deck) {
@@ -217,7 +233,6 @@ export function Study() {
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => setFlipped((f) => !f)}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();
@@ -233,25 +248,30 @@ export function Study() {
                   <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-subtle">
                     คำศัพท์
                   </span>
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
+                    data-nodrag
                     aria-label="ฟังเสียง"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (word) speak(word.w);
+                      speakWord();
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        if (word) speak(word.w);
-                      }
-                    }}
-                    className="absolute right-4 top-4 grid h-9 w-9 cursor-pointer place-items-center rounded-lg border border-line text-muted hover:bg-surface-2"
+                    className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
                   >
-                    🔊
-                  </span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                    >
+                      <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+                      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+                    </svg>
+                  </button>
                   <h2 className="text-4xl font-semibold">{word?.w}</h2>
                   {(word?.stress || word?.p) && (
                     <div className="mt-2 text-sm text-subtle">{word?.stress || word?.p}</div>
