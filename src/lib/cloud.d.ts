@@ -1,4 +1,4 @@
-import type { AppState, CommunityItem, PracticeAttempt } from "../store/types";
+import type { AppState, CommunityItem, ExamTarget, PracticeAttempt } from "../store/types";
 
 type User = { id: string; email?: string };
 
@@ -8,6 +8,10 @@ export function savePracticeAttempt(
   user: User,
   rec: Omit<PracticeAttempt, "id" | "takenAt">,
 ): Promise<{ id: string; taken_at: string } | null>;
+export function saveExamTargets(
+  user: User,
+  targets: Array<{ name: string; date: string | null }>,
+): Promise<ExamTarget[]>;
 export function loadCommunity(query?: string, type?: string): Promise<CommunityItem[]>;
 export function importCommunityItem(user: User, item: CommunityItem): Promise<void>;
 

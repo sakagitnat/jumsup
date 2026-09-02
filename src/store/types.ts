@@ -105,6 +105,13 @@ export interface FlashSettings {
   rate: number;
 }
 
+export interface ExamTarget {
+  id: string;
+  name: string;
+  date: string | null;
+  sortOrder: number;
+}
+
 export interface PracticeAttempt {
   id: string;
   kind: "reading" | "listening" | "writing" | "mock";
@@ -154,6 +161,7 @@ export interface AppState {
   decks: Deck[];
   progress: Record<string, { mastered: number[] }>;
   srs: Record<string, Record<number, SrsCard>>;
+  examTargets: ExamTarget[];
   practiceHistory: PracticeAttempt[];
   flashSettings: FlashSettings;
   reading: PracticeSet[];

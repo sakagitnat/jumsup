@@ -13,6 +13,7 @@ const initial=()=>({
  ],
  progress:{},
  srs:{},
+ examTargets:[],
  practiceHistory:[],
  flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,voiceURI:"",rate:0.9},
  reading:defaultReading,listening:defaultListening,writing:defaultWriting,

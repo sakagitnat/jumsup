@@ -4,7 +4,7 @@ import { useStore } from "../../store/useStore";
 import { dailyCheckin } from "../../actions/session";
 import { loginGoogle } from "../../actions/auth";
 import { dueCount } from "../../lib/srs";
-import { examLabel, skillLabel } from "../../lib/taxonomy";
+import { skillLabel } from "../../lib/taxonomy";
 import { PageHeader, Card, Tag, Button, LinkButton } from "../../ui";
 
 const skillCards: Array<[string, string, string, string]> = [
@@ -31,20 +31,33 @@ interface PlanStep {
 }
 
 export function Home() {
-  const { xp, streak, decks, srs, reading, listening, writing, mocks, lastCheckin, profile, user } =
-    useStore((s) => ({
-      xp: s.xp,
-      streak: s.streak,
-      decks: s.decks,
-      srs: s.srs,
-      reading: s.reading,
-      listening: s.listening,
-      writing: s.writing,
-      mocks: s.mocks,
-      lastCheckin: s.lastCheckin,
-      profile: s.profile,
-      user: s.user,
-    }));
+  const {
+    xp,
+    streak,
+    decks,
+    srs,
+    examTargets,
+    reading,
+    listening,
+    writing,
+    mocks,
+    lastCheckin,
+    profile,
+    user,
+  } = useStore((s) => ({
+    xp: s.xp,
+    streak: s.streak,
+    decks: s.decks,
+    srs: s.srs,
+    examTargets: s.examTargets,
+    reading: s.reading,
+    listening: s.listening,
+    writing: s.writing,
+    mocks: s.mocks,
+    lastCheckin: s.lastCheckin,
+    profile: s.profile,
+    user: s.user,
+  }));
 
   const checked = lastCheckin === todayKey();
   const minutes = profile?.daily_minutes || 10;
@@ -54,17 +67,25 @@ export function Home() {
 
   const totalDue = decks.reduce((n, d) => n + dueCount(srs[d.id]), 0);
   const weakSkills = profile?.weak_skills?.length ? profile.weak_skills : ["vocabulary"];
-  const daysToExam = profile?.exam_date
-    ? Math.ceil(
-        (new Date(`${profile.exam_date}T00:00:00`).getTime() - Date.now()) / 86_400_000,
-      )
-    : null;
-  const examText =
-    daysToExam === null || daysToExam < 0
-      ? null
-      : daysToExam === 0
-        ? `วันนี้สอบ ${examLabel(profile?.exam_goal) || "แล้ว"} — เต็มที่นะ`
-        : `เหลืออีก ${daysToExam} วัน ถึง ${examLabel(profile?.exam_goal) || "วันสอบ"}`;
+
+  const upcomingExams = examTargets
+    .filter((t) => t.date)
+    .map((t) => ({
+      name: t.name,
+      days: Math.ceil(
+        (new Date(`${t.date}T00:00:00`).getTime() - Date.now()) / 86_400_000,
+      ),
+    }))
+    .filter((t) => t.days >= 0)
+    .sort((a, b) => a.days - b.days);
+  const nextExam = upcomingExams[0] ?? null;
+  const daysToExam = nextExam ? nextExam.days : null;
+  const examText = !nextExam
+    ? null
+    : nextExam.days === 0
+      ? `วันนี้สอบ ${nextExam.name} — เต็มที่นะ`
+      : `เหลืออีก ${nextExam.days} วัน ถึง ${nextExam.name}` +
+        (upcomingExams.length > 1 ? ` · อีก ${upcomingExams.length - 1} รายการ` : "");
 
   const planSteps: PlanStep[] = [];
   planSteps.push(

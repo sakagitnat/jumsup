@@ -6,7 +6,7 @@ const ownCreator=p=>p?.username||"user";
 export async function loadCloudState(user){
   if(!backendEnabled||!user)return null;
 
-  const [{data:profile,error:pe},{data:sets,error:se},{data:practice,error:pre},{data:progress,error:proe},{data:subscription,error:sue},{data:payments,error:payE},{data:refunds,error:refE},{data:attempts,error:atE}]=await Promise.all([
+  const [{data:profile,error:pe},{data:sets,error:se},{data:practice,error:pre},{data:progress,error:proe},{data:subscription,error:sue},{data:payments,error:payE},{data:refunds,error:refE},{data:attempts,error:atE},{data:examTargetRows,error:etE}]=await Promise.all([
     supabase.from("profiles").select("*").eq("user_id",user.id).single(),
     supabase.from("vocab_sets").select("id,name,visibility,source_type,exam,skill,level,user_id,created_at,updated_at,vocab_words(id,word,stress,meaning,example,sort_order)").eq("user_id",user.id).order("created_at"),
     supabase.from("practice_sets").select("*").eq("user_id",user.id).order("created_at"),
@@ -14,9 +14,10 @@ export async function loadCloudState(user){
     supabase.from("subscriptions").select("*").eq("user_id",user.id).maybeSingle(),
     supabase.from("payment_events").select("id,kind,amount,currency,status,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(20),
     supabase.from("refund_requests").select("id,payment_event_id,reason,status,requested_amount,cancel_subscription,admin_note,requested_at,reviewed_at,completed_at").eq("user_id",user.id).order("requested_at",{ascending:false}).limit(20),
-    supabase.from("practice_attempts").select("id,kind,set_id,set_title,total,correct,percent,seconds,taken_at").eq("user_id",user.id).order("taken_at",{ascending:false}).limit(200)
+    supabase.from("practice_attempts").select("id,kind,set_id,set_title,total,correct,percent,seconds,taken_at").eq("user_id",user.id).order("taken_at",{ascending:false}).limit(200),
+    supabase.from("exam_targets").select("id,name,exam_date,sort_order").eq("user_id",user.id).order("sort_order")
   ]);
-  if(pe)throw pe;if(se)throw se;if(pre)throw pre;if(proe)throw proe;if(sue)throw sue;if(payE)throw payE;if(refE)throw refE;if(atE)throw atE;
+  if(pe)throw pe;if(se)throw se;if(pre)throw pre;if(proe)throw proe;if(sue)throw sue;if(payE)throw payE;if(refE)throw refE;if(atE)throw atE;if(etE)throw etE;
 
   const decks=(sets||[]).map(s=>({
     id:s.id,name:s.name,visibility:s.visibility,sourceType:s.source_type||"own",creator:ownCreator(profile),
@@ -39,6 +40,10 @@ export async function loadCloudState(user){
     takenAt:a.taken_at
   }));
 
+  const examTargets=(examTargetRows||[]).map(t=>({
+    id:t.id,name:t.name||"",date:t.exam_date||null,sortOrder:t.sort_order||0
+  }));
+
   return {
     user,
     profile,
@@ -49,10 +54,26 @@ export async function loadCloudState(user){
     ...grouped,
     progress:progressMap,
     practiceHistory,
+    examTargets,
     xp:profile?.xp||0,
     streak:profile?.streak||0,
     lastCheckin:profile?.last_checkin||""
   };
+}
+
+export async function saveExamTargets(user,targets){
+  if(!backendEnabled||!user)return [];
+  const {error:delErr}=await supabase.from("exam_targets").delete().eq("user_id",user.id);
+  if(delErr)throw delErr;
+  const rows=(targets||[])
+    .map(t=>({name:String(t.name||"").trim().slice(0,80),exam_date:t.date||null}))
+    .filter(t=>t.name);
+  if(!rows.length)return [];
+  const {data,error}=await supabase.from("exam_targets")
+    .insert(rows.map((r,i)=>({user_id:user.id,name:r.name,exam_date:r.exam_date,sort_order:i})))
+    .select("id,name,exam_date,sort_order");
+  if(error)throw error;
+  return (data||[]).map(t=>({id:t.id,name:t.name,date:t.exam_date||null,sortOrder:t.sort_order||0}));
 }
 
 export async function savePracticeAttempt(user,rec){

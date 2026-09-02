@@ -78,7 +78,7 @@ function ExamCalendar({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-sm"
       >
-        <span className={selected ? "" : "text-subtle"}>{label || "เลือกจากปฏิทิน"}</span>
+        <span className={selected ? "" : "text-subtle"}>{label || "ตั้งวันสอบ (แตะเพื่อเลือก)"}</span>
         <span className="flex items-center gap-2">
           {selected && (
             <span
@@ -166,11 +166,28 @@ function ExamCalendar({
   );
 }
 
-const goals: Array<[string, string, string]> = [
-  ["alevel", "A-Level English", "เตรียมสอบเข้ามหาวิทยาลัย"],
-  ["tgat", "TGAT 1", "เน้นการสื่อสารภาษาอังกฤษ"],
-  ["general", "อังกฤษทั่วไป", "พัฒนาทักษะเพื่อใช้งานจริง"],
+const EXAM_PRESETS = [
+  "A-Level (TCAS)",
+  "TGAT1",
+  "TGAT2",
+  "TGAT3",
+  "IELTS",
+  "TOEFL",
+  "TOEIC",
+  "SAT",
+  "GED",
+  "CU-TEP",
+  "TU-GET",
+  "Duolingo (DET)",
+  "O-NET",
+  "ก.พ. ภาค ก",
 ];
+
+interface ExamTargetDraft {
+  name: string;
+  date: string | null;
+}
+
 const skillOpts: Array<[string, string]> = [
   ["vocabulary", "คำศัพท์"],
   ["reading", "Reading"],
@@ -181,36 +198,40 @@ const skillOpts: Array<[string, string]> = [
 export function Onboarding() {
   const navigate = useNavigate();
   const profile = useStore((s) => s.profile);
-  const [goal, setGoal] = useState(profile?.exam_goal || "alevel");
+  const storedTargets = useStore((s) => s.examTargets);
   const [minutes, setMinutes] = useState(Number(profile?.daily_minutes || 10));
   const [skills, setSkills] = useState<string[]>(
     profile?.weak_skills?.length ? profile.weak_skills : ["vocabulary"],
   );
-  const [examDate, setExamDate] = useState(profile?.exam_date || "");
+  const [targets, setTargets] = useState<ExamTargetDraft[]>(() =>
+    storedTargets.map((t) => ({ name: t.name, date: t.date })),
+  );
+  const [customName, setCustomName] = useState("");
   const [saving, setSaving] = useState(false);
   const editing = Boolean(profile?.onboarding_completed_at);
   const today = localToday();
 
-  const examDateLabel =
-    examDate && !Number.isNaN(new Date(`${examDate}T00:00:00`).getTime())
-      ? new Date(`${examDate}T00:00:00`).toLocaleDateString("th-TH", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "";
-  const examDatePast = Boolean(examDate) && examDate < today;
+  const addTarget = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || targets.some((t) => t.name === trimmed)) return;
+    setTargets((prev) => [...prev, { name: trimmed, date: null }]);
+  };
+  const removeTarget = (i: number) => setTargets((prev) => prev.filter((_, idx) => idx !== i));
+  const setTargetDate = (i: number, date: string) =>
+    setTargets((prev) => prev.map((t, idx) => (idx === i ? { ...t, date: date || null } : t)));
+
+  const hasPastDate = targets.some((t) => t.date && t.date < today);
 
   const toggleSkill = (id: string) =>
     setSkills((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const submit = async () => {
-    if (examDatePast) {
-      toast("วันที่สอบต้องเป็นวันนี้หรือหลังจากนี้");
+    if (hasPastDate) {
+      toast("มีวันสอบที่เป็นวันที่ผ่านมาแล้ว");
       return;
     }
     setSaving(true);
-    const ok = await saveOnboarding({ goal, minutes, skills, examDate: examDate || null });
+    const ok = await saveOnboarding({ minutes, skills, examTargets: targets });
     setSaving(false);
     if (ok) navigate("/home");
   };
@@ -241,29 +262,85 @@ export function Onboarding() {
         )}
 
         <fieldset className="mt-5">
-          <legend className="text-sm font-semibold">คุณกำลังเรียนเพื่ออะไร?</legend>
-          <div className="mt-2 space-y-2">
-            {goals.map(([id, title, desc]) => (
-              <label
-                key={id}
-                className={cx(
-                  "flex cursor-pointer items-start gap-2 rounded-xl border p-3",
-                  goal === id ? "border-primary-border bg-primary-soft" : "border-line",
-                )}
+          <legend className="text-sm font-semibold">คุณกำลังเตรียมสอบอะไรบ้าง?</legend>
+          <p className="text-xs text-subtle">
+            เพิ่มได้หลายรายการ กำหนดวันสอบของแต่ละอันแยกกัน (ไม่บังคับ)
+          </p>
+
+          {targets.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {targets.map((t, i) => {
+                const past = Boolean(t.date) && t.date! < today;
+                return (
+                  <div
+                    key={t.name}
+                    className={cx(
+                      "rounded-xl border p-3",
+                      past ? "border-danger" : "border-line",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <b className="min-w-0 flex-1 truncate text-sm">{t.name}</b>
+                      <button
+                        type="button"
+                        aria-label={`ลบ ${t.name}`}
+                        onClick={() => removeTarget(i)}
+                        className="shrink-0 text-subtle hover:text-danger"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <ExamCalendar
+                      value={t.date ?? ""}
+                      onChange={(iso) => setTargetDate(i, iso)}
+                    />
+                    {past && (
+                      <span className="mt-1 block text-xs text-danger">
+                        วันที่ผ่านมาแล้ว เลือกวันในอนาคต
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {EXAM_PRESETS.filter((p) => !targets.some((t) => t.name === p)).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => addTarget(p)}
+                className="rounded-full border border-line px-3 py-1.5 text-xs hover:border-primary-border hover:bg-primary-soft"
               >
-                <input
-                  type="radio"
-                  name="goal"
-                  checked={goal === id}
-                  onChange={() => setGoal(id)}
-                  className="mt-1"
-                />
-                <span>
-                  <b className="block text-sm">{title}</b>
-                  <small className="text-xs text-muted">{desc}</small>
-                </span>
-              </label>
+                + {p}
+              </button>
             ))}
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <input
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTarget(customName);
+                  setCustomName("");
+                }
+              }}
+              placeholder="พิมพ์ชื่อการสอบเอง"
+              className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+            />
+            <Button
+              onClick={() => {
+                addTarget(customName);
+                setCustomName("");
+              }}
+              disabled={!customName.trim()}
+            >
+              เพิ่ม
+            </Button>
           </div>
         </fieldset>
 
@@ -310,30 +387,11 @@ export function Onboarding() {
           </div>
         </fieldset>
 
-        <div className="mt-5">
-          <span className="block text-sm font-semibold">
-            วันที่สอบ <small className="font-normal text-subtle">(ไม่บังคับ)</small>
-          </span>
-          <ExamCalendar value={examDate} onChange={setExamDate} />
-          {examDateLabel && (
-            <span
-              className={cx(
-                "mt-1 block text-xs font-normal",
-                examDatePast ? "text-danger" : "text-subtle",
-              )}
-            >
-              {examDatePast
-                ? `${examDateLabel} — เป็นวันที่ผ่านมาแล้ว เลือกวันในอนาคต`
-                : `= ${examDateLabel}`}
-            </span>
-          )}
-        </div>
-
         <Button
           variant="primary"
           block
           className="mt-6"
-          disabled={saving || skills.length === 0 || examDatePast}
+          disabled={saving || skills.length === 0 || hasPastDate}
           onClick={submit}
         >
           {saving ? "กำลังบันทึก…" : editing ? "บันทึกแผน" : "สร้างแผนของฉัน"}
