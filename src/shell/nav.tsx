@@ -83,6 +83,13 @@ export const icons = {
       <path d="m16 6 3.5-.8 3 12.8-3.5.8z" />
     </>,
   ),
+  leaderboard: s(
+    <>
+      <path d="M8 21h8M12 17v4" />
+      <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
+      <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+    </>,
+  ),
   account: s(
     <>
       <circle cx="12" cy="8" r="4" />
@@ -113,6 +120,7 @@ export const navGroups: Array<{ label: string; items: NavItem[] }> = [
     label: "manage",
     items: [
       { to: "/library", key: "library", icon: icons.library },
+      { to: "/leaderboard", key: "leaderboard", icon: icons.leaderboard },
       { to: "/community", key: "community", icon: icons.community },
       { to: "/account", key: "account", icon: icons.account },
     ],

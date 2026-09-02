@@ -228,7 +228,10 @@ export function Home() {
         </Link>
       </div>
 
-      <div className="mt-2 text-right">
+      <div className="mt-2 flex justify-end gap-4">
+        <Link to="/leaderboard" className="text-sm font-semibold text-primary hover:underline">
+          อันดับสัปดาห์นี้ →
+        </Link>
         <Link to="/stats" className="text-sm font-semibold text-primary hover:underline">
           ดูสถิติการเรียนทั้งหมด →
         </Link>

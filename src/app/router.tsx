@@ -16,6 +16,7 @@ import { Library } from "../screens/library/Library";
 import { SharedSet } from "../screens/share/SharedSet";
 import { CreatorProfile } from "../screens/creator/CreatorProfile";
 import { Stats } from "../screens/stats/Stats";
+import { Leaderboard } from "../screens/leaderboard/Leaderboard";
 import { Account } from "../screens/account/Account";
 import { AccountProfile } from "../screens/account/AccountProfile";
 import { AccountBilling } from "../screens/account/AccountBilling";
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
 
           { path: "/library", element: <Library /> },
           { path: "/stats", element: <Stats /> },
+          { path: "/leaderboard", element: <Leaderboard /> },
           { path: "/community", element: <Community /> },
           { path: "/s/:kind/:id", element: <SharedSet /> },
           { path: "/u/:username", element: <CreatorProfile /> },

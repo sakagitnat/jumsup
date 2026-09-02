@@ -61,6 +61,17 @@ export async function loadCloudState(user){
   };
 }
 
+export async function loadWeeklyLeaderboard(limit=20){
+  if(!backendEnabled)return {weekStart:"",top:[],me:null};
+  const {data,error}=await supabase.rpc("weekly_leaderboard",{p_limit:limit});
+  if(error)throw error;
+  return {
+    weekStart:data?.week_start||"",
+    top:(data?.top||[]).map(r=>({username:r.username||"ผู้เรียน",xp:r.xp||0,rank:r.rank||0})),
+    me:data?.me?{xp:data.me.xp||0,rank:data.me.rank||0}:null
+  };
+}
+
 export async function saveExamTargets(user,targets){
   if(!backendEnabled||!user)return [];
   const {error:delErr}=await supabase.from("exam_targets").delete().eq("user_id",user.id);

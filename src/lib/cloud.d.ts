@@ -12,6 +12,13 @@ export function saveExamTargets(
   user: User,
   targets: Array<{ name: string; date: string | null }>,
 ): Promise<ExamTarget[]>;
+
+export interface WeeklyLeaderboard {
+  weekStart: string;
+  top: Array<{ username: string; xp: number; rank: number }>;
+  me: { xp: number; rank: number } | null;
+}
+export function loadWeeklyLeaderboard(limit?: number): Promise<WeeklyLeaderboard>;
 export function loadCommunity(query?: string, type?: string): Promise<CommunityItem[]>;
 export function importCommunityItem(user: User, item: CommunityItem): Promise<void>;
 

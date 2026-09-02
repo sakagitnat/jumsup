@@ -88,6 +88,7 @@ export interface Profile {
   referral_code?: string;
   pro_lifetime?: boolean;
   pro_bonus_until?: string | null;
+  leaderboard_anon?: boolean;
 }
 
 export interface Subscription {

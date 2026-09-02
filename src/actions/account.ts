@@ -1,9 +1,24 @@
 import { api } from "../lib/api.js";
-import { backendEnabled } from "../lib/supabase.js";
+import { supabase, backendEnabled } from "../lib/supabase.js";
 import { uploadAvatar } from "../lib/cloud.js";
 import { store } from "../store/store";
 import { getCurrentUser, hydrateFromCloud } from "../app/cloudSync";
 import { toast } from "../ui/toast";
+
+export async function setLeaderboardAnon(value: boolean) {
+  const user = getCurrentUser();
+  const prev = store.get().profile;
+  store.set({ profile: { ...prev, leaderboard_anon: value } });
+  if (!user || !backendEnabled) return;
+  const { error } = await supabase
+    .from("profiles")
+    .update({ leaderboard_anon: value })
+    .eq("user_id", user.id);
+  if (error) {
+    store.set({ profile: { ...store.get().profile, leaderboard_anon: !value } });
+    toast(error.message || "บันทึกไม่สำเร็จ");
+  }
+}
 
 export async function redeemGift(code: string) {
   const user = getCurrentUser();
