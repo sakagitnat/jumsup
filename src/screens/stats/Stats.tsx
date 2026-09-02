@@ -1,13 +1,94 @@
 import { Link } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { PageHeader, Card, Progress, Tag, EmptyState } from "../../ui";
+import type { PracticeAttempt } from "../../store/types";
+
+const KIND_LABEL: Record<PracticeAttempt["kind"], string> = {
+  reading: "Reading",
+  listening: "Listening",
+  writing: "Writing",
+  mock: "Mock",
+};
+
+function scoreTone(percent: number): "success" | "warning" | "danger" {
+  return percent >= 70 ? "success" : percent >= 50 ? "warning" : "danger";
+}
+
+function scoreColor(percent: number): string {
+  if (percent >= 70) return "var(--color-success)";
+  if (percent >= 50) return "var(--color-warning)";
+  return "var(--color-danger)";
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+}
+
+function AttemptChart({ attempts }: { attempts: PracticeAttempt[] }) {
+  // attempts arrive newest-first; show the last 20 oldest -> newest.
+  const data = attempts.slice(0, 20).reverse();
+  const W = 320;
+  const H = 120;
+  const gap = 4;
+  const barW = (W - gap * (data.length - 1)) / data.length;
+
+  return (
+    <svg
+      viewBox={`0 -12 ${W} ${H + 30}`}
+      className="w-full"
+      role="img"
+      aria-label="กราฟคะแนนย้อนหลัง"
+    >
+      {[0, 50, 100].map((line) => {
+        const y = H - (line / 100) * H;
+        return (
+          <g key={line}>
+            <line
+              x1={0}
+              y1={y}
+              x2={W}
+              y2={y}
+              stroke="var(--color-border)"
+              strokeWidth={1}
+              strokeDasharray={line === 0 ? "" : "3 3"}
+            />
+            <text x={W} y={y - 2} textAnchor="end" fontSize={8} fill="var(--color-subtle)">
+              {line}%
+            </text>
+          </g>
+        );
+      })}
+      {data.map((a, i) => {
+        const h = Math.max(2, (a.percent / 100) * H);
+        const x = i * (barW + gap);
+        return (
+          <g key={a.id}>
+            <rect
+              x={x}
+              y={H - h}
+              width={barW}
+              height={h}
+              rx={2}
+              fill={scoreColor(a.percent)}
+            >
+              <title>{`${KIND_LABEL[a.kind]} · ${a.title} · ${a.percent}% · ${shortDate(a.takenAt)}`}</title>
+            </rect>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 export function Stats() {
-  const { xp, streak, decks, progress } = useStore((s) => ({
+  const { xp, streak, decks, progress, practiceHistory } = useStore((s) => ({
     xp: s.xp,
     streak: s.streak,
     decks: s.decks,
     progress: s.progress,
+    practiceHistory: s.practiceHistory,
   }));
 
   const level = Math.floor((xp || 0) / 250) + 1;
@@ -31,6 +112,17 @@ export function Stats() {
 
   const totalWords = perDeck.reduce((n, d) => n + d.total, 0);
   const totalMastered = perDeck.reduce((n, d) => n + d.mastered, 0);
+
+  const history = practiceHistory ?? [];
+  const kindStats = (["reading", "listening", "writing", "mock"] as const)
+    .map((kind) => {
+      const rows = history.filter((a) => a.kind === kind);
+      if (!rows.length) return null;
+      const avg = Math.round(rows.reduce((n, a) => n + a.percent, 0) / rows.length);
+      const best = Math.max(...rows.map((a) => a.percent));
+      return { kind, count: rows.length, avg, best };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
   return (
     <>
@@ -63,6 +155,54 @@ export function Stats() {
           </h3>
         </Card>
       </div>
+
+      <h2 className="mb-3 text-lg font-semibold">ผลสอบย้อนหลัง</h2>
+      {history.length === 0 ? (
+        <EmptyState>
+          ยังไม่มีประวัติการทำข้อสอบ — ลองทำ Reading, Listening หรือ Mock สักรอบ
+        </EmptyState>
+      ) : (
+        <div className="mb-6 space-y-4">
+          <Card>
+            <p className="mb-2 text-xs font-semibold text-muted">
+              คะแนน {Math.min(history.length, 20)} รอบล่าสุด
+            </p>
+            <AttemptChart attempts={history} />
+          </Card>
+
+          {kindStats.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {kindStats.map((k) => (
+                <Card key={k.kind}>
+                  <div className="flex items-center justify-between">
+                    <b className="text-sm">{KIND_LABEL[k.kind]}</b>
+                    <span className="text-xs text-subtle">{k.count} รอบ</span>
+                  </div>
+                  <div className="mt-2 flex gap-4 text-sm">
+                    <span>
+                      เฉลี่ย <b className="tabular-nums">{k.avg}%</b>
+                    </span>
+                    <span className="text-muted">
+                      สูงสุด <b className="tabular-nums text-text">{k.best}%</b>
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {history.slice(0, 8).map((a) => (
+              <Card key={a.id} className="flex items-center gap-3 py-3">
+                <Tag tone="info">{KIND_LABEL[a.kind]}</Tag>
+                <b className="min-w-0 flex-1 truncate text-sm">{a.title || "ไม่มีชื่อ"}</b>
+                <span className="shrink-0 text-xs text-subtle">{shortDate(a.takenAt)}</span>
+                <Tag tone={scoreTone(a.percent)}>{a.percent}%</Tag>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h2 className="mb-3 text-lg font-semibold">ความคืบหน้าแต่ละชุด</h2>
       {perDeck.length === 0 ? (

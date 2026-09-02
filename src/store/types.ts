@@ -102,6 +102,18 @@ export interface FlashSettings {
   rate: number;
 }
 
+export interface PracticeAttempt {
+  id: string;
+  kind: "reading" | "listening" | "writing" | "mock";
+  setId: string;
+  title: string;
+  total: number;
+  correct: number;
+  percent: number;
+  seconds: number;
+  takenAt: string;
+}
+
 export interface CommunityItem {
   id: string;
   type: "vocab" | "skill";
@@ -138,6 +150,7 @@ export interface AppState {
   syncing: boolean;
   decks: Deck[];
   progress: Record<string, { mastered: number[] }>;
+  practiceHistory: PracticeAttempt[];
   flashSettings: FlashSettings;
   reading: PracticeSet[];
   listening: PracticeSet[];

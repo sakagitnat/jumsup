@@ -1,9 +1,13 @@
-import type { AppState, CommunityItem } from "../store/types";
+import type { AppState, CommunityItem, PracticeAttempt } from "../store/types";
 
 type User = { id: string; email?: string };
 
 export function loadCloudState(user: User): Promise<Partial<AppState>>;
 export function pushCloudState(user: User, state: AppState): Promise<void>;
+export function savePracticeAttempt(
+  user: User,
+  rec: Omit<PracticeAttempt, "id" | "takenAt">,
+): Promise<{ id: string; taken_at: string } | null>;
 export function loadCommunity(query?: string, type?: string): Promise<CommunityItem[]>;
 export function importCommunityItem(user: User, item: CommunityItem): Promise<void>;
 

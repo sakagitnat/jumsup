@@ -1,6 +1,7 @@
 import { api } from "../lib/api.js";
 import { backendEnabled } from "../lib/supabase.js";
 import { startDailyFeature } from "../lib/policy.js";
+import { savePracticeAttempt } from "../lib/cloud.js";
 import { store } from "../store/store";
 import { getCurrentUser } from "../app/cloudSync";
 import { proPopup, toast } from "../ui/toast";
@@ -8,6 +9,7 @@ import type { PracticeSet } from "../store/types";
 import {
   attemptStore,
   buildAttemptQuestions,
+  type Attempt,
   type PracticeKind,
 } from "../screens/practice/session";
 
@@ -84,6 +86,7 @@ export async function startPracticeSession(
 export function submitPracticeUsage() {
   const attempt = attemptStore.get();
   if (!attempt) return;
+  recordPracticeAttempt(attempt);
   const key = activeUsageSessions[attempt.kind];
   if (key && backendEnabled) {
     api("/api/usage/save", {
@@ -96,4 +99,53 @@ export function submitPracticeUsage() {
     }).catch(console.error);
   }
   delete activeUsageSessions[attempt.kind];
+}
+
+let lastRecordedAttempt = 0;
+
+/** Append the finished attempt to practiceHistory (local + cloud, best-effort). */
+function recordPracticeAttempt(attempt: Attempt) {
+  if (attempt.startedAt === lastRecordedAttempt) return;
+  lastRecordedAttempt = attempt.startedAt;
+
+  const { questions, answers, kind, set } = attempt;
+  const total = questions.length;
+  const correct = questions.reduce(
+    (n, q) => n + (Number(answers[q._attemptKey]) === Number(q.answer) ? 1 : 0),
+    0,
+  );
+  const percent = total ? Math.round((correct / total) * 100) : 0;
+  const seconds = Math.max(1, Math.round((Date.now() - attempt.startedAt) / 1000));
+
+  const rec = {
+    kind,
+    setId: set.id,
+    title: set.title || "",
+    total,
+    correct,
+    percent,
+    seconds,
+  };
+  const local = {
+    ...rec,
+    id: `local-${attempt.startedAt}`,
+    takenAt: new Date().toISOString(),
+  };
+  store.set({ practiceHistory: [local, ...store.get().practiceHistory].slice(0, 200) });
+
+  const user = getCurrentUser();
+  if (user && backendEnabled) {
+    savePracticeAttempt(user, rec)
+      .then((row) => {
+        if (!row) return;
+        store.set({
+          practiceHistory: store
+            .get()
+            .practiceHistory.map((a) =>
+              a.id === local.id ? { ...a, id: row.id, takenAt: row.taken_at } : a,
+            ),
+        });
+      })
+      .catch(console.error);
+  }
 }
