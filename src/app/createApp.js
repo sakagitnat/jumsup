@@ -451,7 +451,10 @@ export async function createApp(root){
  }
  async function markKnown(i){
   if(!study)return;
-  if(currentUser&&backendEnabled){
+  // Official/starter decks are client-only seed data with no row in vocab_sets,
+  // so mark_word_mastered raises FORBIDDEN for them. Track their progress locally.
+  const officialDeck=store.get().decks.find(d=>d.id===study.deckId)?.official;
+  if(currentUser&&backendEnabled&&!officialDeck){
     const {data,error}=await supabase.rpc("mark_word_mastered",{p_set_id:study.deckId,p_index:i});
     if(error)throw error;
     study.mastered=[...(data.mastered||[])];
