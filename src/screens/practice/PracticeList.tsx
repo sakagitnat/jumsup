@@ -100,7 +100,7 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
                   {official ? "ชุดทางการ" : x.visibility === "public" ? "สาธารณะ" : "ส่วนตัว"}
                 </Tag>
                 <span className="text-xs text-subtle">
-                  {x.category || x.type || titles[kind]}
+                  {examLabel(x.exam) || titles[kind]}
                 </span>
               </div>
               <h3 className="mt-2 text-base font-semibold">{x.title}</h3>

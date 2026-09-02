@@ -110,7 +110,6 @@ interface PracticeInput {
   title: string;
   visibility: Visibility;
   minutes: number;
-  category: string;
   exam: string;
   skill: string;
   level: string;
@@ -127,10 +126,6 @@ function localSavePractice(input: PracticeInput, newId: string, visibility: Visi
     itemCount,
     questions: input.kind === "mock" ? itemCount : input.sections.flatMap((s) => s.questions ?? []),
   };
-  if (input.category) {
-    if (input.kind === "reading") payload.category = input.category;
-    else payload.type = input.category;
-  }
   if (input.kind === "reading") payload.text = input.sections[0]?.text || "";
   if (input.kind === "listening") payload.script = input.sections[0]?.script || "";
   if (input.kind === "writing") payload.passage = input.sections[0]?.passage || "";

@@ -51,7 +51,6 @@ export function PracticeEditor({
     existing?.visibility === "public" ? "public" : "private",
   );
   const [minutes, setMinutes] = useState(Number(existing?.minutes || 10));
-  const [category, setCategory] = useState(existing?.category || existing?.type || "");
   const [sections, setSections] = useState<PracticeSection[]>(
     existing?.sections?.length
       ? existing.sections.map((s) => ({ ...s, questions: (s.questions ?? []).map((q) => ({ ...q })) }))
@@ -115,7 +114,6 @@ export function PracticeEditor({
           title: cleanTitle,
           visibility,
           minutes,
-          category: category.trim(),
           sections: normalized,
           ...tags,
         },
@@ -173,14 +171,6 @@ export function PracticeEditor({
               max={240}
               value={minutes}
               onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 1))}
-              className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-normal"
-            />
-          </label>
-          <label className="block text-sm font-semibold">
-            หมวด/ประเภท (ไม่บังคับ)
-            <input
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-normal"
             />
           </label>
