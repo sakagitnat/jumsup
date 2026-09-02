@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { useT } from "../store/useT";
+import { useStore } from "../store/useStore";
+import { logout } from "../actions/auth";
 import { cx } from "../ui/cx";
 import { navGroups, homeItem } from "./nav";
 import { ProfileMini } from "./ProfileMini";
@@ -27,6 +29,7 @@ function Item({ to, label, icon }: { to: string; label: string; icon: ReactNode 
 
 export function Sidebar() {
   const t = useT();
+  const user = useStore((s) => s.user);
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
@@ -58,6 +61,29 @@ export function Sidebar() {
         <div className="min-w-0 flex-1">
           <ProfileMini />
         </div>
+        {user && (
+          <button
+            type="button"
+            aria-label="ออกจากระบบ"
+            title="ออกจากระบบ"
+            onClick={logout}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:bg-danger-soft hover:text-danger"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="m16 17 5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+          </button>
+        )}
         <ThemeToggle />
       </div>
     </aside>

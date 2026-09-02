@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { PageHeader } from "../../ui";
+import { useStore } from "../../store/useStore";
+import { logout } from "../../actions/auth";
+import { PageHeader, Button } from "../../ui";
 
 const tabs: Array<[string, string, string]> = [
   ["profile", "โปรไฟล์", "ชื่อ รูปภาพ และกิจกรรมการเรียน"],
@@ -9,6 +11,8 @@ const tabs: Array<[string, string, string]> = [
 ];
 
 export function Account() {
+  const user = useStore((s) => s.user);
+
   return (
     <>
       <PageHeader eyebrow="ACCOUNT" title="บัญชีของฉัน" description="เลือกหัวข้อที่ต้องการจัดการ" />
@@ -27,6 +31,12 @@ export function Account() {
           </Link>
         ))}
       </div>
+
+      {user && (
+        <Button variant="secondary" className="mt-4" onClick={logout}>
+          ออกจากระบบ
+        </Button>
+      )}
     </>
   );
 }
