@@ -12,6 +12,7 @@ import { MatchGame } from "../screens/games/MatchGame";
 import { CrosswordGame } from "../screens/games/CrosswordGame";
 import { Onboarding } from "../screens/onboarding/Onboarding";
 import { Community } from "../screens/community/Community";
+import { Library } from "../screens/library/Library";
 import { Account } from "../screens/account/Account";
 import { AccountProfile } from "../screens/account/AccountProfile";
 import { AccountBilling } from "../screens/account/AccountBilling";
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
           { path: "/mock/play/:id", element: <PracticePlay kind="mock" /> },
           { path: "/practice/result", element: <Result /> },
 
+          { path: "/library", element: <Library /> },
           { path: "/community", element: <Community /> },
 
           { path: "/account", element: <Account /> },

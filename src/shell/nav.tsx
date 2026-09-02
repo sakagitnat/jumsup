@@ -77,6 +77,12 @@ export const icons = {
       <path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3-.4 5 1.3 6 4" />
     </>,
   ),
+  library: s(
+    <>
+      <path d="M4 5h4v14H4zM10 5h4v14h-4z" />
+      <path d="m16 6 3.5-.8 3 12.8-3.5.8z" />
+    </>,
+  ),
   account: s(
     <>
       <circle cx="12" cy="8" r="4" />
@@ -106,6 +112,7 @@ export const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "manage",
     items: [
+      { to: "/library", key: "library", icon: icons.library },
       { to: "/community", key: "community", icon: icons.community },
       { to: "/account", key: "account", icon: icons.account },
     ],
