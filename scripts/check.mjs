@@ -34,6 +34,7 @@ for(const [sets,fixedCount] of expected){for(const set of sets){const count=fixe
 if(defaultMocks.find(x=>x.id==="jumsup-tgat1-mock-1")?.sections.map(x=>x.questions.length).join("/")!=="30/30")fail("TGAT1 blueprint must be 30 Speaking and 30 Reading");
 const bannedDistractors=new Set(["A detail not stated in the passage","The opposite of the stated information","An unrelated idea"]);
 for(const q of defaultReading.flatMap(set=>set.sections.flatMap(section=>section.questions)))if(q.choices.some(choice=>bannedDistractors.has(choice)))fail(`${q.id} contains placeholder distractors`);
+for(const q of defaultListening.flatMap(set=>set.sections.flatMap(section=>section.questions)))if(q.choices.some(choice=>bannedDistractors.has(choice)))fail(`${q.id} contains placeholder distractors`);
 const trialMigration=fs.readFileSync("supabase/migrations/013_three_practice_trials.sql","utf8");
 for(const marker of ["used>=3","interval '3 days'","'remaining',2-used","'retry_at',cooldown"]){if(!trialMigration.includes(marker))fail(`missing three-trial marker ${marker}`)}
 console.log("Jumsup V6 audited structure OK");
