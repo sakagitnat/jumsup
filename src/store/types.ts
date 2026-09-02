@@ -97,7 +97,6 @@ export interface Subscription {
 export interface FlashSettings {
   loopSize: number;
   autoSpeak: boolean;
-  showMeaning: boolean;
   shuffle: boolean;
 }
 

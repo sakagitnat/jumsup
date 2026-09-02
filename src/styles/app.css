@@ -146,3 +146,9 @@
     }
   }
 }
+
+@keyframes card-flip-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}

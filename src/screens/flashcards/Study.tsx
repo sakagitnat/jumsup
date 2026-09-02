@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { speak } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
 import { markWordMastered } from "../../actions/flashcards";
-import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast } from "../../ui";
+import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast, cx } from "../../ui";
 
 export function Study() {
   const { deckId = "" } = useParams();
@@ -20,6 +20,13 @@ export function Study() {
   const [cursor, setCursor] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [flipped, setFlipped] = useState(false);
+  const [pop, setPop] = useState(false);
+
+  const toggleFlip = useCallback(() => {
+    setFlipped((f) => !f);
+    setPop(true);
+    window.setTimeout(() => setPop(false), 450);
+  }, []);
 
   const pool = Math.min(poolSize, deck?.words.length ?? 0);
   const activeIndices = useMemo(() => {
@@ -72,12 +79,12 @@ export function Study() {
         miss();
       } else if (e.key === " ") {
         e.preventDefault();
-        setFlipped((f) => !f);
+        toggleFlip();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [know, miss]);
+  }, [know, miss, toggleFlip]);
 
   // swipe / tap. Pointer capture is taken *only* once a real drag starts, so a
   // plain tap still delivers a click (that capture-on-pointerdown was swallowing
@@ -154,7 +161,7 @@ export function Study() {
     }
 
     if (moved < 10) {
-      setFlipped((f) => !f);
+      toggleFlip();
     }
     relax();
   };
@@ -228,7 +235,10 @@ export function Study() {
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              className="touch-pan-y select-none [perspective:1600px] [transform:translate3d(0,0,0)]"
+              className={cx(
+                "touch-pan-y select-none [perspective:1600px] [transform:translate3d(0,0,0)]",
+                pop && "animate-[card-flip-pop_0.45s_ease]",
+              )}
             >
               <div
                 role="button"
@@ -236,11 +246,11 @@ export function Study() {
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();
-                    setFlipped((f) => !f);
+                    toggleFlip();
                   }
                 }}
                 aria-label="พลิกการ์ด"
-                className="relative block min-h-[320px] w-full cursor-pointer rounded-3xl [transform-style:preserve-3d] transition-transform duration-300"
+                className="relative block min-h-[320px] w-full cursor-pointer rounded-3xl will-change-transform [transform-style:preserve-3d] transition-transform duration-500 [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)]"
                 style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
               >
                 {/* front — term */}
@@ -273,11 +283,8 @@ export function Study() {
                     </svg>
                   </button>
                   <h2 className="text-4xl font-semibold">{word?.w}</h2>
-                  {(word?.stress || word?.p) && (
-                    <div className="mt-2 text-sm text-subtle">{word?.stress || word?.p}</div>
-                  )}
-                  {flashSettings.showMeaning && word?.m && (
-                    <div className="mt-4 text-base text-muted">{word.m}</div>
+                  {(word?.p || word?.stress) && (
+                    <div className="mt-2 text-sm text-subtle">{word?.p || word?.stress}</div>
                   )}
                   <span className="absolute bottom-5 text-xs text-subtle">แตะเพื่อพลิก</span>
                 </div>
@@ -337,7 +344,6 @@ export function Study() {
           {(
             [
               ["autoSpeak", "อ่านเสียงอัตโนมัติ"],
-              ["showMeaning", "แสดงคำแปลทันที"],
               ["shuffle", "สุ่มลำดับคำ"],
             ] as const
           ).map(([key, label]) => (
