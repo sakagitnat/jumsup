@@ -71,7 +71,7 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex items-center gap-2">
                 {mode === "flash" ? (
                   <LinkButton variant="primary" size="sm" to={`/flash/study/${d.id}`}>
                     เริ่ม Flashcards
@@ -82,14 +82,26 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                   </Button>
                 )}
                 {!d.official && (
-                  <>
-                    <Button size="sm" onClick={() => setEditor({ open: true, id: d.id })}>
-                      แก้ไข
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => setDel(d.id)}>
-                      ลบ
-                    </Button>
-                  </>
+                  <div className="ml-auto flex gap-1">
+                    <button
+                      type="button"
+                      aria-label="แก้ไขชุด"
+                      title="แก้ไข"
+                      onClick={() => setEditor({ open: true, id: d.id })}
+                      className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="ลบชุด"
+                      title="ลบ"
+                      onClick={() => setDel(d.id)}
+                      className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-danger-soft hover:text-danger"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 )}
               </div>
             </Card>

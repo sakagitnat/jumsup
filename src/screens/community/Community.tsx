@@ -9,7 +9,7 @@ import {
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
 import { CommunityPreviewModal } from "./CommunityPreview";
-import { PageHeader, Card, Tag, Button, EmptyState, Modal, cx } from "../../ui";
+import { PageHeader, Card, Tag, Button, EmptyState, Modal, StarRating, cx } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
 type Tab = "vocab" | "skill";
@@ -150,37 +150,58 @@ export function Community() {
             <p className="text-sm text-muted">
               {x.count || 1} รายการ · สร้างโดย <b>@{x.creator}</b>
             </p>
-            <div className="mt-2 flex gap-4 text-sm text-muted">
-              <span title="คะแนน">
-                ★ <b>{Number(x.rating || 0).toFixed(1)}</b> <small>({x.ratingCount || 0})</small>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+              <span className="inline-flex items-center gap-1">
+                <StarRating value={Math.round(x.rating || 0)} size="sm" readOnly />
+                <b>{Number(x.rating || 0).toFixed(1)}</b>
+                <small>({x.ratingCount || 0})</small>
               </span>
-              <span title="ถูกใจ">
-                ♥ <b>{x.likeCount || 0}</b>
-              </span>
-              <span title="นำเข้า">
-                ⇩ <b>{x.importCount || 0}</b>
-              </span>
+              <span title="นำเข้า">⇩ {x.importCount || 0}</span>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setPreviewFor(x)}>
-                ดูตัวอย่าง
-              </Button>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted">ให้คะแนน:</span>
+              <StarRating
+                value={0}
+                size="sm"
+                onChange={(n) => reviewCommunity(x, n, "", reload)}
+              />
+              <button
+                type="button"
+                onClick={() => setReviewFor(x)}
+                className="text-primary hover:underline"
+              >
+                เขียนรีวิว
+              </button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button variant="primary" size="sm" onClick={() => importCommunity(x, reload)}>
                 นำเข้า
               </Button>
-              <Button
-                size="sm"
-                variant={x.liked ? "success" : "secondary"}
+              <Button size="sm" onClick={() => setPreviewFor(x)}>
+                ดูตัวอย่าง
+              </Button>
+              <button
+                type="button"
+                aria-label="ถูกใจ"
                 onClick={() => likeCommunity(x, reload)}
+                className={cx(
+                  "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-sm font-semibold",
+                  x.liked
+                    ? "border-transparent bg-danger-soft text-danger"
+                    : "border-line text-muted hover:bg-surface-2",
+                )}
               >
-                {x.liked ? "♥ ถูกใจแล้ว" : "♡ ถูกใจ"}
-              </Button>
-              <Button size="sm" onClick={() => setReviewFor(x)}>
-                ให้คะแนน
-              </Button>
-              <Button size="sm" onClick={() => setReportFor(x)}>
+                {x.liked ? "♥" : "♡"} {x.likeCount || 0}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportFor(x)}
+                className="ml-auto text-xs text-subtle hover:text-muted"
+              >
                 รายงาน
-              </Button>
+              </button>
             </div>
           </Card>
         ))}
@@ -230,18 +251,10 @@ function ReviewModal({
       }
     >
       <label className="block text-sm font-semibold">คะแนน</label>
-      <select
-        value={rating}
-        onChange={(e) => setRating(Number(e.target.value))}
-        className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-      >
-        {[5, 4, 3, 2, 1].map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </select>
-      <label className="mt-3 block text-sm font-semibold">รีวิว</label>
+      <div className="mt-1">
+        <StarRating value={rating} onChange={setRating} size="lg" />
+      </div>
+      <label className="mt-3 block text-sm font-semibold">รีวิว (ไม่บังคับ)</label>
       <textarea
         rows={4}
         maxLength={1000}

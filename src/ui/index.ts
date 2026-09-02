@@ -7,5 +7,6 @@ export { Progress } from "./Progress";
 export { PageHeader } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { Switch } from "./Switch";
+export { StarRating } from "./StarRating";
 export { Toaster, toast, proPopup } from "./toast";
 export { cx } from "./cx";
