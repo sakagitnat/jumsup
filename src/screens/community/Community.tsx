@@ -10,6 +10,7 @@ import {
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
 import { CommunityPreviewModal } from "./CommunityPreview";
+import { ReviewsModal } from "./ReviewsModal";
 import { PageHeader, Card, Tag, Button, EmptyState, Modal, StarRating, toast, cx } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
@@ -201,14 +202,14 @@ export function Community() {
               <StarRating
                 value={0}
                 size="sm"
-                onChange={(n) => reviewCommunity(x, n, "", reload)}
+                onChange={(n) => reviewCommunity(x, n, "", false, reload)}
               />
               <button
                 type="button"
                 onClick={() => setReviewFor(x)}
                 className="text-primary hover:underline"
               >
-                เขียนรีวิว
+                รีวิว ({x.ratingCount || 0})
               </button>
             </div>
 
@@ -258,59 +259,15 @@ export function Community() {
         item={previewFor}
         onClose={() => setPreviewFor(null)}
         onImport={(it) => importCommunity(it, reload)}
+        onReviews={(it) => setReviewFor(it)}
       />
-      <ReviewModal item={reviewFor} onClose={() => setReviewFor(null)} reload={reload} />
+      <ReviewsModal
+        item={reviewFor}
+        onClose={() => setReviewFor(null)}
+        onChanged={reload}
+      />
       <ReportModal item={reportFor} onClose={() => setReportFor(null)} />
     </>
-  );
-}
-
-function ReviewModal({
-  item,
-  onClose,
-  reload,
-}: {
-  item: CommunityItem | null;
-  onClose: () => void;
-  reload: () => void;
-}) {
-  const [rating, setRating] = useState(5);
-  const [body, setBody] = useState("");
-  return (
-    <Modal
-      open={!!item}
-      onClose={onClose}
-      title="ให้คะแนนชุดฝึก"
-      footer={
-        <>
-          <Button onClick={onClose}>ยกเลิก</Button>
-          <Button
-            variant="primary"
-            onClick={async () => {
-              if (item) await reviewCommunity(item, rating, body.trim(), reload);
-              onClose();
-              setBody("");
-            }}
-          >
-            บันทึก
-          </Button>
-        </>
-      }
-    >
-      <label className="block text-sm font-semibold">คะแนน</label>
-      <div className="mt-1">
-        <StarRating value={rating} onChange={setRating} size="lg" />
-      </div>
-      <label className="mt-3 block text-sm font-semibold">รีวิว (ไม่บังคับ)</label>
-      <textarea
-        rows={4}
-        maxLength={1000}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder="บอกสิ่งที่เป็นประโยชน์กับผู้เรียนคนอื่น"
-        className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-      />
-    </Modal>
   );
 }
 

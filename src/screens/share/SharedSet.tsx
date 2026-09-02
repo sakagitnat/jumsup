@@ -5,6 +5,7 @@ import { useStore } from "../../store/useStore";
 import { loginGoogle } from "../../actions/auth";
 import { importCommunity } from "../../actions/community";
 import { SetContentView } from "../community/SetContentView";
+import { ReviewsModal } from "../community/ReviewsModal";
 import { PageHeader, Card, Button, EmptyState, toast } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
@@ -15,6 +16,20 @@ export function SharedSet() {
   const [data, setData] = useState<PublicSet | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+
+  const asItem = (): CommunityItem | null =>
+    data
+      ? {
+          id: data.id,
+          type: kind === "vocab" ? "vocab" : "skill",
+          sourceKind: kind === "vocab" ? undefined : kind,
+          kind: kind === "vocab" ? undefined : kind,
+          title: data.title,
+          creator: data.creator,
+          official: false,
+        }
+      : null;
 
   useEffect(() => {
     setLoading(true);
@@ -81,6 +96,7 @@ export function SharedSet() {
         }
         actions={
           <>
+            <Button onClick={() => setReviewsOpen(true)}>ดูรีวิว</Button>
             <Button
               onClick={() => {
                 navigator.clipboard?.writeText(window.location.href);
@@ -104,6 +120,14 @@ export function SharedSet() {
       <Card>
         <SetContentView data={data} />
       </Card>
+
+      {reviewsOpen && (
+        <ReviewsModal
+          item={asItem()}
+          onClose={() => setReviewsOpen(false)}
+          onChanged={() => {}}
+        />
+      )}
     </>
   );
 }

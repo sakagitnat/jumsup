@@ -179,9 +179,27 @@ export async function toggleCommunityLike(user,item){
   if(error)throw error;return true;
 }
 
-export async function saveCommunityReview(user,item,rating,body=""){
+export async function saveCommunityReview(user,item,rating,body="",anonymous=false){
   if(!user||!item)throw new Error("Login required");
-  const {error}=await supabase.from("content_reviews").upsert({user_id:user.id,content_type:item.type,content_id:item.id,rating,body,updated_at:new Date().toISOString()},{onConflict:"user_id,content_type,content_id"});if(error)throw error;
+  const {error}=await supabase.from("content_reviews").upsert({user_id:user.id,content_type:item.type,content_id:item.id,rating,body,anonymous:!!anonymous,updated_at:new Date().toISOString()},{onConflict:"user_id,content_type,content_id"});if(error)throw error;
+}
+
+export async function deleteCommunityReview(user,item){
+  if(!user||!item)throw new Error("Login required");
+  const {error}=await supabase.from("content_reviews").delete()
+    .match({user_id:user.id,content_type:item.type,content_id:item.id});
+  if(error)throw error;
+}
+
+export async function loadContentReviews(type,id){
+  if(!backendEnabled)return [];
+  const {data,error}=await supabase.rpc("get_content_reviews",{p_type:type,p_id:id});
+  if(error)throw error;
+  return (data||[]).map(r=>({
+    rating:r.rating,body:r.body||"",anonymous:!!r.anonymous,
+    createdAt:r.created_at,updatedAt:r.updated_at,
+    isMine:!!r.is_mine,displayName:r.display_name||""
+  }));
 }
 
 export async function reportCommunityContent(user,item,reason){

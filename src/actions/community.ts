@@ -4,9 +4,12 @@ import {
   importCommunityItem,
   toggleCommunityLike,
   saveCommunityReview,
+  deleteCommunityReview,
+  loadContentReviews,
   reportCommunityContent,
   loadCommunityPreview,
   type CommunityPreview,
+  type ContentReview,
 } from "../lib/cloud.js";
 import { store } from "../store/store";
 import { getCurrentUser, hydrateFromCloud, scheduleSync } from "../app/cloudSync";
@@ -217,13 +220,14 @@ export async function reviewCommunity(
   item: CommunityItem,
   rating: number,
   body: string,
+  anonymous: boolean,
   refresh: () => void,
 ) {
   const user = getCurrentUser();
   if (backendEnabled) {
     if (!user) return toast("กรุณาเข้าสู่ระบบก่อนให้คะแนน");
     try {
-      await saveCommunityReview(user, item, rating, body);
+      await saveCommunityReview(user, item, rating, body, anonymous);
     } catch (e) {
       return toast(friendly(e));
     }
@@ -237,7 +241,52 @@ export async function reviewCommunity(
     });
   }
   refresh();
-  toast("บันทึกคะแนนและรีวิวแล้ว");
+  toast("บันทึกรีวิวแล้ว");
+}
+
+export async function deleteReview(item: CommunityItem, refresh: () => void) {
+  const user = getCurrentUser();
+  if (backendEnabled) {
+    if (!user) return;
+    try {
+      await deleteCommunityReview(user, item);
+    } catch (e) {
+      return toast(friendly(e));
+    }
+  } else {
+    const s = store.get();
+    const next = { ...(s.communityReviews || {}) };
+    delete next[item.id];
+    store.set({ communityReviews: next });
+  }
+  refresh();
+  toast("ลบรีวิวแล้ว");
+}
+
+export type { ContentReview };
+
+export async function getReviews(item: CommunityItem): Promise<ContentReview[]> {
+  if (!backendEnabled) {
+    const r = store.get().communityReviews?.[item.id];
+    return r
+      ? [
+          {
+            rating: r.rating,
+            body: r.body,
+            anonymous: false,
+            createdAt: r.createdAt,
+            updatedAt: r.createdAt,
+            isMine: true,
+            displayName: store.get().profile?.username || "คุณ",
+          },
+        ]
+      : [];
+  }
+  try {
+    return await loadContentReviews(item.type, item.id);
+  } catch {
+    return [];
+  }
 }
 
 export async function reportCommunity(item: CommunityItem, reason: string) {

@@ -42,7 +42,20 @@ export function saveCommunityReview(
   item: CommunityItem,
   rating: number,
   body?: string,
+  anonymous?: boolean,
 ): Promise<void>;
+export function deleteCommunityReview(user: User, item: CommunityItem): Promise<void>;
+
+export interface ContentReview {
+  rating: number;
+  body: string;
+  anonymous: boolean;
+  createdAt: string;
+  updatedAt: string;
+  isMine: boolean;
+  displayName: string;
+}
+export function loadContentReviews(type: string, id: string): Promise<ContentReview[]>;
 export function reportCommunityContent(
   user: User,
   item: CommunityItem,

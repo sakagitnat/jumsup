@@ -13,10 +13,12 @@ export function CommunityPreviewModal({
   item,
   onClose,
   onImport,
+  onReviews,
 }: {
   item: CommunityItem | null;
   onClose: () => void;
   onImport: (item: CommunityItem) => void;
+  onReviews?: (item: CommunityItem) => void;
 }) {
   const [data, setData] = useState<Preview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,16 @@ export function CommunityPreviewModal({
       footer={
         <>
           <Button onClick={onClose}>ปิด</Button>
+          {onReviews && (
+            <Button
+              onClick={() => {
+                onReviews(item);
+                onClose();
+              }}
+            >
+              รีวิว ({item.ratingCount || 0})
+            </Button>
+          )}
           <Button
             onClick={() => {
               navigator.clipboard?.writeText(shareUrl(item));
