@@ -1,0 +1,132 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useStore } from "../../store/useStore";
+import { startPracticeSession } from "../../actions/practice";
+import { deleteContent } from "../../actions/content";
+import { PracticeEditor } from "./PracticeEditor";
+import { DeleteDialog } from "../common/DeleteDialog";
+import { BulkImport } from "../import/BulkImport";
+import { PageHeader, Card, Tag, Button, EmptyState } from "../../ui";
+import type { PracticeKind } from "./session";
+import type { PracticeSet } from "../../store/types";
+
+const titles: Record<PracticeKind, string> = {
+  reading: "Reading",
+  listening: "Listening",
+  writing: "Writing",
+  mock: "Mock Exam",
+};
+
+const specs: Record<PracticeKind, string[]> = {
+  reading: ["Advertisements & visuals", "Reviews & news", "General articles"],
+  listening: ["Short conversations", "Long conversation", "Speaking in context"],
+  writing: ["Text completion", "Grammar in context", "Paragraph organization"],
+  mock: ["20 Listening", "40 Reading", "20 Writing"],
+};
+
+export function PracticeList({ kind }: { kind: PracticeKind }) {
+  const navigate = useNavigate();
+  const list = useStore((s) => (kind === "mock" ? s.mocks : s[kind])) as PracticeSet[];
+  const [editor, setEditor] = useState<{ open: boolean; id: string | null }>({
+    open: false,
+    id: null,
+  });
+  const [del, setDel] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  const start = async (id: string) => {
+    if (await startPracticeSession(kind, id)) navigate(`/${kind}/play/${id}`);
+  };
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="PRACTICE"
+        title={titles[kind]}
+        description="เลือกชุดก่อนเข้าสู่หน้าฝึกจริง หรือสร้างชุดของคุณเอง"
+        actions={
+          <>
+            <Button variant="primary" onClick={() => setEditor({ open: true, id: null })}>
+              + สร้างชุดใหม่
+            </Button>
+            <Button onClick={() => setImporting(true)}>นำเข้าจาก CSV</Button>
+            <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
+          </>
+        }
+      />
+
+      <Card soft className="mb-4">
+        <Tag tone="info">SKILL PRACTICE</Tag>
+        <h2 className="mt-2 text-lg font-semibold">{titles[kind]}</h2>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {specs[kind].map((x, i) => (
+            <div key={x} className="rounded-xl border border-line bg-surface px-3 py-2 text-center">
+              <strong className="block">{i + 1}</strong>
+              <small className="text-xs text-muted">{x}</small>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {list.length === 0 && <EmptyState>ยังไม่มีชุดฝึกในหมวดนี้</EmptyState>}
+        {list.map((x) => {
+          const official = x.official;
+          const count = typeof x.questions === "number" ? x.questions : x.itemCount;
+          return (
+            <Card key={x.id} className="flex flex-col">
+              <div className="flex items-center justify-between gap-2">
+                <Tag tone={official || x.visibility === "public" ? "success" : "info"}>
+                  {official ? "ชุดทางการ" : x.visibility === "public" ? "สาธารณะ" : "ส่วนตัว"}
+                </Tag>
+                <span className="text-xs text-subtle">
+                  {x.category || x.type || titles[kind]}
+                </span>
+              </div>
+              <h3 className="mt-2 text-base font-semibold">{x.title}</h3>
+              <p className="text-sm text-muted">
+                สร้างโดย @{x.creator || "Jumsup"}
+                {x.minutes ? ` · ${x.minutes} นาที` : ""}
+                {count ? ` · ${count} ข้อ` : ""}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="primary" size="sm" onClick={() => start(x.id)}>
+                  เริ่มฝึก
+                </Button>
+                {!official && (
+                  <>
+                    <Button size="sm" onClick={() => setEditor({ open: true, id: x.id })}>
+                      แก้ไข
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={() => setDel(x.id)}>
+                      ลบ
+                    </Button>
+                  </>
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {editor.open && (
+        <PracticeEditor
+          kind={kind}
+          id={editor.id}
+          onClose={() => setEditor({ open: false, id: null })}
+        />
+      )}
+      <DeleteDialog
+        open={del !== null}
+        onClose={() => setDel(null)}
+        onConfirm={() => {
+          if (del) deleteContent(kind, del);
+          setDel(null);
+        }}
+      />
+      {importing && (
+        <BulkImport kind={kind} onClose={() => setImporting(false)} onDone={() => {}} />
+      )}
+    </>
+  );
+}

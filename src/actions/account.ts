@@ -1,0 +1,82 @@
+import { api } from "../lib/api.js";
+import { backendEnabled } from "../lib/supabase.js";
+import { uploadAvatar } from "../lib/cloud.js";
+import { store } from "../store/store";
+import { getCurrentUser, hydrateFromCloud } from "../app/cloudSync";
+import { toast } from "../ui/toast";
+
+export async function redeemGift(code: string) {
+  const user = getCurrentUser();
+  try {
+    await api("/api/gift/redeem", { method: "POST", body: JSON.stringify({ code }) });
+    if (user) await hydrateFromCloud(user);
+    toast("แลก Gift Code สำเร็จ");
+  } catch (e) {
+    toast((e as Error).message || "แลกโค้ดไม่สำเร็จ");
+  }
+}
+
+export async function claimReferral(code: string) {
+  const user = getCurrentUser();
+  try {
+    await api("/api/referral/claim", { method: "POST", body: JSON.stringify({ code }) });
+    if (user) await hydrateFromCloud(user);
+    toast("ใช้ Referral สำเร็จ");
+  } catch (e) {
+    toast((e as Error).message || "ใช้โค้ดไม่สำเร็จ");
+  }
+}
+
+export async function exportAccountData() {
+  try {
+    const data = await api("/api/account/export");
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jumsup-data.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    toast((e as Error).message || "ดาวน์โหลดข้อมูลไม่สำเร็จ");
+  }
+}
+
+export async function requestAccountDelete() {
+  try {
+    const d = await api<{ execute_after: string }>("/api/account/request-delete", {
+      method: "POST",
+      body: "{}",
+    });
+    toast(
+      `ส่งคำขอลบบัญชีแล้ว กำหนดดำเนินการหลัง ${new Date(d.execute_after).toLocaleDateString()}`,
+    );
+  } catch (e) {
+    toast((e as Error).message || "ส่งคำขอไม่สำเร็จ");
+  }
+}
+
+export async function submitRefundRequest(reason: string, cancelSubscription: boolean) {
+  const user = getCurrentUser();
+  try {
+    await api("/api/refund/request", {
+      method: "POST",
+      body: JSON.stringify({ reason, cancel_subscription: cancelSubscription }),
+    });
+    if (user) await hydrateFromCloud(user);
+    toast("ส่งคำขอคืนเงินแล้ว ผู้ดูแลจะตรวจสอบก่อนดำเนินการ");
+  } catch (e) {
+    toast((e as Error).message || "ส่งคำขอคืนเงินไม่สำเร็จ");
+  }
+}
+
+export async function changeAvatar(file: File) {
+  const user = getCurrentUser();
+  if (!file || !user || !backendEnabled) return;
+  try {
+    const url = await uploadAvatar(user, file);
+    store.set({ profile: { ...store.get().profile, avatar_url: url } });
+  } catch (e) {
+    toast((e as Error).message || "อัปโหลดรูปไม่สำเร็จ");
+  }
+}
