@@ -8,3 +8,8 @@ admin-dist/
 !.dev.vars.example
 .DS_Store
 *.log
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+.supabase/
