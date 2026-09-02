@@ -98,6 +98,8 @@ export interface FlashSettings {
   loopSize: number;
   autoSpeak: boolean;
   shuffle: boolean;
+  voiceURI: string;
+  rate: number;
 }
 
 export interface CommunityItem {

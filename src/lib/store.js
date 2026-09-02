@@ -12,7 +12,7 @@ const initial=()=>({
   {id:"jumsup-tcas-should-know",name:"TCAS English · ควรรู้",visibility:"public",creator:"Jumsup Official",official:true,words:shouldKnowWords}
  ],
  progress:{},
- flashSettings:{loopSize:10,autoSpeak:false,shuffle:false},
+ flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,voiceURI:"",rate:0.9},
  reading:defaultReading,listening:defaultListening,writing:defaultWriting,
  mocks:defaultMocks,
  community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{}

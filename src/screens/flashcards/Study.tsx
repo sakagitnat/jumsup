@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { speak } from "../../lib/utils.js";
+import { speak, englishVoices } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
 import { markWordMastered } from "../../actions/flashcards";
 import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast, cx } from "../../ui";
@@ -78,8 +78,19 @@ export function Study() {
   const idx = remaining.length ? remaining[cursor % remaining.length] : -1;
   const word = idx >= 0 ? deck?.words[idx] : undefined;
 
+  const [voices, setVoices] = useState(() => englishVoices());
   useEffect(() => {
-    if (word && flashSettings.autoSpeak) speak(word.w);
+    const refresh = () => setVoices(englishVoices());
+    refresh();
+    window.speechSynthesis?.addEventListener("voiceschanged", refresh);
+    return () => window.speechSynthesis?.removeEventListener("voiceschanged", refresh);
+  }, []);
+  const say = (text: string) =>
+    speak(text, "en-US", flashSettings.rate ?? 0.9, flashSettings.voiceURI || undefined);
+
+  useEffect(() => {
+    if (word && flashSettings.autoSpeak) say(word.w);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [word, flashSettings.autoSpeak]);
 
   // a new card always starts on the term side
@@ -129,7 +140,7 @@ export function Study() {
   );
 
   const speakWord = () => {
-    if (word) speak(word.w);
+    if (word) say(word.w);
   };
 
   const paint = (dx: number) => {
@@ -305,7 +316,7 @@ export function Study() {
                     ความหมาย
                   </span>
                   {word?.e && (
-                    <SpeakButton onSpeak={() => word?.e && speak(word.e)} tone="primary" />
+                    <SpeakButton onSpeak={() => word?.e && say(word.e)} tone="primary" />
                   )}
                   <p className="text-2xl font-semibold">{word?.m || "—"}</p>
                   {word?.e && (
@@ -355,6 +366,57 @@ export function Study() {
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2"
             />
           </label>
+          <label className="block">
+            <span className="text-sm font-semibold">เสียงอ่าน</span>
+            <select
+              value={flashSettings.voiceURI || ""}
+              onChange={(e) =>
+                store.set({ flashSettings: { ...flashSettings, voiceURI: e.target.value } })
+              }
+              className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+            >
+              <option value="">ค่าเริ่มต้นของอุปกรณ์</option>
+              {voices.map((v) => (
+                <option key={v.uri} value={v.uri}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
+            {voices.length === 0 && (
+              <span className="mt-1 block text-xs text-subtle">
+                อุปกรณ์นี้ไม่มีเสียงภาษาอังกฤษให้เลือกเพิ่ม
+              </span>
+            )}
+          </label>
+
+          <label className="block">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold">ความเร็วเสียง</span>
+              <button
+                type="button"
+                onClick={() => word && say(word.w)}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                ทดลองฟัง
+              </button>
+            </div>
+            <select
+              value={String(flashSettings.rate ?? 0.9)}
+              onChange={(e) =>
+                store.set({
+                  flashSettings: { ...flashSettings, rate: Number(e.target.value) },
+                })
+              }
+              className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+            >
+              <option value="0.7">ช้ามาก (0.7×)</option>
+              <option value="0.8">ช้า (0.8×)</option>
+              <option value="0.9">ปกติ (0.9×)</option>
+              <option value="1">เร็วขึ้น (1.0×)</option>
+              <option value="1.15">เร็ว (1.15×)</option>
+            </select>
+          </label>
+
           {(
             [
               ["autoSpeak", "อ่านเสียงอัตโนมัติ"],
