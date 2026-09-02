@@ -142,7 +142,7 @@ export function Landing() {
       <section className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 py-6 sm:grid-cols-4">
         {[
           ["4", "ทักษะหลัก"],
-          ["80", "ข้อใน Full Mock"],
+          ["80", "ข้อใน Mock"],
           ["5–20", "นาทีต่อวัน"],
           ["ฟรี", "เริ่มเรียนได้ทันที"],
         ].map(([n, label]) => (

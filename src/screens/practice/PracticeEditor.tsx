@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useStore } from "../../store/useStore";
 import { persistPractice, needsPublicUpgrade } from "../../actions/content";
 import { Modal, Button, toast } from "../../ui";
+import { TagPickers } from "../common/TagPickers";
 import type { PracticeKind } from "./session";
 import type { PracticeSection, Question } from "../../store/types";
 
@@ -56,8 +57,18 @@ export function PracticeEditor({
       ? existing.sections.map((s) => ({ ...s, questions: (s.questions ?? []).map((q) => ({ ...q })) }))
       : [emptySection()],
   );
+  const [tags, setTags] = useState({
+    exam: existing?.exam ?? "",
+    skill: existing?.skill ?? kind,
+    level: existing?.level ?? "",
+  });
   const [confirmPublic, setConfirmPublic] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const questionCount = useMemo(
+    () => sections.reduce((n, s) => n + (s.questions?.length ?? 0), 0),
+    [sections],
+  );
 
   const patchSection = (si: number, patch: Partial<PracticeSection>) =>
     setSections((prev) => prev.map((s, j) => (j === si ? { ...s, ...patch } : s)));
@@ -98,7 +109,16 @@ export function PracticeEditor({
     setBusy(true);
     try {
       await persistPractice(
-        { id, kind, title: cleanTitle, visibility, minutes, category: category.trim(), sections: normalized },
+        {
+          id,
+          kind,
+          title: cleanTitle,
+          visibility,
+          minutes,
+          category: category.trim(),
+          sections: normalized,
+          ...tags,
+        },
         asPublic,
       );
       onClose();
@@ -166,8 +186,12 @@ export function PracticeEditor({
           </label>
         </div>
 
+        <div className="mt-3">
+          <TagPickers value={tags} onChange={setTags} />
+        </div>
+
         <div className="mt-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">เนื้อหาและคำถาม</h3>
+          <h3 className="text-sm font-semibold">เนื้อหาและคำถาม · รวม {questionCount} ข้อ</h3>
           <Button size="sm" onClick={() => setSections((s) => [...s, emptySection()])}>
             + เพิ่ม Section
           </Button>

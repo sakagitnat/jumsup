@@ -7,7 +7,11 @@ import { PracticeEditor } from "../practice/PracticeEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
 import { PageHeader, Card, Button, LinkButton, EmptyState, Modal, toast } from "../../ui";
+import { examLabel, levelLabel } from "../../lib/taxonomy";
 import type { PracticeKind } from "../practice/session";
+
+const tagStr = (exam?: string, level?: string) =>
+  [examLabel(exam), levelLabel(level)].filter(Boolean).join(" · ");
 
 type DeckDialog = { open: boolean; id: string | null };
 type PracticeDialog = { open: boolean; kind: PracticeKind; id: string | null };
@@ -143,7 +147,9 @@ export function Library() {
             <Row
               key={d.id}
               title={d.name}
-              meta={`${d.words.length} คำ · ${d.visibility === "public" ? "สาธารณะ" : "ส่วนตัว"}`}
+              meta={`${d.words.length} คำ · ${
+                d.visibility === "public" ? "สาธารณะ" : "ส่วนตัว"
+              }${tagStr(d.exam, d.level) ? ` · ${tagStr(d.exam, d.level)}` : ""}`}
               onOpen={() => navigate(`/flash/study/${d.id}`)}
               onEdit={() => setDeckDialog({ open: true, id: d.id })}
               onDelete={() => setDel({ type: "deck", id: d.id })}
@@ -177,7 +183,7 @@ export function Library() {
                 title={x.title}
                 meta={`${x.itemCount || 0} ข้อ · ${x.minutes || 0} นาที · ${
                   x.visibility === "public" ? "สาธารณะ" : "ส่วนตัว"
-                }`}
+                }${tagStr(x.exam, x.level) ? ` · ${tagStr(x.exam, x.level)}` : ""}`}
                 onOpen={() => navigate(`/${kind}`)}
                 onEdit={() => setPracticeDialog({ open: true, kind, id: x.id })}
                 onDelete={() => setDel({ type: kind, id: x.id })}

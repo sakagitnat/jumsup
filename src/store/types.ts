@@ -16,6 +16,9 @@ export interface Deck {
   creator: string;
   official?: boolean;
   sourceType?: string;
+  exam?: string;
+  skill?: string;
+  level?: string;
   words: Word[];
 }
 
@@ -55,6 +58,9 @@ export interface PracticeSet {
   category?: string;
   type?: string;
   accent?: string;
+  exam?: string;
+  skill?: string;
+  level?: string;
   text?: string;
   script?: string;
   passage?: string;
@@ -110,6 +116,9 @@ export interface CommunityItem {
   rating?: number;
   ratingCount?: number;
   createdAt?: string;
+  exam?: string;
+  skill?: string;
+  level?: string;
 }
 
 export interface AppState {

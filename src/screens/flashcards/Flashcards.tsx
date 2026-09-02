@@ -7,6 +7,7 @@ import { DeckEditor } from "./DeckEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
 import { PageHeader, Card, Tag, Button, LinkButton } from "../../ui";
+import { examLabel, levelLabel } from "../../lib/taxonomy";
 
 type Mode = "flash" | Game;
 
@@ -69,6 +70,12 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                   <p className="text-sm text-muted">
                     {d.words.length} คำ · สร้างโดย @{d.creator}
                   </p>
+                  {(d.exam || d.level) && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {d.exam && <Tag tone="neutral">{examLabel(d.exam)}</Tag>}
+                      {d.level && <Tag tone="neutral">{levelLabel(d.level)}</Tag>}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2">

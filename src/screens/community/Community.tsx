@@ -9,6 +9,7 @@ import {
   reportCommunity,
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
+import { EXAMS, examLabel, levelLabel } from "../../lib/taxonomy";
 import { CommunityPreviewModal } from "./CommunityPreview";
 import { ReviewsModal } from "./ReviewsModal";
 import { PageHeader, Card, Tag, Button, EmptyState, Modal, StarRating, toast, cx } from "../../ui";
@@ -24,6 +25,7 @@ export function Community() {
   const [tab, setTab] = useState<Tab>("vocab");
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState("");
+  const [examFilter, setExamFilter] = useState("");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reviewFor, setReviewFor] = useState<CommunityItem | null>(null);
   const [reportFor, setReportFor] = useState<CommunityItem | null>(null);
@@ -50,6 +52,7 @@ export function Community() {
         (x) =>
           x.type === tab &&
           (tab !== "skill" || !kindFilter || x.kind === kindFilter) &&
+          (!examFilter || x.exam === examFilter) &&
           (!q || x.title.toLowerCase().includes(q) || x.creator.toLowerCase().includes(q)),
       )
       .sort((a, b) =>
@@ -59,7 +62,7 @@ export function Community() {
             ? (b.rating || 0) - (a.rating || 0)
             : score(b) - score(a),
       );
-  }, [community, tab, query, sort, kindFilter]);
+  }, [community, tab, query, sort, kindFilter, examFilter]);
 
   return (
     <>
@@ -92,6 +95,18 @@ export function Community() {
           className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           onChange={(e) => onSearchChange(e.target.value)}
         />
+        <select
+          value={examFilter}
+          onChange={(e) => setExamFilter(e.target.value)}
+          className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+        >
+          <option value="">ทุกข้อสอบ</option>
+          {EXAMS.map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
         <select
           value={sort}
           onChange={(e) =>
@@ -164,7 +179,7 @@ export function Community() {
               {x.title}
             </button>
             <p className="text-sm text-muted">
-              {x.count || 1} รายการ · สร้างโดย{" "}
+              {x.type === "vocab" ? `${x.count || 0} คำ` : `${x.count || 0} ข้อ`} · สร้างโดย{" "}
               {x.official ? (
                 <b>@{x.creator}</b>
               ) : (
@@ -173,6 +188,12 @@ export function Community() {
                 </Link>
               )}
             </p>
+            {(x.exam || x.level) && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {x.exam && <Tag tone="neutral">{examLabel(x.exam)}</Tag>}
+                {x.level && <Tag tone="neutral">{levelLabel(x.level)}</Tag>}
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="inline-flex items-center gap-1">
                 <StarRating value={Math.round(x.rating || 0)} size="sm" readOnly />

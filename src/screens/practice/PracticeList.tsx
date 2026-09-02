@@ -7,6 +7,7 @@ import { PracticeEditor } from "./PracticeEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
 import { PageHeader, Card, Tag, Button, EmptyState } from "../../ui";
+import { EXAMS, examLabel, levelLabel } from "../../lib/taxonomy";
 import type { PracticeKind } from "./session";
 import type { PracticeSet } from "../../store/types";
 
@@ -26,7 +27,9 @@ const specs: Record<PracticeKind, string[]> = {
 
 export function PracticeList({ kind }: { kind: PracticeKind }) {
   const navigate = useNavigate();
-  const list = useStore((s) => (kind === "mock" ? s.mocks : s[kind])) as PracticeSet[];
+  const all = useStore((s) => (kind === "mock" ? s.mocks : s[kind])) as PracticeSet[];
+  const [examFilter, setExamFilter] = useState("");
+  const list = examFilter ? all.filter((x) => x.exam === examFilter) : all;
   const [editor, setEditor] = useState<{ open: boolean; id: string | null }>({
     open: false,
     id: null,
@@ -68,6 +71,23 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
         </div>
       </Card>
 
+      {all.length > 0 && (
+        <div className="mb-3">
+          <select
+            value={examFilter}
+            onChange={(e) => setExamFilter(e.target.value)}
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+          >
+            <option value="">ทุกข้อสอบ</option>
+            {EXAMS.map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         {list.length === 0 && <EmptyState>ยังไม่มีชุดฝึกในหมวดนี้</EmptyState>}
         {list.map((x) => {
@@ -89,6 +109,12 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
                 {x.minutes ? ` · ${x.minutes} นาที` : ""}
                 {count ? ` · ${count} ข้อ` : ""}
               </p>
+              {(x.exam || x.level) && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {x.exam && <Tag tone="neutral">{examLabel(x.exam)}</Tag>}
+                  {x.level && <Tag tone="neutral">{levelLabel(x.level)}</Tag>}
+                </div>
+              )}
               <div className="mt-4 flex items-center gap-2">
                 <Button variant="primary" size="sm" onClick={() => start(x.id)}>
                   เริ่มฝึก

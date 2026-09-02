@@ -7,6 +7,7 @@ import {
   deckWordLimit,
 } from "../../actions/content";
 import { Modal, Button, toast, proPopup } from "../../ui";
+import { TagPickers } from "../common/TagPickers";
 import type { Word } from "../../store/types";
 
 const emptyRow = (): Word => ({ w: "", p: "", m: "", e: "" });
@@ -26,6 +27,11 @@ export function DeckEditor({
   const [rows, setRows] = useState<Word[]>(
     deck?.words?.length ? deck.words.map((w) => ({ ...w })) : [emptyRow()],
   );
+  const [tags, setTags] = useState({
+    exam: deck?.exam ?? "",
+    skill: deck?.skill ?? "vocabulary",
+    level: deck?.level ?? "",
+  });
   const [confirmPublic, setConfirmPublic] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -64,7 +70,10 @@ export function DeckEditor({
 
     setBusy(true);
     try {
-      await persistDeck({ id: deckId, name: cleanName, visibility, words }, asPublic);
+      await persistDeck(
+        { id: deckId, name: cleanName, visibility, words, ...tags },
+        asPublic,
+      );
       onClose();
     } catch (e) {
       toast((e as Error).message || "บันทึกชุดไม่สำเร็จ");
@@ -110,6 +119,10 @@ export function DeckEditor({
               <option value="public">สาธารณะ</option>
             </select>
           </label>
+        </div>
+
+        <div className="mt-3">
+          <TagPickers value={tags} onChange={setTags} showSkill={false} />
         </div>
 
         <div className="mt-4 flex items-center justify-between">

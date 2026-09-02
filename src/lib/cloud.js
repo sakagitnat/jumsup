@@ -8,7 +8,7 @@ export async function loadCloudState(user){
 
   const [{data:profile,error:pe},{data:sets,error:se},{data:practice,error:pre},{data:progress,error:proe},{data:subscription,error:sue},{data:payments,error:payE},{data:refunds,error:refE}]=await Promise.all([
     supabase.from("profiles").select("*").eq("user_id",user.id).single(),
-    supabase.from("vocab_sets").select("id,name,visibility,source_type,user_id,created_at,updated_at,vocab_words(id,word,stress,meaning,example,sort_order)").eq("user_id",user.id).order("created_at"),
+    supabase.from("vocab_sets").select("id,name,visibility,source_type,exam,skill,level,user_id,created_at,updated_at,vocab_words(id,word,stress,meaning,example,sort_order)").eq("user_id",user.id).order("created_at"),
     supabase.from("practice_sets").select("*").eq("user_id",user.id).order("created_at"),
     supabase.from("learning_progress").select("*").eq("user_id",user.id),
     supabase.from("subscriptions").select("*").eq("user_id",user.id).maybeSingle(),
@@ -19,13 +19,14 @@ export async function loadCloudState(user){
 
   const decks=(sets||[]).map(s=>({
     id:s.id,name:s.name,visibility:s.visibility,sourceType:s.source_type||"own",creator:ownCreator(profile),
+    exam:s.exam||"",skill:s.skill||"",level:s.level||"",
     words:(s.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order).map(w=>({
       w:w.word,stress:w.stress||"",p:"",m:w.meaning||"",e:w.example||""
     }))
   }));
   const grouped={reading:[],listening:[],writing:[],mocks:[]};
   for(const x of practice||[]){
-    const item={id:x.id,title:x.title,visibility:x.visibility,creator:ownCreator(profile),...(x.payload||{})};
+    const item={id:x.id,title:x.title,visibility:x.visibility,creator:ownCreator(profile),exam:x.exam||"",skill:x.skill||"",level:x.level||"",...(x.payload||{})};
     if(x.kind==="mock")grouped.mocks.push(item);else grouped[x.kind].push(item);
   }
   const progressMap={};
@@ -84,7 +85,9 @@ export async function pushCloudState(user,state){
   }
   for(const deck of syncDecks){
     const {error}=await supabase.from("vocab_sets").upsert({
-      id:deck.id,user_id:user.id,name:deck.name,visibility:deck.visibility||"private",source_type:deck.sourceType||"own",updated_at:new Date().toISOString()
+      id:deck.id,user_id:user.id,name:deck.name,visibility:deck.visibility||"private",source_type:deck.sourceType||"own",
+      exam:deck.exam||null,skill:deck.skill||null,level:deck.level||null,
+      updated_at:new Date().toISOString()
     },{onConflict:"id"});
     if(error)throw error;
     await replaceWords(user.id,deck);
@@ -106,8 +109,11 @@ export async function pushCloudState(user,state){
   }
   for(const [kind,item] of allPractice){
     const payload={...item};delete payload.id;delete payload.title;delete payload.visibility;delete payload.creator;
+    delete payload.exam;delete payload.skill;delete payload.level;
     const {error}=await supabase.from("practice_sets").upsert({
-      id:item.id,user_id:user.id,kind,title:item.title,visibility:item.visibility||"private",payload,updated_at:new Date().toISOString()
+      id:item.id,user_id:user.id,kind,title:item.title,visibility:item.visibility||"private",payload,
+      exam:item.exam||null,skill:item.skill||null,level:item.level||null,
+      updated_at:new Date().toISOString()
     },{onConflict:"id"});
     if(error)throw error;
   }
@@ -133,24 +139,27 @@ export async function loadCommunity(query="",type="vocab"){
   if(!backendEnabled)return [];
   if(type==="vocab"){
     let q=supabase.from("vocab_sets")
-      .select("id,name,user_id,visibility,profiles!vocab_sets_user_id_fkey(username),vocab_words(id)")
+      .select("id,name,user_id,visibility,exam,skill,level,profiles!vocab_sets_user_id_fkey(username),vocab_words(id)")
       .eq("visibility","public").eq("moderation_status","visible").limit(40);
     if(query)q=q.ilike("name",`%${query}%`);
     const {data,error}=await q;
     if(error)throw error;
     return withCommunityMetrics((data||[]).map(x=>({
       id:x.id,type:"vocab",title:x.name,creator:x.profiles?.username||"member",
-      count:x.vocab_words?.length||0,visibility:"public"
+      count:x.vocab_words?.length||0,visibility:"public",
+      exam:x.exam||"",skill:x.skill||"",level:x.level||""
     })),"vocab");
   }
   let q=supabase.from("practice_sets")
-    .select("id,title,kind,user_id,visibility,profiles!practice_sets_user_id_fkey(username)")
+    .select("id,title,kind,user_id,visibility,exam,skill,level,payload,profiles!practice_sets_user_id_fkey(username)")
     .eq("visibility","public").eq("moderation_status","visible").limit(40);
   if(query)q=q.ilike("title",`%${query}%`);
   const {data,error}=await q;
   if(error)throw error;
   return withCommunityMetrics((data||[]).map(x=>({
-    id:x.id,type:"skill",kind:x.kind,title:x.title,creator:x.profiles?.username||"member",count:1,visibility:"public"
+    id:x.id,type:"skill",kind:x.kind,title:x.title,creator:x.profiles?.username||"member",
+    count:x.payload?.itemCount||1,visibility:"public",
+    exam:x.exam||"",skill:x.skill||"",level:x.level||""
   })),"skill");
 }
 
@@ -295,35 +304,37 @@ export async function loadPublicSet(kind,id){
   if(!backendEnabled)return null;
   if(kind==="vocab"){
     const {data,error}=await supabase.from("vocab_sets")
-      .select("id,name,profiles!vocab_sets_user_id_fkey(username),vocab_words(word,stress,meaning,example,sort_order)")
+      .select("id,name,exam,skill,level,profiles!vocab_sets_user_id_fkey(username),vocab_words(word,stress,meaning,example,sort_order)")
       .eq("id",id).eq("visibility","public").single();
     if(error)throw error;
     return {type:"vocab",id:data.id,title:data.name,creator:data.profiles?.username||"member",
+      exam:data.exam||"",skill:data.skill||"",level:data.level||"",
       words:(data.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order)
         .map(w=>({w:w.word,p:w.stress||"",m:w.meaning||"",e:w.example||""}))};
   }
   const {data,error}=await supabase.from("practice_sets")
-    .select("id,title,kind,payload,profiles!practice_sets_user_id_fkey(username)")
+    .select("id,title,kind,exam,skill,level,payload,profiles!practice_sets_user_id_fkey(username)")
     .eq("id",id).eq("visibility","public").single();
   if(error)throw error;
-  return {type:"skill",id:data.id,kind:data.kind,title:data.title,creator:data.profiles?.username||"member",...(data.payload||{})};
+  return {type:"skill",id:data.id,kind:data.kind,title:data.title,creator:data.profiles?.username||"member",
+    exam:data.exam||"",skill:data.skill||"",level:data.level||"",...(data.payload||{})};
 }
 
 export async function loadCreatorSets(username){
   if(!backendEnabled||!username)return {vocab:[],skill:[]};
   const [{data:v,error:ve},{data:p,error:pe}]=await Promise.all([
     supabase.from("vocab_sets")
-      .select("id,name,vocab_words(id),profiles!vocab_sets_user_id_fkey!inner(username)")
+      .select("id,name,exam,level,vocab_words(id),profiles!vocab_sets_user_id_fkey!inner(username)")
       .eq("visibility","public").eq("moderation_status","visible")
       .eq("profiles.username",username).limit(60),
     supabase.from("practice_sets")
-      .select("id,title,kind,profiles!practice_sets_user_id_fkey!inner(username)")
+      .select("id,title,kind,exam,level,payload,profiles!practice_sets_user_id_fkey!inner(username)")
       .eq("visibility","public").eq("moderation_status","visible")
       .eq("profiles.username",username).limit(60)
   ]);
   if(ve)throw ve;if(pe)throw pe;
   return {
-    vocab:(v||[]).map(x=>({id:x.id,title:x.name,count:x.vocab_words?.length||0})),
-    skill:(p||[]).map(x=>({id:x.id,title:x.title,kind:x.kind}))
+    vocab:(v||[]).map(x=>({id:x.id,title:x.name,count:x.vocab_words?.length||0,exam:x.exam||"",level:x.level||""})),
+    skill:(p||[]).map(x=>({id:x.id,title:x.title,kind:x.kind,count:x.payload?.itemCount||0,exam:x.exam||"",level:x.level||""}))
   };
 }

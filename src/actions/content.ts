@@ -30,16 +30,22 @@ interface DeckInput {
   id: string | null;
   name: string;
   visibility: Visibility;
+  exam: string;
+  skill: string;
+  level: string;
   words: Word[];
 }
 
 function localSaveDeck(input: DeckInput, newId: string, visibility: Visibility) {
   const creator = store.get().profile?.username || "guest";
+  const tags = { exam: input.exam, skill: input.skill, level: input.level };
   store.update((s) => ({
     ...s,
     decks: input.id
       ? s.decks.map((d) =>
-          d.id === input.id ? { ...d, name: input.name, visibility, words: input.words } : d,
+          d.id === input.id
+            ? { ...d, name: input.name, visibility, words: input.words, ...tags }
+            : d,
         )
       : [
           ...s.decks,
@@ -50,6 +56,7 @@ function localSaveDeck(input: DeckInput, newId: string, visibility: Visibility) 
             sourceType: "own",
             creator,
             words: input.words,
+            ...tags,
           },
         ],
   }));
@@ -87,6 +94,9 @@ export async function persistDeck(input: DeckInput, asPublic = false) {
         id: newId,
         title: input.name,
         visibility,
+        exam: input.exam || null,
+        skill: input.skill || null,
+        level: input.level || null,
         payload: { words: input.words },
       }),
     });
@@ -101,6 +111,9 @@ interface PracticeInput {
   visibility: Visibility;
   minutes: number;
   category: string;
+  exam: string;
+  skill: string;
+  level: string;
   sections: PracticeSection[];
 }
 
@@ -122,11 +135,14 @@ function localSavePractice(input: PracticeInput, newId: string, visibility: Visi
   if (input.kind === "listening") payload.script = input.sections[0]?.script || "";
   if (input.kind === "writing") payload.passage = input.sections[0]?.passage || "";
 
+  const tags = { exam: input.exam, skill: input.skill, level: input.level };
   store.update((s) => ({
     ...s,
     [key]: input.id
-      ? s[key].map((x) => (x.id === input.id ? { ...x, title: input.title, visibility, ...payload } : x))
-      : [...s[key], { id: newId, title: input.title, visibility, creator, ...payload }],
+      ? s[key].map((x) =>
+          x.id === input.id ? { ...x, title: input.title, visibility, ...payload, ...tags } : x,
+        )
+      : [...s[key], { id: newId, title: input.title, visibility, creator, ...payload, ...tags }],
   }));
   scheduleSync();
 }
@@ -166,6 +182,9 @@ export async function persistPractice(input: PracticeInput, asPublic = false) {
         id: newId,
         title: input.title,
         visibility,
+        exam: input.exam || null,
+        skill: input.skill || null,
+        level: input.level || null,
         payload,
       }),
     });
