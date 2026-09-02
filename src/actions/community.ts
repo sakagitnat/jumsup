@@ -5,6 +5,8 @@ import {
   toggleCommunityLike,
   saveCommunityReview,
   reportCommunityContent,
+  loadCommunityPreview,
+  type CommunityPreview,
 } from "../lib/cloud.js";
 import { store } from "../store/store";
 import { getCurrentUser, hydrateFromCloud, scheduleSync } from "../app/cloudSync";
@@ -240,3 +242,35 @@ export async function reportCommunity(item: CommunityItem, reason: string) {
 }
 
 export { buildDemoCommunity };
+export type { CommunityPreview };
+
+/** Content preview for the "before you import" dialog. Official items are built
+ *  from local seed data; other items are fetched from the public row. */
+export async function getCommunityPreview(
+  item: CommunityItem,
+): Promise<CommunityPreview | null> {
+  const s = store.get();
+  if (item.official || !backendEnabled) {
+    if (item.type === "vocab") {
+      const deck = s.decks.find((d) => d.id === item.id);
+      if (!deck) return null;
+      return { type: "vocab", title: deck.name, words: deck.words };
+    }
+    const key = (item.sourceKind === "mock" ? "mocks" : item.sourceKind || "reading") as
+      | "reading"
+      | "listening"
+      | "writing"
+      | "mocks";
+    const set = (s[key] || []).find((x) => x.id === item.id);
+    if (!set) return null;
+    return {
+      type: "skill",
+      kind: item.sourceKind,
+      title: set.title,
+      minutes: set.minutes,
+      itemCount: set.itemCount,
+      sections: set.sections,
+    };
+  }
+  return loadCommunityPreview(item);
+}

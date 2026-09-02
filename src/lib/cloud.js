@@ -233,3 +233,23 @@ export async function uploadAvatar(user,file){
   return url;
 }
 
+
+export async function loadCommunityPreview(item){
+  if(!backendEnabled||!item)return null;
+  if(item.type==="vocab"){
+    const {data,error}=await supabase.from("vocab_sets")
+      .select("id,name,vocab_words(word,stress,meaning,example,sort_order)")
+      .eq("id",item.id).eq("visibility","public").single();
+    if(error)throw error;
+    return {
+      type:"vocab",
+      title:data.name,
+      words:(data.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order)
+        .map(w=>({w:w.word,p:w.stress||"",m:w.meaning||"",e:w.example||""}))
+    };
+  }
+  const {data,error}=await supabase.from("practice_sets")
+    .select("id,title,kind,payload").eq("id",item.id).eq("visibility","public").single();
+  if(error)throw error;
+  return {type:"skill",kind:data.kind,title:data.title,...(data.payload||{})};
+}

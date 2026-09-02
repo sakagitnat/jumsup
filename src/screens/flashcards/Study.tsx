@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { speak } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
 import { markWordMastered } from "../../actions/flashcards";
-import { PageHeader, Card, Tag, Button, Progress, Modal, Switch, EmptyState, toast } from "../../ui";
+import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast } from "../../ui";
 
 export function Study() {
   const { deckId = "" } = useParams();
@@ -19,6 +19,7 @@ export function Study() {
   const [mastered, setMastered] = useState<number[]>(() => [...storedMastered]);
   const [cursor, setCursor] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [flipped, setFlipped] = useState(false);
 
   const pool = Math.min(poolSize, deck?.words.length ?? 0);
   const activeIndices = useMemo(() => Array.from({ length: pool }, (_, i) => i), [pool]);
@@ -29,6 +30,11 @@ export function Study() {
   useEffect(() => {
     if (word && flashSettings.autoSpeak) speak(word.w);
   }, [word, flashSettings.autoSpeak]);
+
+  // a new card always starts on the term side
+  useEffect(() => {
+    setFlipped(false);
+  }, [idx]);
 
   const know = useCallback(async () => {
     if (idx < 0) return;
@@ -46,12 +52,17 @@ export function Study() {
   // keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
       if (e.key === "ArrowRight") {
         e.preventDefault();
         void know();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         miss();
+      } else if (e.key === " ") {
+        e.preventDefault();
+        setFlipped((f) => !f);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -168,7 +179,7 @@ export function Study() {
           <PageHeader
             eyebrow="FLASHCARDS"
             title={deck.name}
-            description="ปัดซ้าย = ยังไม่จำ · ปัดขวา = จำได้ (หรือใช้ปุ่มลูกศร)"
+            description="แตะการ์ดเพื่อพลิกดูคำแปล · ปัดขวา = จำได้ · ปัดซ้าย = ยังไม่จำ"
             actions={
               <Button size="sm" onClick={() => setSettingsOpen(true)}>
                 ⚙ ตั้งค่า
@@ -177,10 +188,11 @@ export function Study() {
           />
 
           <div className="mx-auto max-w-xl">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Tag tone="info">Loop {pool}</Tag>
-              <Tag tone="success">จำแล้ว {pool - remaining.length}/{pool}</Tag>
-              <Tag tone="warning">เหลือ {remaining.length}</Tag>
+            <div className="mb-3 flex items-center justify-between text-sm">
+              <span className="font-semibold tabular-nums">
+                {pool - remaining.length} / {pool}
+              </span>
+              <span className="text-muted">เหลืออีก {remaining.length} คำ</span>
             </div>
             <Progress value={((pool - remaining.length) / pool) * 100} className="mb-4" />
 
@@ -190,36 +202,73 @@ export function Study() {
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              className="flex min-h-[300px] touch-pan-y select-none flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card [transform:translate3d(0,0,0)]"
+              className="touch-pan-y select-none [perspective:1600px] [transform:translate3d(0,0,0)]"
             >
-              <div className="mb-3 flex gap-2 self-end">
-                <button
-                  type="button"
-                  aria-label="ฟังเสียง"
-                  onClick={() => word && speak(word.w)}
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2"
-                >
-                  🔊
-                </button>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setFlipped((f) => !f)}
+                onKeyDown={(e) => {
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
+                    setFlipped((f) => !f);
+                  }
+                }}
+                aria-label="พลิกการ์ด"
+                className="relative block min-h-[320px] w-full cursor-pointer rounded-3xl [transform-style:preserve-3d] transition-transform duration-300"
+                style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+              >
+                {/* front — term */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card [backface-visibility:hidden]">
+                  <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-subtle">
+                    คำศัพท์
+                  </span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="ฟังเสียง"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (word) speak(word.w);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (word) speak(word.w);
+                      }
+                    }}
+                    className="absolute right-4 top-4 grid h-9 w-9 cursor-pointer place-items-center rounded-lg border border-line text-muted hover:bg-surface-2"
+                  >
+                    🔊
+                  </span>
+                  <h2 className="text-4xl font-semibold">{word?.w}</h2>
+                  {(word?.stress || word?.p) && (
+                    <div className="mt-2 text-sm text-subtle">{word?.stress || word?.p}</div>
+                  )}
+                  {flashSettings.showMeaning && word?.m && (
+                    <div className="mt-4 text-base text-muted">{word.m}</div>
+                  )}
+                  <span className="absolute bottom-5 text-xs text-subtle">แตะเพื่อพลิก</span>
+                </div>
+                {/* back — definition */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-primary-border bg-primary-soft p-8 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                  <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-primary">
+                    ความหมาย
+                  </span>
+                  <p className="text-2xl font-semibold">{word?.m || "—"}</p>
+                  {word?.e && (
+                    <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">{word.e}</p>
+                  )}
+                </div>
               </div>
-              <Tag tone="danger">คำที่ {idx + 1}</Tag>
-              <h2 className="mt-3 text-4xl font-semibold">{word?.w}</h2>
-              {(word?.stress || word?.p) && (
-                <div className="mt-2 text-sm text-subtle">{word?.stress || word?.p}</div>
-              )}
-              {flashSettings.showMeaning && word?.m && (
-                <div className="mt-4 text-lg">{word.m}</div>
-              )}
-              {word?.e && (
-                <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">{word.e}</p>
-              )}
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button variant="danger" onClick={miss}>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button variant="danger" size="lg" onClick={miss}>
                 ← ยังไม่จำ
               </Button>
-              <Button variant="success" onClick={know}>
+              <Button variant="success" size="lg" onClick={know}>
                 จำได้ →
               </Button>
             </div>

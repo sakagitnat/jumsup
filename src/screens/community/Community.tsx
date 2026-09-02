@@ -8,6 +8,7 @@ import {
   reportCommunity,
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
+import { CommunityPreviewModal } from "./CommunityPreview";
 import { PageHeader, Card, Tag, Button, EmptyState, Modal, cx } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
@@ -23,6 +24,7 @@ export function Community() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [reviewFor, setReviewFor] = useState<CommunityItem | null>(null);
   const [reportFor, setReportFor] = useState<CommunityItem | null>(null);
+  const [previewFor, setPreviewFor] = useState<CommunityItem | null>(null);
 
   const reload = () => refreshCommunity(query, tab);
 
@@ -138,7 +140,13 @@ export function Community() {
               </Tag>
               <span className="text-xs text-subtle">{x.kind || x.type}</span>
             </div>
-            <h3 className="mt-2 text-base font-semibold">{x.title}</h3>
+            <button
+              type="button"
+              onClick={() => setPreviewFor(x)}
+              className="mt-2 text-left text-base font-semibold hover:text-primary hover:underline"
+            >
+              {x.title}
+            </button>
             <p className="text-sm text-muted">
               {x.count || 1} รายการ · สร้างโดย <b>@{x.creator}</b>
             </p>
@@ -154,6 +162,9 @@ export function Community() {
               </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => setPreviewFor(x)}>
+                ดูตัวอย่าง
+              </Button>
               <Button variant="primary" size="sm" onClick={() => importCommunity(x, reload)}>
                 นำเข้า
               </Button>
@@ -175,6 +186,11 @@ export function Community() {
         ))}
       </div>
 
+      <CommunityPreviewModal
+        item={previewFor}
+        onClose={() => setPreviewFor(null)}
+        onImport={(it) => importCommunity(it, reload)}
+      />
       <ReviewModal item={reviewFor} onClose={() => setReviewFor(null)} reload={reload} />
       <ReportModal item={reportFor} onClose={() => setReportFor(null)} />
     </>

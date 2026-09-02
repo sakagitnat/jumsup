@@ -6,6 +6,24 @@ export function loadCloudState(user: User): Promise<Partial<AppState>>;
 export function pushCloudState(user: User, state: AppState): Promise<void>;
 export function loadCommunity(query?: string, type?: string): Promise<CommunityItem[]>;
 export function importCommunityItem(user: User, item: CommunityItem): Promise<void>;
+
+export interface CommunityPreview {
+  type: "vocab" | "skill";
+  kind?: string;
+  title: string;
+  words?: Array<{ w: string; p?: string; m: string; e?: string }>;
+  minutes?: number;
+  itemCount?: number;
+  sections?: Array<{
+    title?: string;
+    text?: string;
+    script?: string;
+    passage?: string;
+    context?: string;
+    questions?: Array<{ prompt?: string; choices?: string[]; answer?: number }>;
+  }>;
+}
+export function loadCommunityPreview(item: CommunityItem): Promise<CommunityPreview | null>;
 export function uploadAvatar(user: User, file: File): Promise<string>;
 export function toggleCommunityLike(user: User, item: CommunityItem): Promise<boolean>;
 export function saveCommunityReview(
