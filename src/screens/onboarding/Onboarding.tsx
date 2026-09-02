@@ -11,6 +11,86 @@ const localToday = () => {
   ).padStart(2, "0")}`;
 };
 
+const THAI_MONTHS = [
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
+];
+
+/** วัน / เดือน / ปี dropdowns. Native <input type="date"> renders in the
+ *  browser locale (mm/dd/yyyy here), which trips up day-first input — three
+ *  selects with Thai month names remove the ambiguity. Emits ISO yyyy-mm-dd
+ *  once all three are chosen, "" otherwise, while keeping each partial pick
+ *  visible. */
+function ExamDatePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+}) {
+  const init = value ? value.split("-").map(Number) : [0, 0, 0];
+  const [y, setY] = useState(init[0] || 0);
+  const [m, setM] = useState(init[1] || 0);
+  const [d, setD] = useState(init[2] || 0);
+
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 4 }, (_, i) => thisYear + i);
+  const daysInMonth = m && y ? new Date(y, m, 0).getDate() : 31;
+
+  const apply = (ny: number, nm: number, nd: number) => {
+    const maxDay = nm && ny ? new Date(ny, nm, 0).getDate() : 31;
+    const day = nd > maxDay ? maxDay : nd;
+    setY(ny);
+    setM(nm);
+    setD(day);
+    onChange(
+      ny && nm && day
+        ? `${ny}-${String(nm).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+        : "",
+    );
+  };
+
+  const sel = "rounded-xl border border-line bg-surface px-2 py-2 text-sm";
+  return (
+    <div className="mt-1 grid grid-cols-3 gap-2">
+      <select className={sel} value={d || ""} onChange={(e) => apply(y, m, Number(e.target.value))}>
+        <option value="">วัน</option>
+        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+      <select className={sel} value={m || ""} onChange={(e) => apply(y, Number(e.target.value), d)}>
+        <option value="">เดือน</option>
+        {THAI_MONTHS.map((name, i) => (
+          <option key={name} value={i + 1}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <select className={sel} value={y || ""} onChange={(e) => apply(Number(e.target.value), m, d)}>
+        <option value="">ปี พ.ศ.</option>
+        {years.map((yr) => (
+          <option key={yr} value={yr}>
+            {yr + 543}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 const goals: Array<[string, string, string]> = [
   ["alevel", "A-Level English", "เตรียมสอบเข้ามหาวิทยาลัย"],
   ["tgat", "TGAT 1", "เน้นการสื่อสารภาษาอังกฤษ"],
@@ -155,18 +235,11 @@ export function Onboarding() {
           </div>
         </fieldset>
 
-        <label className="mt-5 block text-sm font-semibold">
-          วันที่สอบ <small className="font-normal text-subtle">(ไม่บังคับ)</small>
-          <input
-            type="date"
-            min={today}
-            value={examDate}
-            onChange={(e) => setExamDate(e.target.value)}
-            className={cx(
-              "mt-1 w-full rounded-xl border bg-surface px-3 py-2 text-sm",
-              examDatePast ? "border-danger" : "border-line",
-            )}
-          />
+        <div className="mt-5">
+          <span className="block text-sm font-semibold">
+            วันที่สอบ <small className="font-normal text-subtle">(ไม่บังคับ)</small>
+          </span>
+          <ExamDatePicker value={examDate} onChange={setExamDate} />
           {examDateLabel && (
             <span
               className={cx(
@@ -179,7 +252,7 @@ export function Onboarding() {
                 : `= ${examDateLabel}`}
             </span>
           )}
-        </label>
+        </div>
 
         <Button
           variant="primary"
