@@ -8,6 +8,14 @@ import { Study } from "../screens/flashcards/Study";
 import { PracticeList } from "../screens/practice/PracticeList";
 import { PracticePlay } from "../screens/practice/PracticePlay";
 import { Result } from "../screens/practice/Result";
+import { Community } from "../screens/community/Community";
+import { Account } from "../screens/account/Account";
+import { AccountProfile } from "../screens/account/AccountProfile";
+import { AccountBilling } from "../screens/account/AccountBilling";
+import { AccountPrivacy } from "../screens/account/AccountPrivacy";
+import { Settings } from "../screens/account/Settings";
+import { AccountShell } from "../screens/account/AccountShell";
+import { Pricing } from "../screens/pricing/Pricing";
 import { Stub } from "../screens/Stub";
 
 export const router = createBrowserRouter([
@@ -34,9 +42,22 @@ export const router = createBrowserRouter([
           { path: "/mock/play/:id", element: <PracticePlay kind="mock" /> },
           { path: "/practice/result", element: <Result /> },
 
-          { path: "/community", element: <Stub title="Community" /> },
-          { path: "/account", element: <Stub title="บัญชี" /> },
-          { path: "/pricing", element: <Stub title="แพ็กเกจ" /> },
+          { path: "/community", element: <Community /> },
+
+          { path: "/account", element: <Account /> },
+          { path: "/account/profile", element: <AccountProfile /> },
+          { path: "/account/plan", element: <AccountBilling /> },
+          { path: "/account/privacy", element: <AccountPrivacy /> },
+          {
+            path: "/account/settings",
+            element: (
+              <AccountShell title="การตั้งค่า">
+                <Settings />
+              </AccountShell>
+            ),
+          },
+
+          { path: "/pricing", element: <Pricing /> },
           { path: "/onboarding", element: <Stub title="ตั้งค่าแผนการเรียน" /> },
         ],
       },
