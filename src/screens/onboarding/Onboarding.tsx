@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { saveOnboarding } from "../../actions/onboarding";
 import { Button, cx } from "../../ui";
@@ -26,6 +26,7 @@ export function Onboarding() {
   );
   const [examDate, setExamDate] = useState(profile?.exam_date || "");
   const [saving, setSaving] = useState(false);
+  const editing = Boolean(profile?.onboarding_completed_at);
 
   const toggleSkill = (id: string) =>
     setSkills((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -47,12 +48,20 @@ export function Onboarding() {
           <strong>Jumsup</strong>
         </div>
         <span className="text-xs font-bold uppercase tracking-wide text-primary">
-          ตั้งค่าแผนการเรียน
+          {editing ? "แก้ไขแผนการเรียน" : "ตั้งค่าแผนการเรียน"}
         </span>
         <h1 className="mt-1 text-xl font-semibold">ให้ Jumsup รู้จักเป้าหมายของคุณ</h1>
         <p className="mt-1 text-sm text-muted">
-          ใช้เวลาไม่ถึง 1 นาที และเปลี่ยนได้ภายหลังในหน้าตั้งค่า
+          ใช้เวลาไม่ถึง 1 นาที และเปลี่ยนได้ภายหลังในหน้าบัญชี
         </p>
+        {editing && (
+          <Link
+            to="/account"
+            className="mt-2 inline-block text-sm font-semibold text-primary hover:underline"
+          >
+            ← กลับไปหน้าบัญชี
+          </Link>
+        )}
 
         <fieldset className="mt-5">
           <legend className="text-sm font-semibold">คุณกำลังเรียนเพื่ออะไร?</legend>
@@ -142,7 +151,7 @@ export function Onboarding() {
           disabled={saving || skills.length === 0}
           onClick={submit}
         >
-          {saving ? "กำลังบันทึก…" : "สร้างแผนของฉัน"}
+          {saving ? "กำลังบันทึก…" : editing ? "บันทึกแผน" : "สร้างแผนของฉัน"}
         </Button>
       </div>
     </div>

@@ -11,6 +11,7 @@ const tabs: Array<[string, string, string]> = [
 ];
 
 const links: Array<[string, string, string]> = [
+  ["/onboarding", "แผนการเรียน", "เป้าหมาย วันสอบ เวลาต่อวัน และทักษะที่เน้น"],
   ["/stats", "สถิติการเรียน", "ความก้าวหน้าและคำที่ยังไม่แม่น"],
   ["/library", "คลังของฉัน", "ชุดที่คุณสร้างหรือนำเข้า"],
 ];

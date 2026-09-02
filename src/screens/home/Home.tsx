@@ -137,7 +137,21 @@ export function Home() {
           <div className="flex flex-wrap items-center gap-2">
             <Tag tone="success">แผนวันนี้ · {minutes} นาที</Tag>
             {examText && <span className="text-sm font-medium text-muted">{examText}</span>}
+            <Link
+              to="/onboarding"
+              className="ml-auto text-xs font-semibold text-primary hover:underline"
+            >
+              แก้ไขแผน
+            </Link>
           </div>
+          {!examText && (
+            <p className="mt-1 text-xs text-subtle">
+              <Link to="/onboarding" className="font-semibold text-primary hover:underline">
+                ตั้งวันสอบและทักษะที่อยากเน้น
+              </Link>{" "}
+              เพื่อให้แผนวันนี้ละเอียดขึ้น
+            </p>
+          )}
           <ol className="mt-3 space-y-2">
             {planSteps.map((step, i) => (
               <li
