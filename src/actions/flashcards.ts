@@ -3,14 +3,23 @@ import { store } from "../store/store";
 import { getCurrentUser } from "../app/cloudSync";
 
 /**
- * Mark word `index` of `deckId` as mastered. Server-authoritative when signed in
- * (RPC returns the canonical mastered list + xp); local XP bump otherwise.
- * Returns the updated mastered index list.
+ * Mark word `index` of `deckId` as mastered and return the updated mastered
+ * index list.
+ *
+ * Official / starter decks are client-only seed data with no row in the user's
+ * `vocab_sets`, so the server RPC `mark_word_mastered` rejects them with
+ * `FORBIDDEN`. For those decks we always track progress + XP locally (same as a
+ * signed-out user). Only user-owned decks go through the server RPC, which is
+ * authoritative for their mastered list and XP.
  */
 export async function markWordMastered(deckId: string, index: number): Promise<number[]> {
-  const current = store.get().progress[deckId]?.mastered ?? [];
+  const state = store.get();
+  const deck = state.decks.find((d) => d.id === deckId);
+  const current = state.progress[deckId]?.mastered ?? [];
+  const serverBacked =
+    Boolean(getCurrentUser()) && backendEnabled && !deck?.official;
 
-  if (getCurrentUser() && backendEnabled) {
+  if (serverBacked) {
     const { data, error } = await supabase.rpc("mark_word_mastered", {
       p_set_id: deckId,
       p_index: index,
