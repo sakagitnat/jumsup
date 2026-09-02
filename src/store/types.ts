@@ -31,11 +31,14 @@ export interface Question {
 
 export interface PracticeSection {
   title?: string;
+  category?: string;
+  part?: string | number;
   text?: string;
   script?: string;
   passage?: string;
   context?: string;
   description?: string;
+  directions?: string;
   situation?: string;
   statements?: string[];
   questions?: Question[];
