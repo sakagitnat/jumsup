@@ -25,68 +25,143 @@ const THAI_MONTHS = [
   "พฤศจิกายน",
   "ธันวาคม",
 ];
+const THAI_DOW = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
-/** วัน / เดือน / ปี dropdowns. Native <input type="date"> renders in the
- *  browser locale (mm/dd/yyyy here), which trips up day-first input — three
- *  selects with Thai month names remove the ambiguity. Emits ISO yyyy-mm-dd
- *  once all three are chosen, "" otherwise, while keeping each partial pick
- *  visible. */
-function ExamDatePicker({
+const iso = (y: number, m: number, d: number) =>
+  `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+/** Click-a-day calendar. Fully hand-rolled (CSP blocks CDN libraries) so the
+ *  layout, month/weekday names and ordering are the same on every device —
+ *  unlike a native <input type="date">, whose text order follows the OS locale.
+ *  Value is ISO yyyy-mm-dd or "". Past days can't be picked. */
+function ExamCalendar({
   value,
   onChange,
 }: {
   value: string;
   onChange: (iso: string) => void;
 }) {
-  const init = value ? value.split("-").map(Number) : [0, 0, 0];
-  const [y, setY] = useState(init[0] || 0);
-  const [m, setM] = useState(init[1] || 0);
-  const [d, setD] = useState(init[2] || 0);
+  const now = new Date();
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const selected = value ? value.split("-").map(Number) : null;
 
-  const thisYear = new Date().getFullYear();
-  const years = Array.from({ length: 4 }, (_, i) => thisYear + i);
-  const daysInMonth = m && y ? new Date(y, m, 0).getDate() : 31;
+  const [open, setOpen] = useState(false);
+  const [viewY, setViewY] = useState(selected ? selected[0] : now.getFullYear());
+  const [viewM, setViewM] = useState(selected ? selected[1] - 1 : now.getMonth());
 
-  const apply = (ny: number, nm: number, nd: number) => {
-    const maxDay = nm && ny ? new Date(ny, nm, 0).getDate() : 31;
-    const day = nd > maxDay ? maxDay : nd;
-    setY(ny);
-    setM(nm);
-    setD(day);
-    onChange(
-      ny && nm && day
-        ? `${ny}-${String(nm).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-        : "",
-    );
+  const atMonthStart = viewY === now.getFullYear() && viewM === now.getMonth();
+  const step = (delta: number) => {
+    const next = new Date(viewY, viewM + delta, 1);
+    setViewY(next.getFullYear());
+    setViewM(next.getMonth());
   };
 
-  const sel = "rounded-xl border border-line bg-surface px-2 py-2 text-sm";
+  const firstDow = new Date(viewY, viewM, 1).getDay();
+  const daysInView = new Date(viewY, viewM + 1, 0).getDate();
+  const cells: Array<number | null> = [
+    ...Array.from({ length: firstDow }, () => null),
+    ...Array.from({ length: daysInView }, (_, i) => i + 1),
+  ];
+
+  const label = selected
+    ? new Date(`${value}T00:00:00`).toLocaleDateString("th-TH", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+
   return (
-    <div className="mt-1 grid grid-cols-3 gap-2">
-      <select className={sel} value={d || ""} onChange={(e) => apply(y, m, Number(e.target.value))}>
-        <option value="">วัน</option>
-        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </select>
-      <select className={sel} value={m || ""} onChange={(e) => apply(y, Number(e.target.value), d)}>
-        <option value="">เดือน</option>
-        {THAI_MONTHS.map((name, i) => (
-          <option key={name} value={i + 1}>
-            {name}
-          </option>
-        ))}
-      </select>
-      <select className={sel} value={y || ""} onChange={(e) => apply(Number(e.target.value), m, d)}>
-        <option value="">ปี พ.ศ.</option>
-        {years.map((yr) => (
-          <option key={yr} value={yr}>
-            {yr + 543}
-          </option>
-        ))}
-      </select>
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+      >
+        <span className={selected ? "" : "text-subtle"}>{label || "เลือกจากปฏิทิน"}</span>
+        <span className="flex items-center gap-2">
+          {selected && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="ล้างวันที่"
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange("");
+              }}
+              className="text-subtle hover:text-danger"
+            >
+              ✕
+            </span>
+          )}
+          <span aria-hidden className="text-subtle">
+            📅
+          </span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-2 rounded-xl border border-line bg-surface p-3 shadow-card">
+          <div className="mb-2 flex items-center justify-between">
+            <button
+              type="button"
+              disabled={atMonthStart}
+              onClick={() => step(-1)}
+              className="grid h-8 w-8 place-items-center rounded-lg text-muted enabled:hover:bg-surface-2 disabled:opacity-30"
+            >
+              ‹
+            </button>
+            <b className="text-sm">
+              {THAI_MONTHS[viewM]} {viewY + 543}
+            </b>
+            <button
+              type="button"
+              onClick={() => step(1)}
+              className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-surface-2"
+            >
+              ›
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs text-subtle">
+            {THAI_DOW.map((w) => (
+              <span key={w} className="py-1">
+                {w}
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((day, i) => {
+              if (!day) return <span key={`x${i}`} />;
+              const cellDate = new Date(viewY, viewM, day);
+              const past = cellDate < todayMid;
+              const isSel =
+                selected &&
+                selected[0] === viewY &&
+                selected[1] - 1 === viewM &&
+                selected[2] === day;
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  disabled={past}
+                  onClick={() => {
+                    onChange(iso(viewY, viewM, day));
+                    setOpen(false);
+                  }}
+                  className={cx(
+                    "h-9 rounded-lg text-sm",
+                    isSel && "bg-primary font-semibold text-on-primary",
+                    !isSel && !past && "hover:bg-primary-soft",
+                    past && "text-subtle opacity-40",
+                  )}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -239,7 +314,7 @@ export function Onboarding() {
           <span className="block text-sm font-semibold">
             วันที่สอบ <small className="font-normal text-subtle">(ไม่บังคับ)</small>
           </span>
-          <ExamDatePicker value={examDate} onChange={setExamDate} />
+          <ExamCalendar value={examDate} onChange={setExamDate} />
           {examDateLabel && (
             <span
               className={cx(
