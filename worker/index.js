@@ -8,6 +8,9 @@ import * as adminDictionary from "../functions/api/admin/dictionary.js";
 import * as adminReports from "../functions/api/admin/reports.js";
 import * as adminRefundAction from "../functions/api/admin/refund-action.js";
 import * as adminRefunds from "../functions/api/admin/refunds.js";
+import * as adminBots from "../functions/api/admin/bots.js";
+import * as adminUsers from "../functions/api/admin/users.js";
+import * as adminReviews from "../functions/api/admin/reviews.js";
 import * as contentPublish from "../functions/api/content/publish-confirmed.js";
 import * as contentSave from "../functions/api/content/save.js";
 import * as dictionarySuggest from "../functions/api/dictionary/suggest.js";
@@ -32,6 +35,9 @@ const routes = new Map([
   ["/api/admin/reports", adminReports],
   ["/api/admin/refund-action", adminRefundAction],
   ["/api/admin/refunds", adminRefunds],
+  ["/api/admin/bots", adminBots],
+  ["/api/admin/users", adminUsers],
+  ["/api/admin/reviews", adminReviews],
   ["/api/content/publish-confirmed", contentPublish],
   ["/api/content/save", contentSave],
   ["/api/dictionary/suggest", dictionarySuggest],

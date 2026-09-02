@@ -15,7 +15,7 @@ export default{async fetch(request,env,ctx){
   return json({supabase_url:env.SUPABASE_URL,supabase_anon_key:env.SUPABASE_ANON_KEY},200,{"cache-control":"public, max-age=300"});
  }
  const route=routes.get(url.pathname);
- if(!route){const response=await env.ASSETS.fetch(request),headers=new Headers(response.headers);headers.set("X-Robots-Tag","noindex, nofollow");headers.set("X-Frame-Options","DENY");headers.set("Referrer-Policy","no-referrer");headers.set("Permissions-Policy","camera=(), microphone=(), geolocation=()");headers.set("Content-Security-Policy","default-src 'self'; connect-src 'self' https://vhzpmnirzgrzyaaotcep.supabase.co; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");return new Response(response.body,{status:response.status,headers})}
+ if(!route){const response=await env.ASSETS.fetch(request),headers=new Headers(response.headers);headers.set("X-Robots-Tag","noindex, nofollow");headers.set("X-Frame-Options","DENY");headers.set("Referrer-Policy","no-referrer");headers.set("Permissions-Policy","camera=(), microphone=(), geolocation=()");headers.set("Content-Security-Policy","default-src 'self'; connect-src 'self' https://jumsup.sakagitnat.workers.dev https://vhzpmnirzgrzyaaotcep.supabase.co; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");return new Response(response.body,{status:response.status,headers})}
  const name=`onRequest${request.method[0]}${request.method.slice(1).toLowerCase()}`,handler=route[name];
  if(!handler)return json({error:"METHOD_NOT_ALLOWED"},405,{allow:"GET, POST, OPTIONS"});
  return handler({request,env,ctx,params:{},data:{}})
