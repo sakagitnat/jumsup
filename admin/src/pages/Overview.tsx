@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { apiGet } from "../api";
-import { Card, Section, Btn, useToast } from "../ui";
+import { apiGet, apiPost } from "../api";
+import { Card, Section, Btn, useToast, useAsync } from "../ui";
 
 interface Overview {
   users: number;
@@ -59,8 +59,15 @@ function Bar({ label, value, max, color }: { label: string; value: number; max: 
   );
 }
 
+const JOBS: Array<[string, string]> = [
+  ["push_digest", "ส่งแจ้งเตือน (streak + recap)"],
+  ["close_week", "ปิดสัปดาห์ลีดเดอร์บอร์ด"],
+  ["purge_deletions", "กวาดลบบัญชีที่ครบกำหนด"],
+];
+
 export function Overview() {
   const toast = useToast();
+  const run = useAsync();
   const [g, setG] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -237,6 +244,30 @@ export function Overview() {
               </Card>
             ))}
           </div>
+
+          <h3 className="mb-2 mt-5 text-sm font-bold text-[var(--muted)]">
+            งานอัตโนมัติ (cron)
+          </h3>
+          <Card>
+            <p className="mb-3 text-xs text-[var(--muted)]">
+              ปกติรันเองตามเวลา — กดเพื่อรันเดี๋ยวนี้ (ทุกงานรันซ้ำได้ปลอดภัย)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {JOBS.map(([job, label]) => (
+                <Btn
+                  key={job}
+                  onClick={() =>
+                    run(async () => {
+                      const r = await apiPost<{ result: unknown }>("/api/admin/run-job", { job });
+                      toast(`${label}: ${JSON.stringify(r.result)}`);
+                    })
+                  }
+                >
+                  {label}
+                </Btn>
+              ))}
+            </div>
+          </Card>
         </>
       )}
     </Section>

@@ -27,6 +27,18 @@ STRIPE_PRICE_PRO_YEARLY_GLOBAL = "price_1UBdAU016c6XVEVtOnAe3Ist"
 VAPID_SUBJECT = "mailto:sakagitnat@gmail.com"
 VAPID_PUBLIC_KEY = "BJBnMngd-cs_scv7XAZbwK_VQ7oe61GUhZQa33Tnv9BnPZcqRkOeQStfN46OaM-wjaaSAF5LXxuLnoKzk5mzj2w"
 
+[[unsafe.bindings]]
+name = "API_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "2001"
+simple = { limit = 150, period = 60 }
+
+[[unsafe.bindings]]
+name = "AUTH_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "2002"
+simple = { limit = 20, period = 60 }
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"

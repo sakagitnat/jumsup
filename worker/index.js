@@ -27,6 +27,7 @@ import * as stripeWebhook from "../functions/api/stripe/webhook.js";
 import * as usageSave from "../functions/api/usage/save.js";
 import * as usageStart from "../functions/api/usage/start.js";
 import * as pushSubscribe from "../functions/api/push/subscribe.js";
+import * as adminRunJob from "../functions/api/admin/run-job.js";
 import { closeWeek } from "./jobs/closeWeek.js";
 import { purgeDeletions } from "./jobs/purgeDeletions.js";
 import { sendPushDigest } from "./jobs/sendPush.js";
@@ -61,9 +62,38 @@ const routes = new Map([
   ["/api/usage/save", usageSave],
   ["/api/usage/start", usageStart],
   ["/api/push/subscribe", pushSubscribe],
+  ["/api/admin/run-job", adminRunJob],
 ]);
 
 const methodHandler = (route, method) => route[`onRequest${method[0]}${method.slice(1).toLowerCase()}`];
+
+// Per-IP rate limiting for /api/* — the zone WAF isn't available on *.workers.dev.
+// Stripe's signed webhook is exempt (it legitimately bursts on retries).
+const AUTH_PREFIXES = [
+  "/api/stripe/create-",
+  "/api/account/",
+  "/api/gift/",
+  "/api/referral/",
+  "/api/refund/",
+  "/api/admin/",
+];
+async function rateLimited(request, env, pathname) {
+  if (pathname === "/api/stripe/webhook") return null;
+  const ip = request.headers.get("cf-connecting-ip") || "anon";
+  const strict = AUTH_PREFIXES.some((p) => pathname.startsWith(p));
+  const limiter = strict ? env.AUTH_RATE_LIMITER : env.API_RATE_LIMITER;
+  if (!limiter) return null;
+  const { success } = await limiter.limit({ key: `${strict ? "a" : "g"}:${ip}` });
+  if (success) return null;
+  return new Response(JSON.stringify({ error: "RATE_LIMITED" }), {
+    status: 429,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "retry-after": "60",
+      "cache-control": "no-store",
+    },
+  });
+}
 
 // Cron Triggers (see [triggers] in wrangler.toml), all in UTC:
 //   10 17 * * SUN  Mon 00:10 Asia/Bangkok — close the finished week
@@ -81,6 +111,11 @@ export default {
     const url = new URL(request.url);
     const route = routes.get(url.pathname);
     if (!route) return env.ASSETS.fetch(request);
+
+    if (request.method !== "OPTIONS") {
+      const limited = await rateLimited(request, env, url.pathname);
+      if (limited) return limited;
+    }
 
     const handler = methodHandler(route, request.method);
     if (!handler) {
