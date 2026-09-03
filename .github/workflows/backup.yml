@@ -10,6 +10,9 @@ name: DB backup
 #   → Type: URI → copy, then replace [YOUR-PASSWORD] with the DB password.
 #   If the password is unknown, "Reset database password" is safe here — the
 #   app connects via the Supabase API, not this Postgres password.
+#
+# Restore a dump with pg_restore 17:
+#   pg_restore --no-owner --no-privileges -d "<target db url>" jumsup-YYYY-MM-DD.dump
 
 on:
   schedule:
@@ -20,7 +23,7 @@ jobs:
   dump:
     runs-on: ubuntu-latest
     steps:
-      - name: Install pg_dump 17
+      - name: Install PostgreSQL client 17
         run: |
           sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
@@ -32,8 +35,12 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           test -n "$SUPABASE_DB_URL" || { echo "SUPABASE_DB_URL secret is not set"; exit 1; }
+          # Ubuntu ships client 16 as the default /usr/bin/pg_dump; call 17 by path.
+          PGDUMP="$(ls -d /usr/lib/postgresql/*/bin/pg_dump | sort -V | tail -1)"
+          echo "Using: $PGDUMP"
+          "$PGDUMP" --version
           stamp=$(date -u +%Y-%m-%d)
-          pg_dump --no-owner --no-privileges --format=custom "$SUPABASE_DB_URL" > "jumsup-$stamp.dump"
+          "$PGDUMP" --no-owner --no-privileges --format=custom "$SUPABASE_DB_URL" > "jumsup-$stamp.dump"
           ls -lh "jumsup-$stamp.dump"
 
       - name: Upload artifact
