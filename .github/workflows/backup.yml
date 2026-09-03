@@ -2,9 +2,14 @@ name: DB backup
 
 # Free stop-gap backup while the Supabase project is on the free plan (no
 # managed backups). Dumps the database daily and keeps each dump as a workflow
-# artifact for 30 days. Set the repo secret SUPABASE_DB_URL to the Postgres
-# connection string (Supabase → Project Settings → Database → Connection string
-# → URI, the one WITH the password; use the "Session"/direct URI, not the pooler).
+# artifact for 30 days.
+#
+# Set the repo secret SUPABASE_DB_URL to the Postgres connection URI:
+#   Supabase dashboard → top bar "Connect" → "Direct connection string" tab
+#   → Connection method: "Session pooler" (IPv4 — GitHub runners have no IPv6)
+#   → Type: URI → copy, then replace [YOUR-PASSWORD] with the DB password.
+#   If the password is unknown, "Reset database password" is safe here — the
+#   app connects via the Supabase API, not this Postgres password.
 
 on:
   schedule:
