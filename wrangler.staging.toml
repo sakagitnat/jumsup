@@ -1,0 +1,34 @@
+# Staging deployment for testing the billing flow against Stripe TEST mode.
+# Same worker code and same Supabase project as production, but pointed at
+# Stripe test keys/prices. Deliberately has NO [triggers] block — the cron jobs
+# (weekly close, deletion sweep) must never run from staging against the shared
+# production database.
+#
+# Deploy:  npx wrangler deploy --config wrangler.staging.toml
+# Secrets: npx wrangler secret put NAME --config wrangler.staging.toml
+#   STRIPE_SECRET_KEY          sk_test_...
+#   STRIPE_WEBHOOK_SECRET      whsec_...   (from the test webhook endpoint)
+#   SUPABASE_SERVER_KEY        (same service-role key as production)
+
+name = "jumsup-staging"
+main = "./worker/index.js"
+compatibility_date = "2026-08-18"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_URL = "https://jumsup-staging.sakagitnat.workers.dev"
+ALLOWED_ORIGINS = "https://jumsup-staging.sakagitnat.workers.dev"
+SUPABASE_URL = "https://vhzpmnirzgrzyaaotcep.supabase.co"
+# Filled in after the test product/prices are created:
+STRIPE_PRICE_PRO_MONTHLY = "price_1UBdAU016c6XVEVt8Am6l61f"
+STRIPE_PRICE_PRO_YEARLY = "price_1UBdAU016c6XVEVtXXHyNZpy"
+STRIPE_PRICE_PRO_MONTHLY_GLOBAL = "price_1UBdAU016c6XVEVtKkazctbF"
+STRIPE_PRICE_PRO_YEARLY_GLOBAL = "price_1UBdAU016c6XVEVtOnAe3Ist"
+VAPID_SUBJECT = "mailto:sakagitnat@gmail.com"
+VAPID_PUBLIC_KEY = "BJBnMngd-cs_scv7XAZbwK_VQ7oe61GUhZQa33Tnv9BnPZcqRkOeQStfN46OaM-wjaaSAF5LXxuLnoKzk5mzj2w"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
