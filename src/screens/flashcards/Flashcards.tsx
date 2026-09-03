@@ -6,7 +6,7 @@ import { deleteContent } from "../../actions/content";
 import { DeckEditor } from "./DeckEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
-import { PageHeader, Card, Tag, Button, LinkButton } from "../../ui";
+import { PageHeader, Card, Tag, Button, LinkButton, IconEdit, IconTrash } from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
 import { dueCount } from "../../lib/srs";
 
@@ -135,7 +135,7 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                       onClick={() => setEditor({ open: true, id: d.id })}
                       className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
                     >
-                      ✎
+                      <IconEdit size={16} />
                     </button>
                     <button
                       type="button"
@@ -144,7 +144,7 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                       onClick={() => setDel(d.id)}
                       className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-danger-soft hover:text-danger"
                     >
-                      🗑
+                      <IconTrash size={16} />
                     </button>
                   </div>
                 )}

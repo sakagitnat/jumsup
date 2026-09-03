@@ -2,15 +2,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadWeekRecap, markWeekRecapSeen, type WeekRecap as Recap } from "../../lib/cloud.js";
 import { useStore } from "../../store/useStore";
-import { Modal, Button } from "../../ui";
+import { Modal, Button, IconTrophy, cx } from "../../ui";
 
-const medal = ["🥇", "🥈", "🥉"];
+const rankTint: Record<number, string> = {
+  1: "bg-[#f2c94c33] text-[#a9791b] dark:text-[#e8c877]",
+  2: "bg-[#c9ced633] text-[#7b8494] dark:text-[#c2c9d6]",
+  3: "bg-[#cd7f3233] text-[#9a5a24] dark:text-[#d59a6a]",
+};
 
 function delta(rank: number, prev: number | null): { text: string; tone: string } {
   if (prev == null) return { text: "สัปดาห์แรกบนกระดาน", tone: "text-muted" };
   if (prev === rank) return { text: "อันดับเท่าสัปดาห์ก่อน", tone: "text-muted" };
-  if (rank < prev) return { text: `▲ ขึ้น ${prev - rank} อันดับจากสัปดาห์ก่อน`, tone: "text-primary" };
-  return { text: `▼ ลง ${rank - prev} อันดับจากสัปดาห์ก่อน`, tone: "text-muted" };
+  if (rank < prev) return { text: `ขึ้น ${prev - rank} อันดับจากสัปดาห์ก่อน`, tone: "text-primary" };
+  return { text: `ลง ${rank - prev} อันดับจากสัปดาห์ก่อน`, tone: "text-muted" };
 }
 
 /** Global one-time "your week is over" card. Mounted once in RootChrome. */
@@ -71,7 +75,14 @@ export function WeekRecap() {
     >
       <div className="space-y-4 text-center">
         <div>
-          <div className="text-5xl">{recap.rank <= 3 ? medal[recap.rank - 1] : "🎯"}</div>
+          <div
+            className={cx(
+              "mx-auto grid h-16 w-16 place-items-center rounded-2xl",
+              rankTint[recap.rank] || "bg-primary-soft text-primary",
+            )}
+          >
+            <IconTrophy size={30} />
+          </div>
           <p className="mt-2 text-2xl font-bold">อันดับ {recap.rank}</p>
           <p className={`mt-1 text-sm ${d.tone}`}>{d.text}</p>
         </div>
@@ -90,7 +101,7 @@ export function WeekRecap() {
             </p>
           </div>
         ) : (
-          <p className="text-sm text-muted">สัปดาห์นี้ทำต่อให้ติดรางวัลนะ 💪</p>
+          <p className="text-sm text-muted">สัปดาห์นี้ทำต่อให้ติดรางวัลนะ</p>
         )}
       </div>
     </Modal>

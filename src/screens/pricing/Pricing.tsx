@@ -3,14 +3,14 @@ import { isPro } from "../../store/pro";
 import { PLANS, money } from "../../lib/plans.js";
 import { loginGoogle } from "../../actions/auth";
 import { startCheckout, openBillingPortal } from "../../actions/billing";
-import { PageHeader, Card, Tag, Button, cx } from "../../ui";
+import { PageHeader, Card, Tag, Button, cx, IconCheck } from "../../ui";
 
 function Features({ items }: { items: string[] }) {
   return (
     <ul className="mt-3 space-y-2 text-sm">
       {items.map((x, i) => (
         <li key={i} className="flex gap-2">
-          <span className="text-success">✓</span>
+          <IconCheck size={16} className="mt-0.5 shrink-0 text-success" />
           <span className="text-muted">{x}</span>
         </li>
       ))}

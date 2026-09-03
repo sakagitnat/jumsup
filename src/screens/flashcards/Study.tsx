@@ -4,7 +4,20 @@ import { speak, englishVoices } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
 import { gradeWord } from "../../actions/flashcards";
 import { isDue, nextReviewHint } from "../../lib/srs";
-import { PageHeader, Card, Button, Progress, Modal, Switch, EmptyState, toast, cx } from "../../ui";
+import {
+  PageHeader,
+  Card,
+  Button,
+  Progress,
+  Modal,
+  Switch,
+  EmptyState,
+  toast,
+  cx,
+  IconArrowLeft,
+  IconArrowRight,
+  IconSettings,
+} from "../../ui";
 
 function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "line" | "primary" }) {
   return (
@@ -286,7 +299,8 @@ export function Study() {
   return (
     <>
       <Button variant="ghost" className="mb-3" onClick={() => navigate("/flash")}>
-        ← ย้อนกลับ
+        <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
+        ย้อนกลับ
       </Button>
 
       {done ? (
@@ -346,7 +360,8 @@ export function Study() {
             }
             actions={
               <Button size="sm" onClick={() => setSettingsOpen(true)}>
-                ⚙ ตั้งค่า
+                <IconSettings size={14} className="mr-1.5 inline align-[-2px]" />
+                ตั้งค่า
               </Button>
             }
           />
@@ -423,10 +438,12 @@ export function Study() {
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <Button variant="danger" size="lg" onClick={miss}>
-                ← ยังไม่จำ
+                <IconArrowLeft size={16} className="mr-1.5 inline align-[-2px]" />
+                ยังไม่จำ
               </Button>
               <Button variant="success" size="lg" onClick={know}>
-                จำได้ →
+                จำได้
+                <IconArrowRight size={16} className="ml-1.5 inline align-[-2px]" />
               </Button>
             </div>
           </div>

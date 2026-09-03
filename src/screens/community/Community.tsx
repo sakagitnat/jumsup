@@ -13,7 +13,21 @@ import { COMMUNITY_URL } from "../../lib/community";
 import { EXAMS, examLabel, levelLabel } from "../../lib/taxonomy";
 import { CommunityPreviewModal } from "./CommunityPreview";
 import { ReviewsModal } from "./ReviewsModal";
-import { PageHeader, Card, Tag, Button, EmptyState, Modal, StarRating, toast, cx } from "../../ui";
+import {
+  PageHeader,
+  Card,
+  Tag,
+  Button,
+  EmptyState,
+  Modal,
+  StarRating,
+  toast,
+  cx,
+  IconChat,
+  IconExternal,
+  IconDownload,
+  IconHeart,
+} from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
 type Tab = "vocab" | "skill";
@@ -79,12 +93,12 @@ export function Community() {
         rel="noreferrer"
         className="mb-3 flex items-center gap-3 rounded-2xl border border-primary-border bg-primary-soft px-4 py-3 text-sm"
       >
-        <span className="text-lg">💬</span>
+        <IconChat size={22} className="shrink-0 text-primary" />
         <span className="min-w-0 flex-1">
           <b className="block text-primary">เข้ากลุ่ม LINE OpenChat ของ Jumsup</b>
           <small className="text-xs text-muted">ถามข้อสอบ แชร์เทคนิค และหาเพื่อนติว</small>
         </span>
-        <span className="text-primary">↗</span>
+        <IconExternal size={16} className="shrink-0 text-primary" />
       </a>
 
       <div className="mb-3 inline-flex rounded-xl border border-line bg-surface-2 p-1">
@@ -215,7 +229,9 @@ export function Community() {
                 <b>{Number(x.rating || 0).toFixed(1)}</b>
                 <small>({x.ratingCount || 0})</small>
               </span>
-              <span title="นำเข้า">⇩ {x.importCount || 0}</span>
+              <span className="inline-flex items-center gap-1" title="นำเข้า">
+                <IconDownload size={14} /> {x.importCount || 0}
+              </span>
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
@@ -262,7 +278,8 @@ export function Community() {
                     : "border-line text-muted hover:bg-surface-2",
                 )}
               >
-                {x.liked ? "♥" : "♡"} {x.likeCount || 0}
+                <IconHeart size={14} filled={x.liked} className="inline align-[-2px]" />{" "}
+                {x.likeCount || 0}
               </button>
               <button
                 type="button"

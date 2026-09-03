@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { masteredWords, awardGameXp } from "../../actions/games";
-import { PageHeader, Card, Button, EmptyState, cx } from "../../ui";
+import { PageHeader, Card, Button, EmptyState, cx, IconArrowLeft } from "../../ui";
 
 interface Tile {
   id: number;
@@ -106,7 +106,8 @@ export function MatchGame() {
   return (
     <>
       <Button variant="ghost" className="mb-3" onClick={() => navigate("/match")}>
-        ← ออกจากเกม
+        <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
+        ออกจากเกม
       </Button>
       <PageHeader
         eyebrow="VOCABULARY GAME"
@@ -172,7 +173,7 @@ export function MatchGame() {
         {phase === "done" && (
           <div className="absolute inset-0 grid place-items-center rounded-xl bg-black/30 backdrop-blur-sm">
             <Card className="max-w-xs text-center">
-              <h3 className="text-lg font-semibold">จบเกม! 🎉</h3>
+              <h3 className="text-lg font-semibold">จบเกม!</h3>
               <p className="mt-2 text-sm text-muted">
                 เวลา <b>{seconds} วินาที</b> · ใช้ <b>{moves}</b> ครั้ง
               </p>

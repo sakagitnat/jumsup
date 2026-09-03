@@ -1,7 +1,7 @@
 import { useStore } from "../../store/useStore";
 import { exportAccountData, requestAccountDelete } from "../../actions";
 import { AccountShell } from "./AccountShell";
-import { Card, Button } from "../../ui";
+import { Card, Button, IconCheck } from "../../ui";
 
 export function AccountPrivacy() {
   const user = useStore((s) => s.user);
@@ -16,7 +16,7 @@ export function AccountPrivacy() {
         <div className="space-y-4">
           <Card>
             <div className="flex items-start gap-3">
-              <span className="text-success">✓</span>
+              <IconCheck size={16} className="mt-0.5 shrink-0 text-success" />
               <div>
                 <b className="block text-sm">ข้อมูลของคุณจัดเก็บไว้ในบัญชี</b>
                 <small className="text-xs text-muted">

@@ -1,5 +1,6 @@
 import { useStore, store } from "../store/useStore";
 import { cx } from "../ui/cx";
+import { IconSun, IconMoon } from "../ui/icons";
 
 export function ThemeToggle({ className }: { className?: string }) {
   const theme = useStore((s) => s.theme);
@@ -14,7 +15,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         className,
       )}
     >
-      {dark ? "☀" : "☾"}
+      {dark ? <IconSun /> : <IconMoon />}
     </button>
   );
 }

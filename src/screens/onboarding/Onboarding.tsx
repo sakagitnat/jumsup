@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { saveOnboarding } from "../../actions/onboarding";
-import { Button, cx, toast, Logo } from "../../ui";
+import { Button, cx, toast, Logo, IconCalendar, IconClose } from "../../ui";
 
 const localToday = () => {
   const d = new Date();
@@ -91,11 +91,11 @@ function ExamCalendar({
               }}
               className="text-subtle hover:text-danger"
             >
-              ✕
+              <IconClose size={16} />
             </span>
           )}
           <span aria-hidden className="text-subtle">
-            📅
+            <IconCalendar size={16} />
           </span>
         </span>
       </button>
@@ -285,7 +285,7 @@ export function Onboarding() {
                         onClick={() => removeTarget(i)}
                         className="shrink-0 text-subtle hover:text-danger"
                       >
-                        ✕
+                        <IconClose size={16} />
                       </button>
                     </div>
                     <ExamCalendar

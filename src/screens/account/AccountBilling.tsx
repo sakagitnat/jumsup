@@ -4,7 +4,7 @@ import { isPro, proSource } from "../../store/pro";
 import { openBillingPortal, submitRefundRequest } from "../../actions";
 import { AccountShell } from "./AccountShell";
 import { Pricing } from "../pricing/Pricing";
-import { Card, Tag, Button, Modal } from "../../ui";
+import { Card, Tag, Button, Modal, IconStar } from "../../ui";
 
 export function AccountBilling() {
   const { profile, subscription, payments, refunds } = useStore((s) => ({
@@ -26,8 +26,8 @@ export function AccountBilling() {
     <AccountShell title="แพ็กเกจและการชำระเงิน">
       <Card className="mb-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-lg text-primary">
-            ★
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary">
+            <IconStar size={20} filled={pro} />
           </span>
           <div className="flex-1">
             <b className="block text-sm">{pro ? "Jumsup Pro" : "Jumsup Free"}</b>

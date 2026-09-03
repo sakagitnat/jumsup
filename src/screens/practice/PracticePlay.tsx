@@ -6,7 +6,7 @@ import { QuestionBlock } from "./QuestionBlock";
 import { WordText } from "./WordText";
 import { submitPracticeUsage } from "../../actions/practice";
 import { speakScript, pauseSpeech, resumeSpeech, stopSpeech } from "./tts";
-import { Button, Card, Tag, cx } from "../../ui";
+import { Button, Card, Tag, cx, IconPlay, IconPause, IconStop, IconArrowLeft } from "../../ui";
 import type { PracticeSection } from "../../store/types";
 
 const kindMeta: Record<PracticeKind, { eyebrow: string; title: string }> = {
@@ -86,7 +86,8 @@ export function PracticePlay({ kind }: { kind: PracticeKind }) {
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" onClick={() => navigate(`/${kind}`)}>
-          ← ออกจากแบบฝึก
+          <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
+          ออกจากแบบฝึก
         </Button>
         <div
           className={cx(
@@ -112,16 +113,20 @@ export function PracticePlay({ kind }: { kind: PracticeKind }) {
         <Card soft className="mb-4">
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" size="sm" onClick={() => speakScript(fullScript, accent, rate)}>
-              ▶ ฟังทั้งหมด
+              <IconPlay size={13} className="mr-1.5 inline align-[-1px]" />
+              ฟังทั้งหมด
             </Button>
             <Button size="sm" onClick={pauseSpeech}>
-              ‖ พัก
+              <IconPause size={13} className="mr-1.5 inline align-[-1px]" />
+              พัก
             </Button>
             <Button size="sm" onClick={resumeSpeech}>
-              ▶ ต่อ
+              <IconPlay size={13} className="mr-1.5 inline align-[-1px]" />
+              ต่อ
             </Button>
             <Button size="sm" onClick={stopSpeech}>
-              ■ หยุด
+              <IconStop size={13} className="mr-1.5 inline align-[-1px]" />
+              หยุด
             </Button>
             <label className="ml-2 text-xs text-muted">
               สำเนียง{" "}
@@ -193,7 +198,8 @@ export function PracticePlay({ kind }: { kind: PracticeKind }) {
                       variant="primary"
                       onClick={() => speakScript(section.script || section.context || "", accent, rate)}
                     >
-                      ▶ ฟังส่วนนี้
+                      <IconPlay size={13} className="mr-1.5 inline align-[-1px]" />
+                      ฟังส่วนนี้
                     </Button>
                     <details className="rounded-xl border border-line bg-surface-2 p-3 text-sm">
                       <summary className="cursor-pointer font-semibold">

@@ -6,7 +6,17 @@ import { DeckEditor } from "../flashcards/DeckEditor";
 import { PracticeEditor } from "../practice/PracticeEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
-import { PageHeader, Card, Button, LinkButton, EmptyState, Modal, toast } from "../../ui";
+import {
+  PageHeader,
+  Card,
+  Button,
+  LinkButton,
+  EmptyState,
+  Modal,
+  toast,
+  IconEdit,
+  IconTrash,
+} from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
 import type { PracticeKind } from "../practice/session";
 
@@ -63,7 +73,7 @@ function Row({
         onClick={onEdit}
         className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
       >
-        ✎
+        <IconEdit size={16} />
       </button>
       <button
         type="button"
@@ -72,7 +82,7 @@ function Row({
         onClick={onDelete}
         className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-danger-soft hover:text-danger"
       >
-        🗑
+        <IconTrash size={16} />
       </button>
     </div>
   );

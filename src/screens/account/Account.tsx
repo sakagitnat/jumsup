@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { logout } from "../../actions/auth";
-import { PageHeader, Button } from "../../ui";
+import { PageHeader, Button, IconExternal } from "../../ui";
 import { COMMUNITY_URL } from "../../lib/community";
 
 const tabs: Array<[string, string, string]> = [
@@ -40,7 +40,7 @@ export function Account() {
               เปิดในแท็บใหม่ · ต้องล็อกอินบัญชีแอดมินอีกครั้ง
             </small>
           </div>
-          <span className="text-primary">↗</span>
+          <IconExternal size={16} className="shrink-0 text-primary" />
         </a>
       )}
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCommunityPreview, type CommunityPreview as Preview } from "../../actions/community";
 import { SetContentView } from "./SetContentView";
-import { Modal, Button, Tag, toast } from "../../ui";
+import { Modal, Button, Tag, toast, IconStar, IconHeart, IconDownload } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
 function shareUrl(item: CommunityItem) {
@@ -83,9 +83,14 @@ export function CommunityPreviewModal({
         <Tag tone={item.official ? "info" : "success"}>
           {item.official ? "OFFICIAL" : "COMMUNITY"}
         </Tag>
-        <span className="text-sm text-muted">
-          โดย @{item.creator} · ★ {Number(item.rating || 0).toFixed(1)} ({item.ratingCount || 0}) · ♥{" "}
-          {item.likeCount || 0} · ⇩ {item.importCount || 0}
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
+          โดย @{item.creator} ·
+          <IconStar size={13} filled className="align-[-2px] text-warning" />
+          {Number(item.rating || 0).toFixed(1)} ({item.ratingCount || 0}) ·
+          <IconHeart size={13} className="align-[-2px]" />
+          {item.likeCount || 0} ·
+          <IconDownload size={13} className="align-[-2px]" />
+          {item.importCount || 0}
         </span>
       </div>
       <h3 className="mb-3 text-lg font-semibold">{data?.title || item.title}</h3>

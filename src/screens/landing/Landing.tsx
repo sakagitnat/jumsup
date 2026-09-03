@@ -4,7 +4,7 @@ import { PLANS, money } from "../../lib/plans.js";
 import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
 import { COMMUNITY_URL } from "../../lib/community";
-import { Button, Logo } from "../../ui";
+import { Button, Logo, IconCheck } from "../../ui";
 import { DemoCard } from "./DemoCard";
 
 const features = [
@@ -95,10 +95,13 @@ export function Landing() {
               ลองตัวอย่าง
             </Button>
           </div>
-          <div className="mt-5 flex flex-wrap gap-4 text-sm text-muted">
-            <span>✓ สมัครฟรี รับ Pro 7 วัน</span>
-            <span>✓ ไม่ต้องใช้บัตร</span>
-            <span>✓ ใช้ได้บนมือถือ</span>
+          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
+            {["สมัครฟรี รับ Pro 7 วัน", "ไม่ต้องใช้บัตร", "ใช้ได้บนมือถือ"].map((t) => (
+              <span key={t} className="inline-flex items-center gap-1.5">
+                <IconCheck size={15} className="text-success" />
+                {t}
+              </span>
+            ))}
           </div>
         </div>
 

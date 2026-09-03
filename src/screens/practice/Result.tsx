@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { attemptStore, useAttempt } from "./session";
 import { useStore } from "../../store/useStore";
 import { isPro } from "../../lib/entitlements.js";
-import { PageHeader, Card, Tag, Button, cx, toast } from "../../ui";
+import { PageHeader, Card, Tag, Button, cx, toast, IconBolt, IconArrowRight } from "../../ui";
 
 const KIND_LABEL: Record<string, string> = {
   reading: "Reading",
@@ -51,7 +51,7 @@ export function Result() {
     const link = `${location.origin}/?ref=${profile?.referral_code || ""}`.replace(/\?ref=$/, "");
     const text = `ผมได้ ${percent}% (${correct}/${questions.length}) ใน ${
       KIND_LABEL[kind] || kind
-    } บน Jumsup 🎯 มาลองกัน`;
+    } บน Jumsup มาลองกัน`;
     try {
       if (navigator.share) await navigator.share({ text, url: link });
       else {
@@ -105,13 +105,11 @@ export function Result() {
           to="/pricing"
           className="mb-5 flex items-center gap-2 rounded-xl border border-primary-border bg-primary-soft px-4 py-3 text-sm font-medium text-primary transition hover:brightness-95"
         >
-          <span aria-hidden>⚡</span>
+          <IconBolt size={14} className="shrink-0" />
           <span className="min-w-0 flex-1">
             Pro ฝึก Reading / Listening / Writing / Mock ได้ไม่จำกัด + วิเคราะห์จุดอ่อนแบบละเอียด
           </span>
-          <span aria-hidden className="shrink-0">
-            →
-          </span>
+          <IconArrowRight size={14} className="shrink-0" />
         </Link>
       )}
 

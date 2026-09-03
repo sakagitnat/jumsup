@@ -10,7 +10,12 @@ import { loginGoogle } from "../../actions/auth";
 import { setLeaderboardAnon } from "../../actions/account";
 import { PageHeader, Card, Button, Switch, EmptyState, cx } from "../../ui";
 
-const medal = ["🥇", "🥈", "🥉"];
+// Top-3 rank badge tints (gold / silver / bronze) — no emoji.
+const rankTint: Record<number, string> = {
+  1: "bg-[#f2c94c33] text-[#a9791b] dark:text-[#e8c877]",
+  2: "bg-[#c9ced633] text-[#7b8494] dark:text-[#c2c9d6]",
+  3: "bg-[#cd7f3233] text-[#9a5a24] dark:text-[#d59a6a]",
+};
 
 function weekLabel(weekStart: string): string {
   if (!weekStart) return "สัปดาห์นี้";
@@ -156,8 +161,13 @@ export function Leaderboard() {
                       mine && "border-primary-border bg-primary-soft",
                     )}
                   >
-                    <span className="w-8 shrink-0 text-center text-sm font-bold tabular-nums">
-                      {row.rank <= 3 ? medal[row.rank - 1] : row.rank}
+                    <span
+                      className={cx(
+                        "grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold tabular-nums",
+                        rankTint[row.rank] || "text-muted",
+                      )}
+                    >
+                      {row.rank}
                     </span>
                     <b className="min-w-0 flex-1 truncate text-sm">
                       {row.username}

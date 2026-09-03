@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cx } from "./cx";
+import { IconClose } from "./icons";
 
 export interface ModalProps {
   open: boolean;
@@ -59,7 +60,7 @@ export function Modal({ open, onClose, title, children, footer, size = "md" }: M
             onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-text"
           >
-            ✕
+            <IconClose />
           </button>
         </div>
         <div className="px-5 py-4">{children}</div>

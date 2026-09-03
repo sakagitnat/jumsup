@@ -6,7 +6,17 @@ import { loginGoogle } from "../../actions/auth";
 import { dueCount } from "../../lib/srs";
 import { skillLabel } from "../../lib/taxonomy";
 import { isPro } from "../../lib/entitlements.js";
-import { PageHeader, Card, Tag, Button, LinkButton, toast } from "../../ui";
+import {
+  PageHeader,
+  Card,
+  Tag,
+  Button,
+  LinkButton,
+  toast,
+  IconBolt,
+  IconArrowRight,
+  IconCheck,
+} from "../../ui";
 
 /** A single contextual Pro nudge for the daily-plan card. Returns null for Pro
  *  users (unless their trial is about to lapse) and when nothing is relevant. */
@@ -43,13 +53,13 @@ function proNudge(opts: {
 
 const skillCards: Array<[string, string, string, string]> = [
   ["/flash", "Aa", "Flashcard", "วนคำจนจำครบ"],
-  ["/match", "↔", "Match", "จับคู่แข่งกับเวลาและทำลายสถิติ"],
-  ["/crossword", "＋", "Crossword", "เติมคำศัพท์ลงตารางไขว้จริง"],
+  ["/match", "Mt", "Match", "จับคู่แข่งกับเวลาและทำลายสถิติ"],
+  ["/crossword", "Cw", "Crossword", "เติมคำศัพท์ลงตารางไขว้จริง"],
   ["/reading", "R", "Reading", "อ่าน แตะคำ แปล และเก็บศัพท์"],
   ["/listening", "L", "Listening", "ฟังบทสนทนาและตอบคำถาม"],
   ["/writing", "W", "Writing", "Text Completion และเรียงย่อหน้า"],
   ["/mock", "M", "Mock Exam", "สร้างและเลือกชุดข้อสอบ"],
-  ["/community", "◇", "Community", "ค้นหาชุดจากผู้ใช้อื่น"],
+  ["/community", "Cm", "Community", "ค้นหาชุดจากผู้ใช้อื่น"],
 ];
 
 const skillRoute = (s: string) => (s === "vocabulary" ? "/flash" : `/${s}`);
@@ -231,7 +241,7 @@ export function Home() {
                       : "grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary"
                   }
                 >
-                  {step.done ? "✓" : i + 1}
+                  {step.done ? <IconCheck size={13} /> : i + 1}
                 </span>
                 <span className="min-w-0 flex-1 text-sm">{step.text}</span>
                 {step.done ? (
@@ -253,11 +263,9 @@ export function Home() {
               to="/pricing"
               className="mt-3 flex items-center gap-2 rounded-xl border border-primary-border bg-primary-soft px-3 py-2 text-xs font-medium text-primary transition hover:brightness-95"
             >
-              <span aria-hidden>⚡</span>
+              <IconBolt size={14} className="shrink-0" />
               <span className="min-w-0 flex-1">{nudge}</span>
-              <span aria-hidden className="shrink-0">
-                →
-              </span>
+              <IconArrowRight size={14} className="shrink-0" />
             </Link>
           )}
         </Card>
@@ -296,8 +304,8 @@ export function Home() {
 
       {user && !checked && (
         <Card className="mt-4 flex items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
-            ✓
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+            <IconCheck size={18} />
           </span>
           <div className="min-w-0 flex-1">
             <b className="block text-sm">ยังไม่ได้เช็คอินวันนี้</b>

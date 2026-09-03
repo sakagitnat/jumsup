@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useStore } from "../../store/useStore";
 import { translateWord, addWordToDeck } from "../../actions/translate";
-import { cx } from "../../ui";
+import { cx, IconClose } from "../../ui";
 
 function tokens(text: string): string[] {
   return text.split(/(\s+|[,.!?;:()"“”]+)/);
@@ -88,7 +88,7 @@ export function WordText({ text }: { text: string }) {
                   onClick={() => setPop(null)}
                   className="text-muted hover:text-text"
                 >
-                  ✕
+                  <IconClose size={15} />
                 </button>
               </div>
               <p className="mt-1 min-h-[2.5rem] text-sm text-muted">
@@ -123,7 +123,7 @@ export function WordText({ text }: { text: string }) {
                       "mt-2 w-full rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary disabled:opacity-50",
                     )}
                   >
-                    {pop.saved ? "เพิ่มแล้ว ✓" : "+ เพิ่มเข้า Flashcard"}
+                    {pop.saved ? "เพิ่มแล้ว" : "+ เพิ่มเข้า Flashcard"}
                   </button>
                 </>
               )}

@@ -6,7 +6,7 @@ import { deleteContent } from "../../actions/content";
 import { PracticeEditor } from "./PracticeEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
 import { BulkImport } from "../import/BulkImport";
-import { PageHeader, Card, Tag, Button, EmptyState } from "../../ui";
+import { PageHeader, Card, Tag, Button, EmptyState, IconEdit, IconTrash } from "../../ui";
 import { EXAMS, examLabel, levelLabel } from "../../lib/taxonomy";
 import type { PracticeKind } from "./session";
 import type { PracticeSet } from "../../store/types";
@@ -108,7 +108,7 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
                       onClick={() => setEditor({ open: true, id: x.id })}
                       className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
                     >
-                      ✎
+                      <IconEdit size={16} />
                     </button>
                     <button
                       type="button"
@@ -117,7 +117,7 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
                       onClick={() => setDel(x.id)}
                       className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted hover:bg-danger-soft hover:text-danger"
                     >
-                      🗑
+                      <IconTrash size={16} />
                     </button>
                   </div>
                 )}

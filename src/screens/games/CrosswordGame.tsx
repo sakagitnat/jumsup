@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { masteredWords, awardGameXp } from "../../actions/games";
 import { buildCrossword } from "../../lib/crossword";
-import { PageHeader, Card, Button, EmptyState, cx, toast } from "../../ui";
+import { PageHeader, Card, Button, EmptyState, cx, toast, IconArrowLeft } from "../../ui";
 
 export function CrosswordGame() {
   const { deckId = "" } = useParams();
@@ -88,7 +88,8 @@ export function CrosswordGame() {
   return (
     <>
       <Button variant="ghost" className="mb-3" onClick={() => navigate("/crossword")}>
-        ← ออกจากเกม
+        <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
+        ออกจากเกม
       </Button>
       <PageHeader
         eyebrow="VOCABULARY GAME"

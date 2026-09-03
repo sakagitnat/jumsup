@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cx } from "./cx";
+import { IconStar } from "./icons";
 
 export function StarRating({
   value,
@@ -14,7 +15,7 @@ export function StarRating({
 }) {
   const [hover, setHover] = useState(0);
   const shown = hover || value;
-  const px = size === "lg" ? "text-3xl" : size === "sm" ? "text-base" : "text-2xl";
+  const px = size === "lg" ? 28 : size === "sm" ? 16 : 22;
 
   return (
     <div className="inline-flex" role={readOnly ? undefined : "radiogroup"} aria-label="คะแนน">
@@ -30,14 +31,13 @@ export function StarRating({
           onMouseLeave={() => !readOnly && setHover(0)}
           onClick={() => !readOnly && onChange?.(n)}
           className={cx(
-            px,
             "leading-none transition-transform",
             !readOnly && "hover:scale-110",
             n <= shown ? "text-warning" : "text-line-strong",
             readOnly && "cursor-default",
           )}
         >
-          {n <= shown ? "★" : "☆"}
+          <IconStar size={px} filled={n <= shown} />
         </button>
       ))}
     </div>

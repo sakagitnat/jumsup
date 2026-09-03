@@ -8,7 +8,7 @@ import {
   type ContentReview,
 } from "../../actions/community";
 import { useStore } from "../../store/useStore";
-import { Modal, Button, StarRating, cx } from "../../ui";
+import { Modal, Button, StarRating, cx, IconCheck, IconThumbUp } from "../../ui";
 import type { CommunityItem } from "../../store/types";
 
 type Sort = "recent" | "top" | "helpful";
@@ -154,8 +154,8 @@ export function ReviewsModal({
                   {r.displayName || "ไม่ระบุชื่อ"}
                 </span>
                 {r.imported && (
-                  <span className="rounded bg-success-soft px-1.5 py-0.5 text-[10px] font-bold text-success">
-                    ✓ นำเข้าแล้ว
+                  <span className="inline-flex items-center gap-1 rounded bg-success-soft px-1.5 py-0.5 text-[10px] font-bold text-success">
+                    <IconCheck size={11} /> นำเข้าแล้ว
                   </span>
                 )}
                 {r.isMine && (
@@ -191,7 +191,8 @@ export function ReviewsModal({
                     : "border-line text-muted hover:bg-surface-2",
                 )}
               >
-                👍 มีประโยชน์ {r.helpfulCount > 0 ? `(${r.helpfulCount})` : ""}
+                <IconThumbUp size={13} className="mr-1 inline align-[-2px]" />
+                มีประโยชน์ {r.helpfulCount > 0 ? `(${r.helpfulCount})` : ""}
               </button>
 
               {isOwner && r.id !== "local" && (
