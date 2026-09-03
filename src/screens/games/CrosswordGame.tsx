@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../store/useStore";
-import { masteredWords } from "../../actions/games";
+import { masteredWords, awardGameXp } from "../../actions/games";
 import { buildCrossword } from "../../lib/crossword";
 import { PageHeader, Card, Button, EmptyState, cx, toast } from "../../ui";
 
@@ -66,6 +66,7 @@ export function CrosswordGame() {
     if (allRight && !doneRef.current) {
       doneRef.current = true;
       toast(`ถูกทั้งหมด · ใช้เวลา ${seconds} วินาที`);
+      void awardGameXp("crossword");
     }
   };
 

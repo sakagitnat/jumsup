@@ -36,6 +36,27 @@ export async function markWordMastered(deckId: string, index: number): Promise<n
 
   const fresh = !current.includes(index);
   const mastered = fresh ? [...current, index] : current;
+
+  // Official/starter deck: the mastered list is device-local, but a logged-in
+  // user should still earn (server-authoritative, leaderboard-counting) XP the
+  // first time they master each word.
+  if (fresh && getCurrentUser() && backendEnabled) {
+    store.update((s) => ({
+      ...s,
+      progress: { ...s.progress, [deckId]: { mastered } },
+    }));
+    try {
+      const { data } = await supabase.rpc("award_flashcard_xp", {
+        p_deck_id: deckId,
+        p_word_index: index,
+      });
+      if (data?.awarded) store.set({ xp: data.xp });
+    } catch (e) {
+      console.error(e);
+    }
+    return mastered;
+  }
+
   store.update((s) => ({
     ...s,
     progress: { ...s.progress, [deckId]: { mastered } },

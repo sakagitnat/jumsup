@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../store/useStore";
-import { masteredWords } from "../../actions/games";
+import { masteredWords, awardGameXp } from "../../actions/games";
 import { PageHeader, Card, Button, EmptyState, cx } from "../../ui";
 
 interface Tile {
@@ -55,6 +55,7 @@ export function MatchGame() {
   useEffect(() => {
     if (phase === "playing" && pairCount > 0 && matched.size === pairCount * 2) {
       setPhase("done");
+      void awardGameXp("match");
     }
   }, [matched, pairCount, phase]);
 

@@ -1,5 +1,5 @@
 import { api } from "../lib/api.js";
-import { backendEnabled } from "../lib/supabase.js";
+import { supabase, backendEnabled } from "../lib/supabase.js";
 import { startDailyFeature } from "../lib/policy.js";
 import { savePracticeAttempt } from "../lib/cloud.js";
 import { store } from "../store/store";
@@ -116,6 +116,25 @@ function recordPracticeAttempt(attempt: Attempt) {
   );
   const percent = total ? Math.round((correct / total) * 100) : 0;
   const seconds = Math.max(1, Math.round((Date.now() - attempt.startedAt) / 1000));
+
+  if (getCurrentUser() && backendEnabled) {
+    supabase
+      .rpc("award_practice_xp", {
+        p_kind: kind,
+        p_set_id: set.id,
+        p_total: total,
+        p_correct: correct,
+      })
+      .then(
+        ({ data }) => {
+          if (data?.awarded) {
+            store.set({ xp: data.xp });
+            toast(`+${data.awarded} XP`);
+          }
+        },
+        (e: unknown) => console.error(e),
+      );
+  }
 
   const rec = {
     kind,

@@ -26,6 +26,7 @@ interface Overview {
   imports_30d: number;
   attempts_30d: number;
   attempts_by_kind_30d: Record<string, number>;
+  xp_by_source_30d: Record<string, number>;
   gift_redemptions_30d: number;
   redeemers_total: number;
   redeemers_converted: number;
@@ -87,6 +88,16 @@ export function Overview() {
   const kindEntries = g ? Object.entries(g.attempts_by_kind_30d || {}) : [];
   const kindMax = Math.max(1, ...kindEntries.map(([, v]) => v));
 
+  const xpSourceLabels: Record<string, string> = {
+    checkin: "เช็คอิน",
+    practice: "ทำข้อสอบ",
+    flashcard: "จำศัพท์",
+    game: "เกม",
+    import: "ชุดถูกนำเข้า",
+  };
+  const xpEntries = g ? Object.entries(g.xp_by_source_30d || {}).sort((a, b) => b[1] - a[1]) : [];
+  const xpMax = Math.max(1, ...xpEntries.map(([, v]) => v));
+
   return (
     <Section
       title="ศูนย์จัดการ Jumsup"
@@ -141,6 +152,24 @@ export function Overview() {
                         color="var(--primary)"
                       />
                     ))
+                )}
+              </div>
+            </Card>
+            <Card>
+              <div className="mb-2 text-xs text-[var(--muted)]">XP มาจากกิจกรรมไหนมากสุด</div>
+              <div className="space-y-1.5">
+                {xpEntries.length === 0 ? (
+                  <span className="text-sm text-[var(--subtle)]">ยังไม่มีข้อมูล</span>
+                ) : (
+                  xpEntries.map(([k, v]) => (
+                    <Bar
+                      key={k}
+                      label={xpSourceLabels[k] || k}
+                      value={v}
+                      max={xpMax}
+                      color="var(--success)"
+                    />
+                  ))
                 )}
               </div>
             </Card>

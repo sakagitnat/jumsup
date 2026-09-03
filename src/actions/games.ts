@@ -1,4 +1,4 @@
-import { backendEnabled } from "../lib/supabase.js";
+import { supabase, backendEnabled } from "../lib/supabase.js";
 import { startDailyFeature } from "../lib/policy.js";
 import { store } from "../store/store";
 import { getCurrentUser } from "../app/cloudSync";
@@ -6,6 +6,20 @@ import { proPopup, toast } from "../ui/toast";
 import type { Word } from "../store/types";
 
 export type Game = "match" | "crossword";
+
+/** +12 XP for finishing a game, once per game per day (server-enforced). */
+export async function awardGameXp(game: Game) {
+  if (!getCurrentUser() || !backendEnabled) return;
+  try {
+    const { data } = await supabase.rpc("award_game_xp", { p_game: game });
+    if (data?.awarded) {
+      store.set({ xp: data.xp });
+      toast(`+${data.awarded} XP`);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
 
 export function masteredWords(deckId: string): Word[] {
   const s = store.get();

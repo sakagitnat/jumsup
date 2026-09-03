@@ -47,6 +47,7 @@ export async function onRequestGet({ request, env }) {
       allRedemptions,
       allPaidEvents,
       allActiveSubs,
+      xpEvents,
     ] = await Promise.all([
       count(sb.from("profiles").select("user_id", { count: "exact", head: true })),
       count(
@@ -148,6 +149,7 @@ export async function onRequestGet({ request, env }) {
       sb.from("gift_redemptions").select("user_id").limit(10000),
       sb.from("payment_events").select("user_id").eq("status", "succeeded").gt("amount", 0).limit(10000),
       sb.from("subscriptions").select("user_id").in("status", ["active", "trialing", "past_due"]).limit(10000),
+      sb.from("xp_events").select("source,amount").gte("created_at", daysAgo(30)).limit(50000),
     ]);
 
     if (codes.error) throw codes.error;
@@ -175,6 +177,10 @@ export async function onRequestGet({ request, env }) {
     let redeemersConverted = 0;
     for (const u of redeemers) if (paidUsers.has(u)) redeemersConverted++;
 
+    const xpBySource = {};
+    for (const e of xpEvents.data || [])
+      xpBySource[e.source] = (xpBySource[e.source] || 0) + (e.amount || 0);
+
     return json(
       {
         users,
@@ -200,6 +206,7 @@ export async function onRequestGet({ request, env }) {
         imports_30d: imports30,
         attempts_30d: attempts30,
         attempts_by_kind_30d: byKind,
+        xp_by_source_30d: xpBySource,
         gift_redemptions_30d: giftRedemptions30,
         redeemers_total: redeemers.size,
         redeemers_converted: redeemersConverted,
