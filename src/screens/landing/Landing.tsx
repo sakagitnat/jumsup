@@ -4,7 +4,7 @@ import { useStore, store } from "../../store/useStore";
 import { PLANS, money } from "../../lib/plans.js";
 import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
-import { Button } from "../../ui";
+import { Button, Logo } from "../../ui";
 
 const features = [
   ["Aa", "จำศัพท์ด้วย Loop", "คำที่ยังไม่จำจะวนกลับมา และบันทึกไว้ทบทวนได้เสมอ"],
@@ -31,9 +31,7 @@ export function Landing() {
     <div className="min-h-screen bg-bg text-text">
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-lg font-bold text-on-primary">
-            J
-          </span>
+          <Logo size={36} />
           <strong className="text-lg">Jumsup</strong>
         </div>
         <nav className="flex items-center gap-2 sm:gap-3">

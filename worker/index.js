@@ -14,6 +14,7 @@ import * as adminReviews from "../functions/api/admin/reviews.js";
 import * as adminContent from "../functions/api/admin/content.js";
 import * as adminSeasons from "../functions/api/admin/seasons.js";
 import * as adminXpIntegrity from "../functions/api/admin/xp-integrity.js";
+import * as adminFunnel from "../functions/api/admin/funnel.js";
 import * as contentPublish from "../functions/api/content/publish-confirmed.js";
 import * as contentSave from "../functions/api/content/save.js";
 import * as dictionarySuggest from "../functions/api/dictionary/suggest.js";
@@ -49,6 +50,7 @@ const routes = new Map([
   ["/api/admin/content", adminContent],
   ["/api/admin/seasons", adminSeasons],
   ["/api/admin/xp-integrity", adminXpIntegrity],
+  ["/api/admin/funnel", adminFunnel],
   ["/api/content/publish-confirmed", contentPublish],
   ["/api/content/save", contentSave],
   ["/api/dictionary/suggest", dictionarySuggest],

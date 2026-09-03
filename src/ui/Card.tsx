@@ -9,7 +9,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-2xl border border-line p-4 sm:p-5",
+        "rounded-3xl border border-line p-4 sm:p-5",
         soft ? "bg-surface-2" : "bg-surface shadow-card",
         className,
       )}

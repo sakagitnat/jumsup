@@ -4,6 +4,7 @@ import { useT } from "../store/useT";
 import { useStore } from "../store/useStore";
 import { logout } from "../actions/auth";
 import { cx } from "../ui/cx";
+import { Logo } from "../ui/Logo";
 import { navGroups, homeItem } from "./nav";
 import { ProfileMini } from "./ProfileMini";
 import { ThemeToggle } from "./ThemeToggle";
@@ -34,9 +35,7 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 lg:flex">
       <div className="flex items-center gap-2.5 px-2 pb-4">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-lg font-bold text-on-primary">
-          J
-        </span>
+        <Logo size={36} />
         <div className="leading-tight">
           <strong className="block text-[15px]">Jumsup</strong>
           <small className="text-[11px] text-subtle">English Practice</small>

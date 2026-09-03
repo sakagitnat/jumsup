@@ -1,0 +1,39 @@
+name: DB backup
+
+# Free stop-gap backup while the Supabase project is on the free plan (no
+# managed backups). Dumps the database daily and keeps each dump as a workflow
+# artifact for 30 days. Set the repo secret SUPABASE_DB_URL to the Postgres
+# connection string (Supabase → Project Settings → Database → Connection string
+# → URI, the one WITH the password; use the "Session"/direct URI, not the pooler).
+
+on:
+  schedule:
+    - cron: "30 18 * * *" # 01:30 Asia/Bangkok
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install pg_dump 16
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "SUPABASE_DB_URL secret is not set"; exit 1; }
+          stamp=$(date -u +%Y-%m-%d)
+          pg_dump --no-owner --no-privileges --format=custom "$SUPABASE_DB_URL" > "jumsup-$stamp.dump"
+          ls -lh "jumsup-$stamp.dump"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup
+          path: "jumsup-*.dump"
+          retention-days: 30

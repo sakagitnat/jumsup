@@ -65,10 +65,31 @@ const JOBS: Array<[string, string]> = [
   ["purge_deletions", "กวาดลบบัญชีที่ครบกำหนด"],
 ];
 
+interface Funnel {
+  days: number;
+  signup: number;
+  onboarded: number;
+  first_word: number;
+  first_practice: number;
+  first_checkin: number;
+  returned_day2: number;
+  started_pro: number;
+}
+const FUNNEL_STEPS: Array<[keyof Funnel, string]> = [
+  ["signup", "สมัคร"],
+  ["onboarded", "ตั้งค่าแผนเสร็จ"],
+  ["first_word", "จำคำแรก"],
+  ["first_practice", "ทำ Practice แรก"],
+  ["first_checkin", "เช็คอินอย่างน้อย 1 ครั้ง"],
+  ["returned_day2", "กลับมาวันที่ 2+"],
+  ["started_pro", "เริ่มสมัคร Pro"],
+];
+
 export function Overview() {
   const toast = useToast();
   const run = useAsync();
   const [g, setG] = useState<Overview | null>(null);
+  const [funnel, setFunnel] = useState<Funnel | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = () => {
@@ -77,6 +98,9 @@ export function Overview() {
       .then(setG)
       .catch((e) => toast((e as Error).message))
       .finally(() => setLoading(false));
+    apiGet<Funnel>("/api/admin/funnel?days=30")
+      .then(setFunnel)
+      .catch(() => {});
   };
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -115,6 +139,34 @@ export function Overview() {
         </Btn>
       }
     >
+      {funnel && funnel.signup > 0 && (
+        <>
+          <h3 className="mb-2 text-sm font-bold text-[var(--muted)]">
+            Funnel — คนสมัคร {funnel.days} วันล่าสุด ({funnel.signup} คน)
+          </h3>
+          <Card className="mb-5 space-y-1.5">
+            {FUNNEL_STEPS.map(([key, label]) => {
+              const v = funnel[key];
+              const pct = funnel.signup ? Math.round((v / funnel.signup) * 100) : 0;
+              return (
+                <div key={key} className="flex items-center gap-2 text-sm">
+                  <span className="w-40 shrink-0 text-[var(--muted)]">{label}</span>
+                  <div className="h-4 flex-1 overflow-hidden rounded bg-[var(--surface-2)]">
+                    <div
+                      className="h-full rounded bg-[var(--primary)]"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="w-24 shrink-0 text-right tabular-nums">
+                    {v} <span className="text-[var(--muted)]">({pct}%)</span>
+                  </span>
+                </div>
+              );
+            })}
+          </Card>
+        </>
+      )}
+
       {!g ? null : (
         <>
           <h3 className="mb-2 text-sm font-bold text-[var(--muted)]">ผู้ใช้</h3>

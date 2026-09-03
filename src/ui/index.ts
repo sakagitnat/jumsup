@@ -10,3 +10,4 @@ export { Switch } from "./Switch";
 export { StarRating } from "./StarRating";
 export { Toaster, toast, proPopup } from "./toast";
 export { cx } from "./cx";
+export { Logo } from "./Logo";

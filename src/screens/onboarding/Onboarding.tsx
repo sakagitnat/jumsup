@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { saveOnboarding } from "../../actions/onboarding";
-import { Button, cx, toast } from "../../ui";
+import { Button, cx, toast, Logo } from "../../ui";
 
 const localToday = () => {
   const d = new Date();
@@ -240,9 +240,7 @@ export function Onboarding() {
     <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-10">
       <div className="rounded-2xl border border-line bg-surface p-6 shadow-card">
         <div className="mb-4 flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-sm font-bold text-on-primary">
-            J
-          </span>
+          <Logo size={32} />
           <strong>Jumsup</strong>
         </div>
         <span className="text-xs font-bold uppercase tracking-wide text-primary">
