@@ -30,7 +30,9 @@ function mergeSamples(saved){
  });
  const starters=base.decks.map(sample=>{
   const savedDeck=savedDecks.find(deck=>deck.id===sample.id);
-  return savedDeck?.words?.length?savedDeck:{...sample,...savedDeck,words:sample.words};
+  // Official starter decks always track the shipped content — users can't edit
+  // them, and review progress lives in `srs`/`progress` keyed by word, not here.
+  return {...sample,...savedDeck,words:sample.words};
  });
  next.decks=[...starters,...savedDecks.filter(deck=>!starters.some(sample=>sample.id===deck.id))];
  for(const key of ["reading","listening","writing","mocks"]){

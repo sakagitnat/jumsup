@@ -4,6 +4,7 @@ import { useStore, store } from "../../store/useStore";
 import { PLANS, money } from "../../lib/plans.js";
 import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
+import { COMMUNITY_URL } from "../../lib/community";
 import { Button, Logo } from "../../ui";
 
 const features = [
@@ -225,12 +226,13 @@ export function Landing() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-xs font-bold text-on-primary">
-              J
-            </span>
+            <Logo size={28} />
             <span>Jumsup — ฝึกอังกฤษให้เป็นระบบในแบบของคุณ</span>
           </div>
           <div className="flex flex-wrap gap-4">
+            <a href={COMMUNITY_URL} target="_blank" rel="noreferrer">
+              เข้ากลุ่ม LINE
+            </a>
             <a href="/privacy/">Privacy</a>
             <a href="/terms/">Terms</a>
             <a href="/refund/">Refund</a>

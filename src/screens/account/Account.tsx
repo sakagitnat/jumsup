@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { logout } from "../../actions/auth";
 import { PageHeader, Button } from "../../ui";
+import { COMMUNITY_URL } from "../../lib/community";
 
 const tabs: Array<[string, string, string]> = [
   ["profile", "โปรไฟล์", "ชื่อ รูปภาพ และกิจกรรมการเรียน"],
@@ -67,6 +68,21 @@ export function Account() {
           </Link>
         ))}
       </div>
+
+      <a
+        href={COMMUNITY_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-4 flex items-center gap-4 rounded-2xl border border-primary-border bg-primary-soft px-4 py-4"
+      >
+        <div className="min-w-0 flex-1">
+          <b className="block text-sm text-primary">เข้ากลุ่ม LINE OpenChat</b>
+          <small className="text-xs text-muted">
+            ถามข้อสอบ แชร์เทคนิค และหาเพื่อนติวกับผู้ใช้ Jumsup คนอื่น
+          </small>
+        </div>
+        <span className="text-primary">↗</span>
+      </a>
 
       {user && (
         <Button variant="secondary" className="mt-4" onClick={logout}>

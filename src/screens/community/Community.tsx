@@ -9,6 +9,7 @@ import {
   reportCommunity,
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
+import { COMMUNITY_URL } from "../../lib/community";
 import { EXAMS, examLabel, levelLabel } from "../../lib/taxonomy";
 import { CommunityPreviewModal } from "./CommunityPreview";
 import { ReviewsModal } from "./ReviewsModal";
@@ -71,6 +72,20 @@ export function Community() {
         title="Community Search"
         description="ค้นหา เปรียบเทียบ และนำเข้าชุดฝึกจากผู้สร้างคนอื่น"
       />
+
+      <a
+        href={COMMUNITY_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="mb-3 flex items-center gap-3 rounded-2xl border border-primary-border bg-primary-soft px-4 py-3 text-sm"
+      >
+        <span className="text-lg">💬</span>
+        <span className="min-w-0 flex-1">
+          <b className="block text-primary">เข้ากลุ่ม LINE OpenChat ของ Jumsup</b>
+          <small className="text-xs text-muted">ถามข้อสอบ แชร์เทคนิค และหาเพื่อนติว</small>
+        </span>
+        <span className="text-primary">↗</span>
+      </a>
 
       <div className="mb-3 inline-flex rounded-xl border border-line bg-surface-2 p-1">
         {(["vocab", "skill"] as const).map((t) => (
