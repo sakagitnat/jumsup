@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { loginGoogle } from "../actions/auth";
-import { PageHeader, Card, Button } from "../ui";
+import { PageHeader, Card, Button, Logo } from "../ui";
 
 const FEATURE_LABEL: Record<string, string> = {
   flash: "Flashcard",
@@ -36,7 +36,9 @@ export function RequireAuth() {
         description="สมัครฟรีด้วย Google เพื่อเริ่มใช้ Jumsup เก็บความคืบหน้า สะสม XP/Streak และรับ Pro 7 วันทันที"
       />
       <Card className="flex flex-col items-center gap-4 py-10 text-center">
-        <div className="text-4xl">🔓</div>
+        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary-soft">
+          <Logo size={40} />
+        </div>
         <p className="max-w-sm text-sm text-muted">
           Flashcard, Reading, Listening, Writing, Mock, เกม, ลีดเดอร์บอร์ด และ Community
           ใช้ได้เมื่อสมัคร เพื่อบันทึกผลและซิงก์ทุกอุปกรณ์
