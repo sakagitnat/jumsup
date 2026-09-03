@@ -26,8 +26,10 @@ import * as stripePortal from "../functions/api/stripe/create-portal.js";
 import * as stripeWebhook from "../functions/api/stripe/webhook.js";
 import * as usageSave from "../functions/api/usage/save.js";
 import * as usageStart from "../functions/api/usage/start.js";
+import * as pushSubscribe from "../functions/api/push/subscribe.js";
 import { closeWeek } from "./jobs/closeWeek.js";
 import { purgeDeletions } from "./jobs/purgeDeletions.js";
+import { sendPushDigest } from "./jobs/sendPush.js";
 
 const routes = new Map([
   ["/api/translate", translate],
@@ -58,14 +60,18 @@ const routes = new Map([
   ["/api/stripe/webhook", stripeWebhook],
   ["/api/usage/save", usageSave],
   ["/api/usage/start", usageStart],
+  ["/api/push/subscribe", pushSubscribe],
 ]);
 
 const methodHandler = (route, method) => route[`onRequest${method[0]}${method.slice(1).toLowerCase()}`];
 
-// Cron Triggers (see [triggers] in wrangler.toml). The daily 18:00 UTC tick only
-// sweeps account deletions; every other tick (the Sunday 17:10 UTC one, = Monday
-// 00:10 Asia/Bangkok, just after the weekly XP boundary) also closes the week.
+// Cron Triggers (see [triggers] in wrangler.toml), all in UTC:
+//   10 17 * * SUN  Mon 00:10 Asia/Bangkok — close the finished week
+//   0 12 * * *     19:00 Asia/Bangkok      — push digest (streak + recap reminders)
+//   0 18 * * *     01:00 Asia/Bangkok      — account-deletion sweep
+// Deletions are swept on every tick as a catch-up; closeWeek is idempotent.
 const CRON_DELETION_SWEEP = "0 18 * * *";
+const CRON_PUSH_DIGEST = "0 12 * * *";
 
 export default {
   async fetch(request, env, ctx) {
@@ -92,10 +98,11 @@ export default {
       env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVER_KEY;
     }
     const run = async () => {
-      // Any tick that isn't the daily deletion sweep is the weekly close.
-      // purgeDeletions runs on every tick so a missed daily one still gets caught.
-      if (event.cron !== CRON_DELETION_SWEEP) {
+      if (event.cron !== CRON_DELETION_SWEEP && event.cron !== CRON_PUSH_DIGEST) {
         await closeWeek(env);
+      }
+      if (event.cron === CRON_PUSH_DIGEST) {
+        await sendPushDigest(env);
       }
       await purgeDeletions(env);
     };

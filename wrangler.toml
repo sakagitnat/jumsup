@@ -11,11 +11,14 @@ STRIPE_PRICE_PRO_MONTHLY = "price_1U7z7E016c6XVEVtLurhwTki"
 STRIPE_PRICE_PRO_YEARLY = "price_1U7z7E016c6XVEVtn9BO1pE0"
 STRIPE_PRICE_PRO_MONTHLY_GLOBAL = "price_1U7z7D016c6XVEVtc3rR6OUx"
 STRIPE_PRICE_PRO_YEARLY_GLOBAL = "price_1U7z7D016c6XVEVtp0FflHGJ"
+VAPID_SUBJECT = "mailto:sakagitnat@gmail.com"
+VAPID_PUBLIC_KEY = "BJBnMngd-cs_scv7XAZbwK_VQ7oe61GUhZQa33Tnv9BnPZcqRkOeQStfN46OaM-wjaaSAF5LXxuLnoKzk5mzj2w"
 
 [triggers]
-# Sun 17:10 UTC = Mon 00:10 Asia/Bangkok (weekly leaderboard close);
-# 18:00 UTC daily = account-deletion sweep.
-crons = ["10 17 * * SUN", "0 18 * * *"]
+# Sun 17:10 UTC = Mon 00:10 Asia/Bangkok  — weekly leaderboard close
+# 12:00 UTC daily = 19:00 Asia/Bangkok     — push digest (streak + recap)
+# 18:00 UTC daily = 01:00 Asia/Bangkok     — account-deletion sweep
+crons = ["10 17 * * SUN", "0 12 * * *", "0 18 * * *"]
 
 [assets]
 directory = "./dist"

@@ -5,9 +5,10 @@ export interface SwitchProps {
   onChange: (next: boolean) => void;
   label?: string;
   id?: string;
+  disabled?: boolean;
 }
 
-export function Switch({ checked, onChange, label, id }: SwitchProps) {
+export function Switch({ checked, onChange, label, id, disabled }: SwitchProps) {
   return (
     <button
       type="button"
@@ -15,9 +16,10 @@ export function Switch({ checked, onChange, label, id }: SwitchProps) {
       id={id}
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cx(
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-40",
         checked ? "border-primary bg-primary" : "border-line-strong bg-surface-2",
       )}
     >

@@ -6,7 +6,15 @@
   <meta name="theme-color" content="#f7f6f3" />
   <link rel="icon" type="image/png" href="/brand/jumsup-logo.png" />
   <link rel="apple-touch-icon" href="/brand/jumsup-logo.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <title>Jumsup</title>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").catch(function () {});
+      });
+    }
+  </script>
 </head>
 <body>
   <div id="app"></div>
