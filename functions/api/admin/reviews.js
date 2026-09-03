@@ -121,15 +121,36 @@ export async function onRequestPost({ request, env }) {
       });
       return json({ ok: true }, 200, noStore(cors));
     }
-    if (b.action === "clear_reply") {
-      const { error } = await sb
-        .from("content_reviews")
-        .update({ creator_reply: null, creator_replied_at: null })
-        .eq("id", b.id);
+    if (b.action === "edit") {
+      const patch = { updated_at: new Date().toISOString() };
+      if (typeof b.body === "string") patch.body = b.body.slice(0, 1000);
+      if (Number.isInteger(b.rating) && b.rating >= 1 && b.rating <= 5) patch.rating = b.rating;
+      if (Object.keys(patch).length === 1) throw new Error("NOTHING_TO_UPDATE");
+      const { error } = await sb.from("content_reviews").update(patch).eq("id", b.id);
       if (error) throw error;
       await sb.from("audit_log").insert({
         actor_user_id: user.id,
-        action: "review_reply_cleared",
+        action: "review_edited",
+        object_type: "content_review",
+        object_id: b.id,
+        metadata: { body: "body" in patch, rating: patch.rating ?? null },
+      });
+      return json({ ok: true }, 200, noStore(cors));
+    }
+
+    if (b.action === "edit_reply" || b.action === "clear_reply") {
+      const reply =
+        b.action === "edit_reply" && typeof b.reply === "string"
+          ? b.reply.trim().slice(0, 1000)
+          : "";
+      const patch = reply
+        ? { creator_reply: reply, creator_replied_at: new Date().toISOString() }
+        : { creator_reply: null, creator_replied_at: null };
+      const { error } = await sb.from("content_reviews").update(patch).eq("id", b.id);
+      if (error) throw error;
+      await sb.from("audit_log").insert({
+        actor_user_id: user.id,
+        action: reply ? "review_reply_edited" : "review_reply_cleared",
         object_type: "content_review",
         object_id: b.id,
       });

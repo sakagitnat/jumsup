@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import { Card, Section, Btn, Field, Tag, Empty, useAsync } from "../ui";
 
@@ -32,10 +32,149 @@ const FILTERS: Array<["" | Review["status"], string]> = [
 
 const fmt = (s: string) => new Date(s).toLocaleString("th-TH");
 
-export function Reviews() {
+function ReviewCard({ r, reload }: { r: Review; reload: () => void }) {
   const run = useAsync();
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(r.body);
+  const [rating, setRating] = useState(r.rating);
+  const [editReply, setEditReply] = useState(false);
+  const [reply, setReply] = useState(r.creator_reply || "");
+
+  const setStatus = (s: Review["status"]) =>
+    run(() => apiPost("/api/admin/reviews", { action: "set_status", id: r.id, status: s }), reload);
+
+  return (
+    <Card className="space-y-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <b className="text-[var(--warning)]">{"★".repeat(r.rating)}</b>
+        <span>
+          <b>{r.nickname || r.username}</b>{" "}
+          <span className="text-xs font-normal text-[var(--subtle)]">@{r.username}</span>
+          {r.anonymous && (
+            <span className="ml-1 text-xs text-[var(--subtle)]">(ซ่อนชื่อจากผู้สร้าง)</span>
+          )}
+        </span>
+        {r.status !== "visible" && (
+          <Tag tone={r.status === "removed" ? "danger" : "warning"}>{r.status}</Tag>
+        )}
+        <span className="ml-auto text-xs text-[var(--subtle)]">
+          {fmt(r.created_at)}
+          {r.updated_at !== r.created_at && " · แก้ไขแล้ว"} · มีประโยชน์ {r.helpful_count}
+        </span>
+      </div>
+
+      {editing ? (
+        <div className="space-y-2 rounded-lg bg-[var(--surface-2)] p-2">
+          <div className="flex items-center gap-2 text-xs">
+            คะแนน
+            <select
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+              className="rounded-lg border border-[var(--line)] px-2 py-1 text-sm"
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {n} ดาว
+                </option>
+              ))}
+            </select>
+          </div>
+          <textarea
+            value={body}
+            maxLength={1000}
+            onChange={(e) => setBody(e.target.value)}
+            className="h-24 w-full rounded-lg border border-[var(--line)] p-2 text-sm"
+          />
+          <div className="flex gap-2">
+            <Btn
+              tone="primary"
+              onClick={() =>
+                run(
+                  () =>
+                    apiPost("/api/admin/reviews", {
+                      action: "edit",
+                      id: r.id,
+                      body,
+                      rating,
+                    }),
+                  () => {
+                    setEditing(false);
+                    reload();
+                  },
+                )
+              }
+            >
+              บันทึก
+            </Btn>
+            <Btn onClick={() => setEditing(false)}>ยกเลิก</Btn>
+          </div>
+        </div>
+      ) : (
+        r.body && <p className="text-sm">{r.body}</p>
+      )}
+
+      {editReply ? (
+        <div className="space-y-2 rounded-lg border-l-2 border-[var(--primary)] bg-[var(--primary-soft)] p-2">
+          <textarea
+            value={reply}
+            maxLength={1000}
+            placeholder="คำตอบของผู้สร้าง (เว้นว่าง = ลบ)"
+            onChange={(e) => setReply(e.target.value)}
+            className="h-20 w-full rounded-lg border border-[var(--line)] p-2 text-sm"
+          />
+          <div className="flex gap-2">
+            <Btn
+              tone="primary"
+              onClick={() =>
+                run(
+                  () =>
+                    apiPost("/api/admin/reviews", { action: "edit_reply", id: r.id, reply }),
+                  () => {
+                    setEditReply(false);
+                    reload();
+                  },
+                )
+              }
+            >
+              บันทึกคำตอบ
+            </Btn>
+            <Btn onClick={() => setEditReply(false)}>ยกเลิก</Btn>
+          </div>
+        </div>
+      ) : (
+        r.creator_reply && (
+          <p className="rounded-lg border-l-2 border-[var(--primary)] bg-[var(--primary-soft)] p-2 text-xs">
+            ผู้สร้างตอบ: {r.creator_reply}
+          </p>
+        )
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Btn onClick={() => setEditing((v) => !v)}>แก้ไขข้อความ</Btn>
+        <Btn onClick={() => setEditReply((v) => !v)}>
+          {r.creator_reply ? "แก้ไขคำตอบผู้สร้าง" : "เพิ่มคำตอบผู้สร้าง"}
+        </Btn>
+        {r.status !== "visible" && <Btn onClick={() => setStatus("visible")}>คืนค่าให้แสดง</Btn>}
+        {r.status !== "hidden" && <Btn onClick={() => setStatus("hidden")}>ซ่อน</Btn>}
+        {r.status !== "removed" && (
+          <Btn
+            tone="danger"
+            onClick={() => {
+              if (confirm("ลบรีวิวนี้?")) setStatus("removed");
+            }}
+          >
+            ลบ
+          </Btn>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+export function Reviews() {
   const [status, setStatus] = useState<"" | Review["status"]>("");
   const [q, setQ] = useState("");
+  const [grouped, setGrouped] = useState(true);
   const [items, setItems] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,13 +190,27 @@ export function Reviews() {
   };
   useEffect(load, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const setReviewStatus = (id: string, s: Review["status"]) =>
-    run(() => apiPost("/api/admin/reviews", { action: "set_status", id, status: s }), load);
+  const groups = useMemo(() => {
+    const map = new Map<string, { title: string; owner: string; link: string; visibility: string; rows: Review[] }>();
+    for (const r of items) {
+      const key = `${r.content_type}:${r.content_id}`;
+      if (!map.has(key))
+        map.set(key, {
+          title: r.content_title,
+          owner: r.set_owner,
+          link: r.set_link,
+          visibility: r.set_visibility,
+          rows: [],
+        });
+      map.get(key)!.rows.push(r);
+    }
+    return [...map.values()].sort((a, b) => b.rows.length - a.rows.length);
+  }, [items]);
 
   return (
     <Section
-      title="รีวิว"
-      desc="รีวิวทั้งหมดจากผู้ใช้ พร้อมชุดที่ถูกรีวิวและเจ้าของชุด"
+      title="รีวิว / คอมเมนต์"
+      desc="ดู แก้ไขข้อความ/คะแนน ตอบแทนผู้สร้าง ซ่อน หรือลบ"
       actions={
         <div className="flex flex-wrap gap-1">
           {FILTERS.map(([v, label]) => (
@@ -65,6 +218,9 @@ export function Reviews() {
               {label}
             </Btn>
           ))}
+          <Btn tone={grouped ? "primary" : "line"} onClick={() => setGrouped((v) => !v)}>
+            จัดกลุ่มตามชุด
+          </Btn>
         </div>
       }
     >
@@ -92,82 +248,44 @@ export function Reviews() {
         <Empty>กำลังโหลด…</Empty>
       ) : items.length === 0 ? (
         <Empty>ไม่มีรีวิว</Empty>
+      ) : grouped ? (
+        <div className="space-y-6">
+          {groups.map((grp) => (
+            <div key={grp.link}>
+              <div className="mb-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 text-sm">
+                <a
+                  href={grp.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-[var(--primary)] underline"
+                >
+                  {grp.title}
+                </a>{" "}
+                <span className="text-xs text-[var(--muted)]">
+                  · เจ้าของ @{grp.owner} · {grp.visibility} · {grp.rows.length} รีวิว
+                </span>
+              </div>
+              <div className="space-y-2 border-l-2 border-[var(--line)] pl-3">
+                {grp.rows.map((r) => (
+                  <ReviewCard key={r.id} r={r} reload={load} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="space-y-2">
           {items.map((r) => (
-            <Card key={r.id} className="space-y-2">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                <b className="text-[var(--warning)]">{"★".repeat(r.rating)}</b>
-                <span>
-                  <b>{r.nickname || r.username}</b>{" "}
-                  <span className="text-xs font-normal text-[var(--subtle)]">@{r.username}</span>
-                  {r.anonymous && (
-                    <span className="ml-1 text-xs text-[var(--subtle)]">(ซ่อนชื่อจากผู้สร้าง)</span>
-                  )}
-                </span>
-                {r.status !== "visible" && (
-                  <Tag tone={r.status === "removed" ? "danger" : "warning"}>{r.status}</Tag>
-                )}
-              </div>
-
-              <div className="rounded-lg bg-[var(--surface-2)] p-2 text-xs text-[var(--muted)]">
+            <div key={r.id}>
+              <div className="mb-1 rounded-lg bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--muted)]">
                 รีวิวชุด{" "}
                 <a href={r.set_link} target="_blank" rel="noreferrer" className="font-semibold text-[var(--primary)] underline">
                   {r.content_title}
                 </a>{" "}
-                ({r.content_type}) · เจ้าของ <b>@{r.set_owner}</b> · การมองเห็น {r.set_visibility}
-                <br />
-                สร้าง {fmt(r.created_at)}
-                {r.updated_at !== r.created_at && ` · แก้ไข ${fmt(r.updated_at)}`} · มีประโยชน์{" "}
-                {r.helpful_count}
+                · เจ้าของ @{r.set_owner}
               </div>
-
-              {r.body && <p className="text-sm">{r.body}</p>}
-              {r.creator_reply && (
-                <p className="rounded-lg border-l-2 border-[var(--primary)] bg-[var(--primary-soft)] p-2 text-xs">
-                  ผู้สร้างตอบ: {r.creator_reply}
-                </p>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                {r.status !== "visible" && (
-                  <Btn onClick={() => setReviewStatus(r.id, "visible")}>คืนค่าให้แสดง</Btn>
-                )}
-                {r.status !== "hidden" && (
-                  <Btn onClick={() => setReviewStatus(r.id, "hidden")}>ซ่อน</Btn>
-                )}
-                {r.status !== "removed" && (
-                  <Btn
-                    tone="danger"
-                    onClick={() => {
-                      if (confirm("ลบรีวิวนี้?")) setReviewStatus(r.id, "removed");
-                    }}
-                  >
-                    ลบ
-                  </Btn>
-                )}
-                {r.creator_reply && (
-                  <Btn
-                    onClick={() =>
-                      run(
-                        () => apiPost("/api/admin/reviews", { action: "clear_reply", id: r.id }),
-                        load,
-                      )
-                    }
-                  >
-                    ลบคำตอบผู้สร้าง
-                  </Btn>
-                )}
-                <a
-                  href={r.set_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-xl border border-[var(--line)] px-3.5 py-2 text-sm font-semibold hover:bg-[var(--surface-2)]"
-                >
-                  เปิดหน้าชุด ↗
-                </a>
-              </div>
-            </Card>
+              <ReviewCard r={r} reload={load} />
+            </div>
           ))}
         </div>
       )}
