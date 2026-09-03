@@ -44,7 +44,7 @@ export function Pricing({ embedded = false }: { embedded?: boolean }) {
         <Tag tone="success">Stripe · ชำระเงินจริงอย่างปลอดภัยผ่าน Stripe</Tag>
         <h2 className="mt-2 text-lg font-semibold">เรียนต่อเนื่องในราคาที่เข้าถึงได้</h2>
         <p className="text-sm text-muted">
-          ราคาจะแสดงเป็น {currency} ตามภาษาที่คุณเลือก และตรงกับ Stripe Checkout
+          {`ราคาจะแสดงเป็น ${currency} ตามภาษาที่คุณเลือก และตรงกับ Stripe Checkout`}
         </p>
       </Card>
 
@@ -57,7 +57,11 @@ export function Pricing({ embedded = false }: { embedded?: boolean }) {
             <span className="text-sm text-muted">ตลอดไป</span>
           </div>
           <Features items={free.features} />
-          <Button className="mt-4" disabled>
+          <Button
+            className="mt-4"
+            disabled={loggedIn}
+            onClick={loggedIn ? undefined : loginGoogle}
+          >
             {loggedIn ? "ใช้งาน Free อยู่" : "สมัครฟรีด้วย Google"}
           </Button>
         </Card>

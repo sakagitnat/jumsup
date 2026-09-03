@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore, store } from "../../store/useStore";
 import { PLANS, money } from "../../lib/plans.js";
@@ -6,6 +5,7 @@ import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
 import { COMMUNITY_URL } from "../../lib/community";
 import { Button, Logo } from "../../ui";
+import { DemoCard } from "./DemoCard";
 
 const features = [
   ["Aa", "จำศัพท์ด้วย Loop", "คำที่ยังไม่จำจะวนกลับมา และบันทึกไว้ทบทวนได้เสมอ"],
@@ -23,7 +23,6 @@ const steps = [
 export function Landing() {
   const lang = useStore((s) => s.lang);
   const navigate = useNavigate();
-  const [revealed, setRevealed] = useState(false);
   const currency = lang === "th" ? "THB" : "USD";
 
   const enter = loginGoogle;
@@ -51,7 +50,10 @@ export function Landing() {
           <select
             aria-label="ภาษาที่แสดง"
             value={lang}
-            onChange={(e) => store.set({ lang: e.target.value })}
+            onChange={(e) => {
+              store.set({ lang: e.target.value });
+              location.reload();
+            }}
             className="rounded-lg border border-line bg-surface px-2 py-2 text-sm"
           >
             {languages.map(([id, name]) => (
@@ -77,8 +79,7 @@ export function Landing() {
             <span className="text-primary">ศัพท์ ทักษะ และข้อสอบ</span>
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
-            วางแผนฝึกจากจุดอ่อนของคุณ ทบทวนศัพท์ด้วย Loop และลองข้อสอบคู่ขนานที่สร้างใหม่
-            โดยไม่คัดลอกข้อสอบจริง
+            วางแผนฝึกจากจุดอ่อนของคุณ ทบทวนศัพท์ด้วย Loop และลองข้อสอบคู่ขนานที่สร้างใหม่โดยไม่คัดลอกข้อสอบจริง
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button size="lg" variant="primary" onClick={enter}>
@@ -87,7 +88,9 @@ export function Landing() {
             <Button
               size="lg"
               variant="secondary"
-              onClick={() => setRevealed(true)}
+              onClick={() =>
+                document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }
             >
               ลองตัวอย่าง
             </Button>
@@ -99,38 +102,8 @@ export function Landing() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-line bg-surface p-6 shadow-card">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-subtle">
-            <span>Flashcard · A-Level</span>
-            <span>1 / 10</span>
-          </div>
-          <div className="py-8 text-center">
-            <small className="text-xs text-subtle">แตะเพื่อดูคำแปล</small>
-            <p className="mt-2 text-3xl font-semibold">significant</p>
-            <p className="text-sm text-subtle">/sɪɡˈnɪfɪkənt/</p>
-            <div
-              className={
-                "mt-4 transition-opacity " + (revealed ? "opacity-100" : "opacity-0")
-              }
-            >
-              <b className="text-lg">สำคัญ · มีนัยสำคัญ</b>
-              <p className="text-sm text-muted">The change had a significant effect.</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setRevealed(true)}
-              className="rounded-xl border border-line py-2 text-sm font-semibold text-muted hover:bg-surface-2"
-            >
-              ยังไม่จำ
-            </button>
-            <button
-              onClick={() => setRevealed(true)}
-              className="rounded-xl border border-primary-border bg-primary-soft py-2 text-sm font-semibold text-primary"
-            >
-              จำได้
-            </button>
-          </div>
+        <div id="demo">
+          <DemoCard />
         </div>
       </section>
 

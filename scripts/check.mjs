@@ -51,7 +51,9 @@ for (const marker of [
 }
 
 const i18n = fs.readFileSync("src/lib/i18n.js", "utf8");
-for (const lang of ["th", "en", "zh", "ja", "ko", "pt", "de", "ru", "hi"]) {
+// Only Thai and English are offered in the language picker; the other locale
+// maps remain in i18n.js for reference but are intentionally not selectable.
+for (const lang of ["th", "en"]) {
   if (!i18n.includes(`["${lang}"`)) {
     console.error("Missing supported language", lang);
     process.exit(1);

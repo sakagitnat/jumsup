@@ -103,9 +103,9 @@
   --color-info: var(--color-info);
   --color-info-soft: var(--color-info-soft);
 
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Thai",
-    "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Mali", var(--font-sans);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Anuphan",
+    "Noto Sans Thai", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Anuphan", var(--font-sans);
 
   --radius-card: 20px;
   --radius-lg: 24px;
