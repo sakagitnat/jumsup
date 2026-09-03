@@ -14,6 +14,7 @@ import {
   type ContentReview,
 } from "../lib/cloud.js";
 import { store } from "../store/store";
+import { displayName } from "../store/name";
 import { getCurrentUser, hydrateFromCloud, scheduleSync } from "../app/cloudSync";
 import { toast, proPopup } from "../ui/toast";
 import type { AppState, CommunityItem } from "../store/types";
@@ -283,7 +284,7 @@ export async function getReviews(
             createdAt: r.createdAt,
             updatedAt: r.createdAt,
             isMine: true,
-            displayName: store.get().profile?.username || "คุณ",
+            displayName: displayName(store.get().profile),
             helpfulCount: 0,
             helpfulByMe: false,
             imported: false,

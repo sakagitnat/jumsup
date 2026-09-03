@@ -11,6 +11,24 @@ export async function checkUsername(name: string): Promise<boolean> {
   return Boolean(data);
 }
 
+export async function changeDisplayName(name: string): Promise<{ ok: boolean; error?: string }> {
+  const user = getCurrentUser();
+  if (!user || !backendEnabled) return { ok: false, error: "กรุณาเข้าสู่ระบบก่อน" };
+  try {
+    const { data, error } = await supabase.rpc("set_display_name", { p_name: name });
+    if (error) throw error;
+    store.set({
+      profile: { ...store.get().profile, display_name: (data as string) || null },
+    });
+    return { ok: true };
+  } catch (e) {
+    const raw = (e as Error).message || "";
+    if (raw === "DISPLAY_NAME_INVALID")
+      return { ok: false, error: "นิกเนมยาวได้ไม่เกิน 40 ตัว" };
+    return { ok: false, error: raw || "เปลี่ยนนิกเนมไม่สำเร็จ" };
+  }
+}
+
 export async function changeUsername(name: string): Promise<{ ok: boolean; error?: string }> {
   const user = getCurrentUser();
   if (!user || !backendEnabled) return { ok: false, error: "กรุณาเข้าสู่ระบบก่อน" };

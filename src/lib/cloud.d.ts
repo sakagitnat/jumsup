@@ -15,7 +15,7 @@ export function saveExamTargets(
 
 export interface WeeklyLeaderboard {
   weekStart: string;
-  top: Array<{ username: string; xp: number; rank: number }>;
+  top: Array<{ username: string; xp: number; rank: number; isMe: boolean }>;
   me: { xp: number; rank: number } | null;
 }
 export function loadWeeklyLeaderboard(limit?: number): Promise<WeeklyLeaderboard>;
@@ -47,6 +47,8 @@ export interface PublicSet extends CommunityPreview {
 export function loadPublicSet(kind: string, id: string): Promise<PublicSet | null>;
 
 export function loadCreatorSets(username: string): Promise<{
+  displayName: string;
+  handle: string;
   vocab: Array<{ id: string; title: string; count: number }>;
   skill: Array<{ id: string; title: string; kind: string }>;
 }>;

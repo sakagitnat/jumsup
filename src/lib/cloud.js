@@ -67,7 +67,7 @@ export async function loadWeeklyLeaderboard(limit=20){
   if(error)throw error;
   return {
     weekStart:data?.week_start||"",
-    top:(data?.top||[]).map(r=>({username:r.username||"ผู้เรียน",xp:r.xp||0,rank:r.rank||0})),
+    top:(data?.top||[]).map(r=>({username:r.username||"ผู้เรียน",xp:r.xp||0,rank:r.rank||0,isMe:!!r.is_me})),
     me:data?.me?{xp:data.me.xp||0,rank:data.me.rank||0}:null
   };
 }
@@ -383,7 +383,10 @@ export async function loadCreatorSets(username){
       .eq("profiles.username",username).limit(60)
   ]);
   if(ve)throw ve;if(pe)throw pe;
+  const {data:prof}=await supabase.from("profiles").select("display_name").eq("username",username).maybeSingle();
   return {
+    displayName:(prof?.display_name||"").trim()||`@${username}`,
+    handle:username,
     vocab:(v||[]).map(x=>({id:x.id,title:x.name,count:x.vocab_words?.length||0,exam:x.exam||"",level:x.level||""})),
     skill:(p||[]).map(x=>({id:x.id,title:x.title,kind:x.kind,count:x.payload?.itemCount||0,exam:x.exam||"",level:x.level||""}))
   };

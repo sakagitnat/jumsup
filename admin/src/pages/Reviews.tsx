@@ -5,6 +5,7 @@ import { Card, Section, Btn, Field, Tag, Empty, useAsync } from "../ui";
 interface Review {
   id: string;
   username: string;
+  nickname: string;
   content_type: string;
   content_id: string;
   content_title: string;
@@ -98,7 +99,8 @@ export function Reviews() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                 <b className="text-[var(--warning)]">{"★".repeat(r.rating)}</b>
                 <span>
-                  <b>@{r.username}</b>
+                  <b>{r.nickname || r.username}</b>{" "}
+                  <span className="text-xs font-normal text-[var(--subtle)]">@{r.username}</span>
                   {r.anonymous && (
                     <span className="ml-1 text-xs text-[var(--subtle)]">(ซ่อนชื่อจากผู้สร้าง)</span>
                   )}

@@ -18,9 +18,8 @@ function weekLabel(weekStart: string): string {
 }
 
 export function Leaderboard() {
-  const { user, myName, anon } = useStore((s) => ({
+  const { user, anon } = useStore((s) => ({
     user: s.user,
-    myName: s.profile?.username || "",
     anon: Boolean(s.profile?.leaderboard_anon),
   }));
 
@@ -95,7 +94,7 @@ export function Leaderboard() {
           ) : (
             <div className="space-y-2">
               {data.top.map((row) => {
-                const mine = myName && row.username === myName;
+                const mine = row.isMe;
                 return (
                   <Card
                     key={`${row.rank}-${row.username}`}
@@ -108,7 +107,7 @@ export function Leaderboard() {
                       {row.rank <= 3 ? medal[row.rank - 1] : row.rank}
                     </span>
                     <b className="min-w-0 flex-1 truncate text-sm">
-                      @{row.username}
+                      {row.username}
                       {mine && <span className="ml-1 text-xs font-normal text-primary">(คุณ)</span>}
                     </b>
                     <span className="shrink-0 text-sm font-semibold tabular-nums">

@@ -34,8 +34,12 @@ export function CreatorProfile() {
     <>
       <PageHeader
         eyebrow="ครีเอเตอร์"
-        title={`@${username}`}
-        description={loading ? "กำลังโหลด…" : `เผยแพร่ ${total} ชุดสาธารณะ`}
+        title={sets?.displayName || `@${username}`}
+        description={
+          loading
+            ? "กำลังโหลด…"
+            : `@${username} · เผยแพร่ ${total} ชุดสาธารณะ`
+        }
       />
 
       {err && <EmptyState>{err}</EmptyState>}

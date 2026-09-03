@@ -8,9 +8,65 @@ import {
   changeAvatar,
   changeUsername,
   checkUsername,
+  changeDisplayName,
 } from "../../actions/account";
+import { displayName } from "../../store/name";
 import { AccountShell } from "./AccountShell";
 import { Card, Tag, Button, cx, toast } from "../../ui";
+
+function NicknameEditor({ current }: { current: string }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(current);
+  const [saving, setSaving] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setValue(current);
+          setOpen(true);
+        }}
+        className="text-xs font-semibold text-primary hover:underline"
+      >
+        {current ? "แก้ไขนิกเนม" : "ตั้งนิกเนม"}
+      </button>
+    );
+  }
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2">
+      <input
+        autoFocus
+        value={value}
+        maxLength={40}
+        placeholder="ชื่อที่อยากให้คนอื่นเห็น"
+        onChange={(e) => setValue(e.target.value)}
+        className="rounded-xl border border-line bg-surface px-3 py-1.5 text-sm"
+      />
+      <Button
+        size="sm"
+        variant="primary"
+        disabled={saving}
+        onClick={async () => {
+          setSaving(true);
+          const res = await changeDisplayName(value);
+          setSaving(false);
+          if (res.ok) {
+            toast("บันทึกนิกเนมแล้ว");
+            setOpen(false);
+          } else {
+            toast(res.error || "บันทึกไม่สำเร็จ");
+          }
+        }}
+      >
+        บันทึก
+      </Button>
+      <Button size="sm" onClick={() => setOpen(false)}>
+        ยกเลิก
+      </Button>
+    </div>
+  );
+}
 
 function UsernameEditor({ current }: { current: string }) {
   const [open, setOpen] = useState(false);
@@ -140,8 +196,8 @@ export function AccountProfile() {
 
   const pro = isPro({ profile, subscription });
   const level = Math.floor((xp || 0) / 250) + 1;
-  const name = profile?.username || "User";
-  const letter = name.slice(0, 1).toUpperCase();
+  const name = displayName(profile);
+  const letter = name.replace(/^@/, "").slice(0, 1).toUpperCase() || "U";
 
   return (
     <AccountShell title="โปรไฟล์">
@@ -158,10 +214,24 @@ export function AccountProfile() {
             <h2 className="text-lg font-semibold">{name}</h2>
             <Tag tone={pro ? "success" : "info"}>{pro ? "PRO" : "FREE"}</Tag>
           </div>
-          <p className="text-sm text-muted">
-            ชื่อที่ผู้ใช้อื่นมองเห็น · ต้องไม่ซ้ำกับใคร · อีเมลของคุณเป็นข้อมูลส่วนตัว
-          </p>
-          <UsernameEditor current={profile?.username || ""} />
+          {profile?.username && (
+            <p className="text-sm text-subtle">@{profile.username}</p>
+          )}
+
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted">นิกเนม</span>
+              <NicknameEditor current={profile?.display_name || ""} />
+            </div>
+            <p className="text-xs text-subtle">ชื่อที่คนอื่นเห็น · ซ้ำกันได้ · ใส่ภาษาไทย/อีโมจิได้</p>
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs font-semibold text-muted">ยูเซอร์เนม</span>
+              <UsernameEditor current={profile?.username || ""} />
+            </div>
+            <p className="text-xs text-subtle">
+              ตัวตนของคุณ (@handle) · ต้องไม่ซ้ำใคร · a–z 0–9 _ . ยาว 3–20
+            </p>
+          </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button onClick={() => fileRef.current?.click()}>เปลี่ยนรูป</Button>
             <input

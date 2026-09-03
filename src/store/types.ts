@@ -75,6 +75,7 @@ export interface PracticeSet {
 
 export interface Profile {
   username?: string;
+  display_name?: string | null;
   avatar_url?: string;
   role?: string;
   ui_theme?: "light" | "dark";

@@ -5,6 +5,7 @@ import { Card, Section, Btn, Field, Tag, Empty, useAsync } from "../ui";
 interface Row {
   user_id: string;
   username: string | null;
+  display_name: string | null;
   role: string;
   xp: number;
   streak: number;
@@ -133,7 +134,10 @@ export function Users() {
           {data.items.map((r) => (
             <Card key={r.user_id} className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <b className="text-sm">@{r.username || "ไม่มีชื่อ"}</b>
+                <b className="text-sm">
+                  {r.display_name || "—"}{" "}
+                  <span className="font-normal text-[var(--subtle)]">@{r.username || "?"}</span>
+                </b>
                 {r.role === "admin" && <Tag tone="primary">admin</Tag>}
                 {r.banned_at && <Tag tone="danger">ถูกแบน</Tag>}
                 <span className="text-xs text-[var(--muted)]">

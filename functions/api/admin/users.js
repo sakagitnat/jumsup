@@ -75,12 +75,12 @@ export async function onRequestGet({ request, env }) {
     let query = sb
       .from("profiles")
       .select(
-        "user_id,username,role,xp,streak,pro_lifetime,pro_bonus_until,banned_at,created_at",
+        "user_id,username,display_name,role,xp,streak,pro_lifetime,pro_bonus_until,banned_at,created_at",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })
       .range(page * PER, page * PER + PER - 1);
-    if (q) query = query.ilike("username", `%${q}%`);
+    if (q) query = query.or(`username.ilike.%${q}%,display_name.ilike.%${q}%`);
     const { data, error, count } = await query;
     if (error) throw error;
 

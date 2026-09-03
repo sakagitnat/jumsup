@@ -49,9 +49,12 @@ export async function onRequestGet({ request, env }) {
     ];
     const allUserIds = [...new Set([...userIds, ...ownerIds])];
     const { data: names } = allUserIds.length
-      ? await sb.from("profiles").select("user_id,username").in("user_id", allUserIds)
+      ? await sb.from("profiles").select("user_id,username,display_name").in("user_id", allUserIds)
       : { data: [] };
     const nameMap = Object.fromEntries((names || []).map((p) => [p.user_id, p.username]));
+    const nickMap = Object.fromEntries(
+      (names || []).map((p) => [p.user_id, (p.display_name || "").trim()]),
+    );
     const setMap = Object.fromEntries([
       ...(vocabSets.data || []).map((s) => [
         `vocab:${s.id}`,
@@ -69,6 +72,7 @@ export async function onRequestGet({ request, env }) {
       return {
         ...r,
         username: nameMap[r.user_id] || "user",
+        nickname: nickMap[r.user_id] || "",
         content_title: set.title || r.content_id,
         set_owner: set.owner || "—",
         set_visibility: set.visibility || "?",
@@ -80,6 +84,7 @@ export async function onRequestGet({ request, env }) {
       items = items.filter(
         (r) =>
           r.username.toLowerCase().includes(needle) ||
+          (r.nickname || "").toLowerCase().includes(needle) ||
           r.set_owner.toLowerCase().includes(needle) ||
           r.content_title.toLowerCase().includes(needle) ||
           (r.body || "").toLowerCase().includes(needle),
