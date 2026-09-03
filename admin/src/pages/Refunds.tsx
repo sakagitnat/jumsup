@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api";
-import { Card, Section, Btn, Empty, useToast, useAsync } from "../ui";
+import { Card, Section, Btn, Tag, Empty, useToast, useAsync } from "../ui";
 
 interface Refund {
   id: string;
   reason: string;
   profiles?: { username?: string };
   payment_events?: { amount?: number; currency?: string };
+  prior_granted?: number;
+  prior_rejected?: number;
 }
 
 const money = (v: number, c: string) =>
@@ -41,7 +43,15 @@ export function Refunds() {
           {items.map((r) => (
             <Card key={r.id} className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
-                <b className="block text-sm">@{r.profiles?.username || "user"}</b>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <b className="text-sm">@{r.profiles?.username || "user"}</b>
+                  {(r.prior_granted ?? 0) > 0 && (
+                    <Tag tone="danger">เคยคืนเงินแล้ว {r.prior_granted} ครั้ง</Tag>
+                  )}
+                  {(r.prior_rejected ?? 0) > 0 && (
+                    <Tag tone="warning">เคยถูกปฏิเสธ {r.prior_rejected} ครั้ง</Tag>
+                  )}
+                </div>
                 <small className="text-xs text-[var(--muted)]">
                   {r.reason}
                   {r.payment_events?.amount != null &&
