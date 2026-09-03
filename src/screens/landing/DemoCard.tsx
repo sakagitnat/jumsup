@@ -33,18 +33,21 @@ export function DemoCard() {
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (dragging.current === null) return;
-    setDx(e.clientX - dragging.current);
+    const d = e.clientX - dragging.current;
+    // Commit as soon as the threshold is crossed — don't wait for pointerup,
+    // which some environments drop after fast drags.
+    if (Math.abs(d) > SWIPE_PX) {
+      dragging.current = null;
+      swiped.current = true;
+      advance();
+      return;
+    }
+    setDx(d);
   };
   const onPointerUp = () => {
     if (dragging.current === null) return;
-    const moved = dx;
     dragging.current = null;
-    if (Math.abs(moved) > SWIPE_PX) {
-      swiped.current = true;
-      advance();
-    } else {
-      setDx(0);
-    }
+    setDx(0);
   };
   const onClick = () => {
     if (swiped.current) {
