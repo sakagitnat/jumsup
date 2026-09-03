@@ -13,3 +13,6 @@ admin-dist/
 supabase/.temp/
 supabase/.branches/
 .supabase/
+
+# Claude Code local session settings (machine-specific, not shared)
+.claude/settings.local.json
