@@ -40,7 +40,7 @@ export async function onRequestGet({ request, env }) {
         ? sb.from("vocab_sets").select("id,name,user_id,visibility").in("id", vocabIds)
         : { data: [] },
       skillIds.length
-        ? sb.from("practice_sets").select("id,title,user_id,visibility").in("id", skillIds)
+        ? sb.from("practice_sets").select("id,title,kind,user_id,visibility").in("id", skillIds)
         : { data: [] },
     ]);
     const ownerIds = [
@@ -58,17 +58,23 @@ export async function onRequestGet({ request, env }) {
     const setMap = Object.fromEntries([
       ...(vocabSets.data || []).map((s) => [
         `vocab:${s.id}`,
-        { title: s.name, owner: nameMap[s.user_id] || "user", visibility: s.visibility },
+        { title: s.name, owner: nameMap[s.user_id] || "user", visibility: s.visibility, kind: "vocab" },
       ]),
       ...(skillSets.data || []).map((s) => [
         `skill:${s.id}`,
-        { title: s.title, owner: nameMap[s.user_id] || "user", visibility: s.visibility },
+        {
+          title: s.title,
+          owner: nameMap[s.user_id] || "user",
+          visibility: s.visibility,
+          kind: s.kind || "reading",
+        },
       ]),
     ]);
 
     let items = (reviews || []).map((r) => {
       const set = setMap[`${r.content_type}:${r.content_id}`] || {};
-      const shareKind = r.content_type === "vocab" ? "vocab" : "skill";
+      const shareKind = r.content_type === "vocab" ? "vocab" : set.kind || "reading";
+      const isPublic = set.visibility === "public";
       return {
         ...r,
         username: nameMap[r.user_id] || "user",
@@ -76,7 +82,9 @@ export async function onRequestGet({ request, env }) {
         content_title: set.title || r.content_id,
         set_owner: set.owner || "—",
         set_visibility: set.visibility || "?",
-        set_link: `https://jumsup.sakagitnat.workers.dev/s/${shareKind}/${r.content_id}`,
+        set_link: isPublic
+          ? `https://jumsup.sakagitnat.workers.dev/s/${shareKind}/${r.content_id}`
+          : "",
       };
     });
     if (q) {

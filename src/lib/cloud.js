@@ -355,8 +355,9 @@ export async function loadPublicSet(kind,id){
   if(kind==="vocab"){
     const {data,error}=await supabase.from("vocab_sets")
       .select("id,name,exam,skill,level,profiles!vocab_sets_user_id_fkey(username),vocab_words(word,stress,meaning,example,sort_order)")
-      .eq("id",id).eq("visibility","public").single();
+      .eq("id",id).eq("visibility","public").eq("moderation_status","visible").maybeSingle();
     if(error)throw error;
+    if(!data)return null;
     return {type:"vocab",id:data.id,title:data.name,creator:data.profiles?.username||"member",
       exam:data.exam||"",skill:data.skill||"",level:data.level||"",
       words:(data.vocab_words||[]).sort((a,b)=>a.sort_order-b.sort_order)
@@ -364,8 +365,9 @@ export async function loadPublicSet(kind,id){
   }
   const {data,error}=await supabase.from("practice_sets")
     .select("id,title,kind,exam,skill,level,payload,profiles!practice_sets_user_id_fkey(username)")
-    .eq("id",id).eq("visibility","public").single();
+    .eq("id",id).eq("visibility","public").eq("moderation_status","visible").maybeSingle();
   if(error)throw error;
+  if(!data)return null;
   return {type:"skill",id:data.id,kind:data.kind,title:data.title,creator:data.profiles?.username||"member",
     exam:data.exam||"",skill:data.skill||"",level:data.level||"",...(data.payload||{})};
 }

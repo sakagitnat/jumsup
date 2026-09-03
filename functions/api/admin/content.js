@@ -74,7 +74,7 @@ export async function onRequestGet({ request, env }) {
         exam: s.exam,
         level: s.level,
         created_at: s.created_at,
-        link: `https://jumsup.sakagitnat.workers.dev/s/skill/${s.id}`,
+        link: `https://jumsup.sakagitnat.workers.dev/s/${s.kind || "reading"}/${s.id}`,
       })),
     ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 

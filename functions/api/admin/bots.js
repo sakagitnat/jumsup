@@ -18,17 +18,17 @@ export async function onRequestGet({ request, env }) {
       .order("factor", { ascending: false });
     if (error) throw error;
 
-    // Live-ish preview of the board as a mid-week player (ref = 150 floor).
-    const ref = 150;
-    const { data: weekly } = await sb.rpc("weekly_leaderboard", { p_limit: 30 }).catch(() => ({ data: null }));
+    // The board is the same for everyone now (fixed bot scores).
+    const { data: weekly } = await sb
+      .rpc("weekly_leaderboard", { p_limit: 30 })
+      .catch(() => ({ data: null }));
     let preview = weekly?.top || null;
     if (!preview) {
-      // Fallback: compute bot rows only.
       preview = (bots || [])
         .filter((b) => b.active)
         .map((b) => ({
           username: b.hidden ? `ผู้เรียน #${b.id.slice(0, 4)}` : b.name,
-          xp: Math.max(15, Math.round(ref * Number(b.factor))),
+          xp: Math.max(15, Number(b.base_xp) || 0),
         }))
         .sort((a, b) => b.xp - a.xp)
         .map((r, i) => ({ ...r, rank: i + 1 }));
@@ -50,13 +50,12 @@ export async function onRequestPost({ request, env }) {
 
     if (b.action === "create") {
       const name = String(b.name || "").trim().slice(0, 40);
-      const factor = Number(b.factor);
-      const baseXp = Math.max(0, Number(b.base_xp ?? 200) | 0);
+      const baseXp = Math.max(1, Number(b.base_xp ?? 200) | 0);
       if (!name) throw new Error("INVALID_NAME");
-      if (!(factor > 0 && factor <= 5)) throw new Error("INVALID_FACTOR");
+      if (!(baseXp >= 1 && baseXp <= 100000)) throw new Error("INVALID_XP");
       const { data, error } = await sb
         .from("leaderboard_bots")
-        .insert({ name, factor, base_xp: baseXp, active: true, hidden: Boolean(b.hidden) })
+        .insert({ name, factor: 1, base_xp: baseXp, active: true, hidden: Boolean(b.hidden) })
         .select("id")
         .single();
       if (error) throw error;

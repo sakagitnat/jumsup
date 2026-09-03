@@ -253,16 +253,21 @@ export function Reviews() {
           {groups.map((grp) => (
             <div key={grp.link}>
               <div className="mb-2 rounded-xl bg-[var(--surface-2)] px-3 py-2 text-sm">
-                <a
-                  href={grp.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-[var(--primary)] underline"
-                >
-                  {grp.title}
-                </a>{" "}
+                {grp.link ? (
+                  <a
+                    href={grp.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-[var(--primary)] underline"
+                  >
+                    {grp.title}
+                  </a>
+                ) : (
+                  <b>{grp.title}</b>
+                )}{" "}
                 <span className="text-xs text-[var(--muted)]">
                   · เจ้าของ @{grp.owner} · {grp.visibility} · {grp.rows.length} รีวิว
+                  {!grp.link && " · (เปิดหน้าไม่ได้: ส่วนตัว/ถูกซ่อน)"}
                 </span>
               </div>
               <div className="space-y-2 border-l-2 border-[var(--line)] pl-3">
@@ -279,10 +284,15 @@ export function Reviews() {
             <div key={r.id}>
               <div className="mb-1 rounded-lg bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--muted)]">
                 รีวิวชุด{" "}
-                <a href={r.set_link} target="_blank" rel="noreferrer" className="font-semibold text-[var(--primary)] underline">
-                  {r.content_title}
-                </a>{" "}
+                {r.set_link ? (
+                  <a href={r.set_link} target="_blank" rel="noreferrer" className="font-semibold text-[var(--primary)] underline">
+                    {r.content_title}
+                  </a>
+                ) : (
+                  <b className="text-[var(--text)]">{r.content_title}</b>
+                )}{" "}
                 · เจ้าของ @{r.set_owner}
+                {!r.set_link && " · (เปิดหน้าไม่ได้)"}
               </div>
               <ReviewCard r={r} reload={load} />
             </div>

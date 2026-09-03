@@ -67,7 +67,7 @@ export function SharedSet() {
       <>
         <PageHeader eyebrow="SHARED SET" title="เปิดชุดนี้ไม่ได้" />
         <EmptyState>
-          {err || "ไม่พบชุดนี้"}
+          {err || "ไม่พบชุดนี้ หรือถูกตั้งเป็นส่วนตัว/ถูกซ่อน"}
           <div className="mt-3">
             <Button variant="primary" onClick={() => navigate("/community")}>
               ไปที่ Community
