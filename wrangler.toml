@@ -12,6 +12,11 @@ STRIPE_PRICE_PRO_YEARLY = "price_1U7z7E016c6XVEVtn9BO1pE0"
 STRIPE_PRICE_PRO_MONTHLY_GLOBAL = "price_1U7z7D016c6XVEVtc3rR6OUx"
 STRIPE_PRICE_PRO_YEARLY_GLOBAL = "price_1U7z7D016c6XVEVtp0FflHGJ"
 
+[triggers]
+# Sun 17:10 UTC = Mon 00:10 Asia/Bangkok (weekly leaderboard close);
+# 18:00 UTC daily = account-deletion sweep.
+crons = ["10 17 * * SUN", "0 18 * * *"]
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"

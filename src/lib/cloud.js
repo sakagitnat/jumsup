@@ -72,6 +72,51 @@ export async function loadWeeklyLeaderboard(limit=20){
   };
 }
 
+export async function loadWeekRecap(){
+  if(!backendEnabled)return null;
+  const {data,error}=await supabase.rpc("my_week_recap");
+  if(error)throw error;
+  if(!data)return null;
+  return {
+    weekStart:data.week_start||"",
+    rank:data.rank||0,
+    prevRank:data.prev_rank??null,
+    xp:data.xp||0,
+    rewardXp:data.reward_xp||0,
+    rewardProDays:data.reward_pro_days||0,
+    tierLabel:data.tier_label||""
+  };
+}
+
+export async function markWeekRecapSeen(){
+  if(!backendEnabled)return;
+  await supabase.rpc("mark_week_recap_seen");
+}
+
+export async function loadLeaderboardHistoryWeeks(){
+  if(!backendEnabled)return [];
+  const {data,error}=await supabase.rpc("leaderboard_history_weeks");
+  if(error)throw error;
+  return Array.isArray(data)?data:[];
+}
+
+export async function loadLeaderboardHistory(week,limit=20){
+  if(!backendEnabled)return {weekStart:week||"",top:[],me:null};
+  const {data,error}=await supabase.rpc("leaderboard_history",{p_week:week,p_limit:limit});
+  if(error)throw error;
+  return {
+    weekStart:data?.week_start||week||"",
+    top:(data?.top||[]).map(r=>({
+      username:r.username||"ผู้เรียน",xp:r.xp||0,rank:r.rank||0,isMe:!!r.is_me,
+      rewardXp:r.reward_xp||0,rewardProDays:r.reward_pro_days||0
+    })),
+    me:data?.me?{
+      xp:data.me.xp||0,rank:data.me.rank||0,
+      rewardXp:data.me.reward_xp||0,rewardProDays:data.me.reward_pro_days||0
+    }:null
+  };
+}
+
 export async function saveExamTargets(user,targets){
   if(!backendEnabled||!user)return [];
   const {error:delErr}=await supabase.from("exam_targets").delete().eq("user_id",user.id);

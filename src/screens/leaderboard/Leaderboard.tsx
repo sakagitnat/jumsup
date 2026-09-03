@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { loadWeeklyLeaderboard, type WeeklyLeaderboard } from "../../lib/cloud.js";
+import {
+  loadWeeklyLeaderboard,
+  loadLeaderboardHistory,
+  loadLeaderboardHistoryWeeks,
+  type WeeklyLeaderboard,
+} from "../../lib/cloud.js";
 import { useStore } from "../../store/useStore";
 import { loginGoogle } from "../../actions/auth";
 import { setLeaderboardAnon } from "../../actions/account";
@@ -27,6 +32,15 @@ export function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [weeks, setWeeks] = useState<string[]>([]);
+  const [sel, setSel] = useState(""); // "" = this week, otherwise a past week_start
+
+  useEffect(() => {
+    if (!user) return;
+    loadLeaderboardHistoryWeeks()
+      .then(setWeeks)
+      .catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -35,26 +49,59 @@ export function Leaderboard() {
     }
     setLoading(true);
     setErr("");
-    loadWeeklyLeaderboard(20)
+    const load = sel ? loadLeaderboardHistory(sel, 20) : loadWeeklyLeaderboard(20);
+    load
       .then(setData)
       .catch((e) => setErr((e as Error).message || "โหลดอันดับไม่สำเร็จ"))
       .finally(() => setLoading(false));
-  }, [user, reloadKey]);
+  }, [user, sel, reloadKey]);
 
   const toggleAnon = async (v: boolean) => {
     await setLeaderboardAnon(v);
     setReloadKey((k) => k + 1);
   };
 
+  const isPast = Boolean(sel);
+
   return (
     <>
       <PageHeader
         eyebrow="LEADERBOARD"
-        title="อันดับสัปดาห์นี้"
+        title={isPast ? "อันดับย้อนหลัง" : "อันดับสัปดาห์นี้"}
         description={
-          data ? `สะสม XP ${weekLabel(data.weekStart)} · รีเซ็ตทุกวันจันทร์` : "แข่งสะสม XP รีเซ็ตทุกวันจันทร์"
+          data
+            ? `${isPast ? "ปิดสัปดาห์แล้ว · " : "สะสม XP · รีเซ็ตทุกวันจันทร์ · "}${weekLabel(data.weekStart)}`
+            : "แข่งสะสม XP รีเซ็ตทุกวันจันทร์"
         }
       />
+
+      {user && weeks.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setSel("")}
+            className={cx(
+              "rounded-full px-3 py-1 text-sm font-medium",
+              !sel ? "bg-primary text-on-primary" : "bg-surface-2 text-muted hover:text-text",
+            )}
+          >
+            สัปดาห์นี้
+          </button>
+          {weeks.map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => setSel(w)}
+              className={cx(
+                "rounded-full px-3 py-1 text-sm font-medium",
+                sel === w ? "bg-primary text-on-primary" : "bg-surface-2 text-muted hover:text-text",
+              )}
+            >
+              {weekLabel(w)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!user ? (
         <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -75,22 +122,28 @@ export function Leaderboard() {
           <Card soft className="mb-4 space-y-3">
             {data?.me ? (
               <p className="text-sm">
-                อันดับของคุณสัปดาห์นี้:{" "}
+                อันดับของคุณ{isPast ? "สัปดาห์นั้น" : "สัปดาห์นี้"}:{" "}
                 <b className="text-primary">#{data.me.rank}</b> · {data.me.xp.toLocaleString()} XP
               </p>
             ) : (
               <p className="text-sm text-muted">
-                ยังไม่มี XP สัปดาห์นี้ — เช็คอินหรือเรียนสักหน่อยเพื่อขึ้นกระดาน
+                {isPast
+                  ? "สัปดาห์นั้นคุณยังไม่มี XP บนกระดาน"
+                  : "ยังไม่มี XP สัปดาห์นี้ — เช็คอินหรือเรียนสักหน่อยเพื่อขึ้นกระดาน"}
               </p>
             )}
-            <div className="flex items-center justify-between border-t border-line pt-3">
-              <span className="text-sm">ซ่อนชื่อของฉันบนกระดาน</span>
-              <Switch checked={anon} label="ซ่อนชื่อ" onChange={toggleAnon} />
-            </div>
+            {!isPast && (
+              <div className="flex items-center justify-between border-t border-line pt-3">
+                <span className="text-sm">ซ่อนชื่อของฉันบนกระดาน</span>
+                <Switch checked={anon} label="ซ่อนชื่อ" onChange={toggleAnon} />
+              </div>
+            )}
           </Card>
 
           {!data || data.top.length === 0 ? (
-            <EmptyState>ยังไม่มีใครทำคะแนนสัปดาห์นี้ — เป็นคนแรกเลย!</EmptyState>
+            <EmptyState>
+              {isPast ? "ไม่มีข้อมูลสัปดาห์นั้น" : "ยังไม่มีใครทำคะแนนสัปดาห์นี้ — เป็นคนแรกเลย!"}
+            </EmptyState>
           ) : (
             <div className="space-y-2">
               {data.top.map((row) => {

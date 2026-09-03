@@ -12,6 +12,8 @@ import { Refunds } from "./pages/Refunds";
 import { Bots } from "./pages/Bots";
 import { Users } from "./pages/Users";
 import { Content } from "./pages/Content";
+import { Seasons } from "./pages/Seasons";
+import { XpIntegrity } from "./pages/XpIntegrity";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +27,8 @@ const router = createBrowserRouter([
       { path: "/gift-codes", element: <GiftCodes /> },
       { path: "/refunds", element: <Refunds /> },
       { path: "/bots", element: <Bots /> },
+      { path: "/seasons", element: <Seasons /> },
+      { path: "/xp-integrity", element: <XpIntegrity /> },
       { path: "/users", element: <Users /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

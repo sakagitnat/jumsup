@@ -19,6 +19,36 @@ export interface WeeklyLeaderboard {
   me: { xp: number; rank: number } | null;
 }
 export function loadWeeklyLeaderboard(limit?: number): Promise<WeeklyLeaderboard>;
+
+export interface WeekRecap {
+  weekStart: string;
+  rank: number;
+  prevRank: number | null;
+  xp: number;
+  rewardXp: number;
+  rewardProDays: number;
+  tierLabel: string;
+}
+export function loadWeekRecap(): Promise<WeekRecap | null>;
+export function markWeekRecapSeen(): Promise<void>;
+export function loadLeaderboardHistoryWeeks(): Promise<string[]>;
+
+export interface HistoryLeaderboard {
+  weekStart: string;
+  top: Array<{
+    username: string;
+    xp: number;
+    rank: number;
+    isMe: boolean;
+    rewardXp: number;
+    rewardProDays: number;
+  }>;
+  me: { xp: number; rank: number; rewardXp: number; rewardProDays: number } | null;
+}
+export function loadLeaderboardHistory(
+  week: string,
+  limit?: number,
+): Promise<HistoryLeaderboard>;
 export function loadCommunity(query?: string, type?: string): Promise<CommunityItem[]>;
 export function importCommunityItem(user: User, item: CommunityItem): Promise<void>;
 

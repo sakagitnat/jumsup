@@ -12,6 +12,8 @@ const nav: Array<[string, string]> = [
   ["/gift-codes", "Gift Code"],
   ["/refunds", "คืนเงิน"],
   ["/bots", "บอทลีดเดอร์บอร์ด"],
+  ["/seasons", "ฤดูกาลลีดเดอร์บอร์ด"],
+  ["/xp-integrity", "ตรวจ XP"],
 ];
 
 export function Layout() {

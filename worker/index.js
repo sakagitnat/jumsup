@@ -12,6 +12,8 @@ import * as adminBots from "../functions/api/admin/bots.js";
 import * as adminUsers from "../functions/api/admin/users.js";
 import * as adminReviews from "../functions/api/admin/reviews.js";
 import * as adminContent from "../functions/api/admin/content.js";
+import * as adminSeasons from "../functions/api/admin/seasons.js";
+import * as adminXpIntegrity from "../functions/api/admin/xp-integrity.js";
 import * as contentPublish from "../functions/api/content/publish-confirmed.js";
 import * as contentSave from "../functions/api/content/save.js";
 import * as dictionarySuggest from "../functions/api/dictionary/suggest.js";
@@ -24,6 +26,8 @@ import * as stripePortal from "../functions/api/stripe/create-portal.js";
 import * as stripeWebhook from "../functions/api/stripe/webhook.js";
 import * as usageSave from "../functions/api/usage/save.js";
 import * as usageStart from "../functions/api/usage/start.js";
+import { closeWeek } from "./jobs/closeWeek.js";
+import { purgeDeletions } from "./jobs/purgeDeletions.js";
 
 const routes = new Map([
   ["/api/translate", translate],
@@ -40,6 +44,8 @@ const routes = new Map([
   ["/api/admin/users", adminUsers],
   ["/api/admin/reviews", adminReviews],
   ["/api/admin/content", adminContent],
+  ["/api/admin/seasons", adminSeasons],
+  ["/api/admin/xp-integrity", adminXpIntegrity],
   ["/api/content/publish-confirmed", contentPublish],
   ["/api/content/save", contentSave],
   ["/api/dictionary/suggest", dictionarySuggest],
@@ -55,6 +61,11 @@ const routes = new Map([
 ]);
 
 const methodHandler = (route, method) => route[`onRequest${method[0]}${method.slice(1).toLowerCase()}`];
+
+// Cron Triggers (see [triggers] in wrangler.toml). The daily 18:00 UTC tick only
+// sweeps account deletions; every other tick (the Sunday 17:10 UTC one, = Monday
+// 00:10 Asia/Bangkok, just after the weekly XP boundary) also closes the week.
+const CRON_DELETION_SWEEP = "0 18 * * *";
 
 export default {
   async fetch(request, env, ctx) {
@@ -74,5 +85,20 @@ export default {
     }
 
     return handler({ request, env, ctx, params: {}, data: {} });
+  },
+
+  async scheduled(event, env, ctx) {
+    if (env.SUPABASE_SERVER_KEY) {
+      env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVER_KEY;
+    }
+    const run = async () => {
+      // Any tick that isn't the daily deletion sweep is the weekly close.
+      // purgeDeletions runs on every tick so a missed daily one still gets caught.
+      if (event.cron !== CRON_DELETION_SWEEP) {
+        await closeWeek(env);
+      }
+      await purgeDeletions(env);
+    };
+    ctx.waitUntil(run());
   },
 };
