@@ -17,11 +17,32 @@ const links: Array<[string, string, string]> = [
 ];
 
 export function Account() {
-  const user = useStore((s) => s.user);
+  const { user, isAdmin } = useStore((s) => ({
+    user: s.user,
+    isAdmin: s.profile?.role === "admin",
+  }));
 
   return (
     <>
       <PageHeader eyebrow="ACCOUNT" title="บัญชีของฉัน" description="เลือกหัวข้อที่ต้องการจัดการ" />
+
+      {isAdmin && (
+        <a
+          href="https://jumsup-admin.sakagitnat.workers.dev/"
+          target="_blank"
+          rel="noreferrer"
+          className="mb-4 flex items-center gap-4 rounded-2xl border border-primary-border bg-primary-soft px-4 py-4"
+        >
+          <div className="min-w-0 flex-1">
+            <b className="block text-sm text-primary">แผงควบคุมแอดมิน</b>
+            <small className="text-xs text-muted">
+              เปิดในแท็บใหม่ · ต้องล็อกอินบัญชีแอดมินอีกครั้ง
+            </small>
+          </div>
+          <span className="text-primary">↗</span>
+        </a>
+      )}
+
       <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {tabs.map(([id, label, desc]) => (
           <Link

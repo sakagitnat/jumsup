@@ -27,6 +27,9 @@ interface Overview {
   attempts_30d: number;
   attempts_by_kind_30d: Record<string, number>;
   gift_redemptions_30d: number;
+  redeemers_total: number;
+  redeemers_converted: number;
+  redeemers_pending: number;
   active_codes: number;
   gift_liability_days: number;
   translations_today: number;
@@ -156,6 +159,31 @@ export function Overview() {
                     <div className="text-lg font-bold">{value}</div>
                   </div>
                 ))}
+              </div>
+            </Card>
+          </div>
+
+          <h3 className="mb-2 mt-5 text-sm font-bold text-[var(--muted)]">
+            การแปลงลูกค้า (โค้ดฟรี → จ่ายเงิน)
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <Card>
+              <div className="text-xs text-[var(--muted)]">เคยใช้โค้ดฟรี</div>
+              <div className="mt-1 text-lg font-bold">{g.redeemers_total} คน</div>
+            </Card>
+            <Card>
+              <div className="text-xs text-[var(--muted)]">แปลงเป็นลูกค้าแล้ว</div>
+              <div className="mt-1 text-lg font-bold text-[var(--success)]">
+                {g.redeemers_converted} คน
+                {g.redeemers_total
+                  ? ` (${Math.round((g.redeemers_converted / g.redeemers_total) * 100)}%)`
+                  : ""}
+              </div>
+            </Card>
+            <Card>
+              <div className="text-xs text-[var(--muted)]">ยังไม่จ่ายเงิน</div>
+              <div className="mt-1 text-lg font-bold text-[var(--warning)]">
+                {g.redeemers_pending} คน
               </div>
             </Card>
           </div>

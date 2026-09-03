@@ -44,6 +44,9 @@ export async function onRequestGet({ request, env }) {
       usage,
       payments,
       attemptRows,
+      allRedemptions,
+      allPaidEvents,
+      allActiveSubs,
     ] = await Promise.all([
       count(sb.from("profiles").select("user_id", { count: "exact", head: true })),
       count(
@@ -142,6 +145,9 @@ export async function onRequestGet({ request, env }) {
       sb.from("translation_usage").select("usage_count").eq("usage_date", today).limit(5000),
       sb.from("payment_events").select("amount,currency").eq("status", "succeeded").gte("created_at", month).limit(5000),
       sb.from("practice_attempts").select("kind").gte("taken_at", daysAgo(30)).limit(5000),
+      sb.from("gift_redemptions").select("user_id").limit(10000),
+      sb.from("payment_events").select("user_id").eq("status", "succeeded").gt("amount", 0).limit(10000),
+      sb.from("subscriptions").select("user_id").in("status", ["active", "trialing", "past_due"]).limit(10000),
     ]);
 
     if (codes.error) throw codes.error;
@@ -160,6 +166,14 @@ export async function onRequestGet({ request, env }) {
 
     const byKind = {};
     for (const r of attemptRows.data || []) byKind[r.kind] = (byKind[r.kind] || 0) + 1;
+
+    const paidUsers = new Set([
+      ...(allPaidEvents.data || []).map((r) => r.user_id),
+      ...(allActiveSubs.data || []).map((r) => r.user_id),
+    ]);
+    const redeemers = new Set((allRedemptions.data || []).map((r) => r.user_id));
+    let redeemersConverted = 0;
+    for (const u of redeemers) if (paidUsers.has(u)) redeemersConverted++;
 
     return json(
       {
@@ -187,6 +201,9 @@ export async function onRequestGet({ request, env }) {
         attempts_30d: attempts30,
         attempts_by_kind_30d: byKind,
         gift_redemptions_30d: giftRedemptions30,
+        redeemers_total: redeemers.size,
+        redeemers_converted: redeemersConverted,
+        redeemers_pending: Math.max(0, redeemers.size - redeemersConverted),
         active_codes: active.length,
         gift_liability_days: giftLiability,
         translations_today: (usage.data || []).reduce((n, x) => n + (x.usage_count || 0), 0),

@@ -84,7 +84,48 @@ export async function onRequestGet({ request, env }) {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    return json({ items: data || [], count: count || 0, page, per: PER }, 200, noStore(cors));
+    const ids = (data || []).map((r) => r.user_id);
+    let items = data || [];
+    if (ids.length) {
+      const [subs, pays, reds] = await Promise.all([
+        sb
+          .from("subscriptions")
+          .select("user_id,status")
+          .in("user_id", ids)
+          .in("status", ["active", "trialing", "past_due"]),
+        sb
+          .from("payment_events")
+          .select("user_id")
+          .in("user_id", ids)
+          .eq("status", "succeeded")
+          .gt("amount", 0),
+        sb.from("gift_redemptions").select("user_id").in("user_id", ids),
+      ]);
+      const paidSet = new Set([
+        ...(subs.data || []).map((r) => r.user_id),
+        ...(pays.data || []).map((r) => r.user_id),
+      ]);
+      const redCount = {};
+      for (const r of reds.data || []) redCount[r.user_id] = (redCount[r.user_id] || 0) + 1;
+
+      items = items.map((r) => {
+        const paid = paidSet.has(r.user_id);
+        const redeemed = (redCount[r.user_id] || 0) > 0;
+        const proNow =
+          r.pro_lifetime ||
+          (r.pro_bonus_until && new Date(r.pro_bonus_until) > new Date());
+        let pro_source;
+        if (paid && redeemed) pro_source = "converted";
+        else if (paid) pro_source = "paid";
+        else if (redeemed && proNow) pro_source = "gift";
+        else if (redeemed) pro_source = "gift_expired";
+        else if (proNow) pro_source = "admin_grant";
+        else pro_source = "free";
+        return { ...r, pro_source, free_codes_count: redCount[r.user_id] || 0 };
+      });
+    }
+
+    return json({ items, count: count || 0, page, per: PER }, 200, noStore(cors));
   } catch (e) {
     return json({ error: e.message }, errorStatus(e.message), noStore(cors));
   }

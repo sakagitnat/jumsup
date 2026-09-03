@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import { Card, Section, Btn, Field, Tag, Empty, useToast, useAsync } from "../ui";
 
@@ -16,6 +16,8 @@ interface PreviewRow {
   rank: number;
 }
 
+const botXpAt = (factor: number, ref: number) => Math.max(15, Math.round(ref * factor));
+
 export function Bots() {
   const toast = useToast();
   const run = useAsync();
@@ -24,6 +26,7 @@ export function Bots() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [factor, setFactor] = useState("0.8");
+  const [simXp, setSimXp] = useState("300");
 
   const load = () => {
     setLoading(true);
@@ -40,16 +43,32 @@ export function Bots() {
   const update = (id: string, patch: object) =>
     run(() => apiPost("/api/admin/bots", { action: "update", id, ...patch }), load);
 
+  const ref = Math.max(150, Number(simXp) || 150);
+  const sim = useMemo(() => {
+    const rows = items
+      .filter((b) => b.active)
+      .map((b) => ({ name: b.hidden ? `(ซ่อนชื่อ) ${b.name}` : b.name, xp: botXpAt(b.factor, ref) }));
+    rows.push({ name: "★ ผู้เล่นจำลอง", xp: ref });
+    return rows.sort((a, b) => b.xp - a.xp);
+  }, [items, ref]);
+
   return (
     <Section
       title="บอทลีดเดอร์บอร์ด"
-      desc="บอทโผล่บนกระดานเฉพาะตอนผู้เล่นจริง < 15 คน · คะแนน = ตัวคูณ × XP ผู้เล่น (ขั้นต่ำอิง 150)"
+      desc="บอทช่วยให้กระดานไม่ว่าง"
       actions={
         <Btn onClick={load} disabled={loading}>
           รีเฟรช
         </Btn>
       }
     >
+      <Card className="mb-4 text-sm text-[var(--muted)]">
+        <b className="text-[var(--text)]">วิธีคิดคะแนนบอท:</b> คะแนนบอทในสัปดาห์นั้น ={" "}
+        <b>ตัวคูณ × XP ของผู้เล่นที่กำลังดู</b> (ถ้าผู้เล่นมี XP น้อยกว่า 150 จะคิดที่ 150) บวกลบสุ่มเล็กน้อย
+        · ตัวคูณ &lt; 1 = บอทอยู่ต่ำกว่าผู้เล่น (แซงได้) · &gt; 1 = อยู่สูงกว่า (เป็นเป้า) · บอททั้งหมดจะโผล่บนกระดาน
+        <b> เฉพาะตอนผู้เล่นจริงยังน้อยกว่า 15 คน</b> พอถึงเกณฑ์จะหายเอง
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <Card className="mb-3">
@@ -125,6 +144,7 @@ export function Bots() {
                         }}
                       />
                     </label>
+                    <span>≈ {botXpAt(b.factor, ref)} XP ที่ผู้เล่น {ref}</span>
                     <Btn onClick={() => update(b.id, { active: !b.active })}>
                       {b.active ? "ปิด" : "เปิด"}
                     </Btn>
@@ -150,25 +170,62 @@ export function Bots() {
           )}
         </div>
 
-        <Card>
-          <h3 className="mb-2 text-sm font-bold">ลีดเดอร์บอร์ดตอนนี้ (มุมมองผู้เล่นทั่วไป)</h3>
-          {preview.length === 0 ? (
-            <p className="text-sm text-[var(--subtle)]">ไม่มีข้อมูล</p>
-          ) : (
+        <div className="space-y-4">
+          <Card>
+            <h3 className="mb-2 text-sm font-bold">ลีดเดอร์บอร์ดตอนนี้ (มุมมองผู้เล่นทั่วไป)</h3>
+            {preview.length === 0 ? (
+              <p className="text-sm text-[var(--subtle)]">ไม่มีข้อมูล</p>
+            ) : (
+              <div className="space-y-1">
+                {preview.map((row) => (
+                  <div
+                    key={`${row.rank}-${row.username}`}
+                    className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm odd:bg-[var(--surface-2)]"
+                  >
+                    <span className="w-6 text-center font-bold tabular-nums">{row.rank}</span>
+                    <span className="min-w-0 flex-1 truncate">{row.username}</span>
+                    <span className="tabular-nums text-[var(--muted)]">{row.xp} XP</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <div className="mb-2 flex items-end gap-2">
+              <Field
+                label="จำลอง: ถ้าผู้เล่นมี XP เท่านี้"
+                type="number"
+                value={simXp}
+                onChange={(e) => setSimXp(e.target.value)}
+                className="w-32"
+              />
+              <span className="pb-2 text-xs text-[var(--subtle)]">
+                บอร์ดจะเรียงแบบนี้ (ประมาณ ไม่รวมสุ่ม)
+              </span>
+            </div>
             <div className="space-y-1">
-              {preview.map((row) => (
+              {sim.map((row, i) => (
                 <div
-                  key={`${row.rank}-${row.username}`}
+                  key={`${i}-${row.name}`}
                   className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm odd:bg-[var(--surface-2)]"
                 >
-                  <span className="w-6 text-center font-bold tabular-nums">{row.rank}</span>
-                  <span className="min-w-0 flex-1 truncate">{row.username}</span>
+                  <span className="w-6 text-center font-bold tabular-nums">{i + 1}</span>
+                  <span
+                    className={
+                      row.name.startsWith("★")
+                        ? "min-w-0 flex-1 truncate font-bold text-[var(--primary)]"
+                        : "min-w-0 flex-1 truncate"
+                    }
+                  >
+                    {row.name}
+                  </span>
                   <span className="tabular-nums text-[var(--muted)]">{row.xp} XP</span>
                 </div>
               ))}
             </div>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
     </Section>
   );

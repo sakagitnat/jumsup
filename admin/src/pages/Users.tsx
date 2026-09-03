@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import { Card, Section, Btn, Field, Tag, Empty, useAsync } from "../ui";
 
+type ProSource =
+  | "converted"
+  | "paid"
+  | "gift"
+  | "gift_expired"
+  | "admin_grant"
+  | "free";
+
 interface Row {
   user_id: string;
   username: string | null;
@@ -13,7 +21,28 @@ interface Row {
   pro_bonus_until: string | null;
   banned_at: string | null;
   created_at: string;
+  pro_source: ProSource;
+  free_codes_count: number;
 }
+
+const SOURCE: Record<ProSource, { label: string; tone: "success" | "primary" | "warning" | "danger" | "line" }> = {
+  converted: { label: "แปลงเป็นลูกค้า", tone: "success" },
+  paid: { label: "จ่ายเงิน", tone: "primary" },
+  gift: { label: "โค้ดฟรี", tone: "warning" },
+  gift_expired: { label: "เคยใช้โค้ด (หมดแล้ว)", tone: "line" },
+  admin_grant: { label: "แอดมินให้", tone: "primary" },
+  free: { label: "ฟรี", tone: "line" },
+};
+
+const FILTERS: Array<["" | ProSource, string]> = [
+  ["", "ทั้งหมด"],
+  ["converted", "แปลงเป็นลูกค้า"],
+  ["paid", "จ่ายเงิน"],
+  ["gift", "โค้ดฟรี (ยังไม่จ่าย)"],
+  ["gift_expired", "เคยใช้โค้ด หมดแล้ว"],
+  ["admin_grant", "แอดมินให้"],
+  ["free", "ฟรี"],
+];
 
 interface Detail {
   profile: Row & { referral_code?: string; last_checkin?: string };
@@ -85,6 +114,7 @@ export function Users() {
   const [data, setData] = useState<{ items: Row[]; count: number; per: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [srcFilter, setSrcFilter] = useState<"" | ProSource>("");
 
   const load = () => {
     setLoading(true);
@@ -101,10 +131,18 @@ export function Users() {
     run(() => apiPost("/api/admin/users", { user_id, ...payload }), load);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.count / data.per)) : 1;
+  const rows = data
+    ? srcFilter
+      ? data.items.filter((r) => r.pro_source === srcFilter)
+      : data.items
+    : [];
 
   return (
-    <Section title="ผู้ใช้" desc={data ? `${data.count} บัญชี` : ""}>
-      <Card className="mb-4">
+    <Section
+      title="ผู้ใช้"
+      desc={data ? `${data.count} บัญชี · กรองในหน้านี้` : ""}
+    >
+      <Card className="mb-3">
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -114,7 +152,7 @@ export function Users() {
           }}
         >
           <Field
-            label="ค้นหาชื่อผู้ใช้"
+            label="ค้นหา ชื่อ / นิกเนม"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="w-full"
@@ -125,13 +163,21 @@ export function Users() {
         </form>
       </Card>
 
+      <div className="mb-4 flex flex-wrap gap-1">
+        {FILTERS.map(([v, label]) => (
+          <Btn key={v} tone={srcFilter === v ? "primary" : "line"} onClick={() => setSrcFilter(v)}>
+            {label}
+          </Btn>
+        ))}
+      </div>
+
       {loading ? (
         <Empty>กำลังโหลด…</Empty>
-      ) : !data || data.items.length === 0 ? (
-        <Empty>ไม่พบผู้ใช้</Empty>
+      ) : rows.length === 0 ? (
+        <Empty>ไม่พบผู้ใช้{srcFilter ? "ในกลุ่มนี้ (หน้านี้)" : ""}</Empty>
       ) : (
         <div className="space-y-2">
-          {data.items.map((r) => (
+          {rows.map((r) => (
             <Card key={r.user_id} className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <b className="text-sm">
@@ -140,6 +186,10 @@ export function Users() {
                 </b>
                 {r.role === "admin" && <Tag tone="primary">admin</Tag>}
                 {r.banned_at && <Tag tone="danger">ถูกแบน</Tag>}
+                <Tag tone={SOURCE[r.pro_source].tone}>{SOURCE[r.pro_source].label}</Tag>
+                {r.free_codes_count > 0 && (
+                  <Tag tone="line">โค้ดฟรี {r.free_codes_count} ครั้ง</Tag>
+                )}
                 <span className="text-xs text-[var(--muted)]">
                   {proState(r)} · {r.xp.toLocaleString()} XP · streak {r.streak} · สมัคร{" "}
                   {fmtDate(r.created_at)}
