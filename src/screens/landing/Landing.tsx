@@ -236,9 +236,11 @@ export function Landing() {
             </span>
             <span>Jumsup — ฝึกอังกฤษให้เป็นระบบในแบบของคุณ</span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <a href="/privacy/">Privacy</a>
             <a href="/terms/">Terms</a>
+            <a href="/refund/">Refund</a>
+            <a href="/community-guidelines/">Community</a>
             <a href="mailto:sakagitnat@gmail.com">Contact</a>
           </div>
         </div>

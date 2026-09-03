@@ -45,6 +45,7 @@ export function Study() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const dueMode = params.get("due") === "1";
+  const chain = (params.get("chain") || "").split(",").filter(Boolean);
 
   const deck = useStore((s) => s.decks.find((d) => d.id === deckId));
   const flashSettings = useStore((s) => s.flashSettings);
@@ -65,16 +66,20 @@ export function Study() {
   const [duePos, setDuePos] = useState(0);
   const [dueTotal, setDueTotal] = useState(0);
   const [dueCleared, setDueCleared] = useState(0);
-  const dueInit = useRef(false);
+  const dueInitFor = useRef<string>("");
   useEffect(() => {
-    if (!dueMode || !deck || dueInit.current) return;
-    dueInit.current = true;
+    // (re)build the due queue whenever the deck changes — the component stays
+    // mounted when chaining from one deck's review straight into the next.
+    if (!dueMode || !deck || dueInitFor.current === deckId) return;
+    dueInitFor.current = deckId;
     const q = deck.words
       .map((_, i) => i)
       .filter((i) => deckSrs?.[i] && isDue(deckSrs[i]));
     setDueQueue(q);
     setDueTotal(q.length);
-  }, [dueMode, deck, deckSrs]);
+    setDuePos(0);
+    setDueCleared(0);
+  }, [dueMode, deck, deckSrs, deckId]);
 
   const toggleFlip = useCallback(() => {
     setFlipped((f) => !f);
@@ -310,6 +315,19 @@ export function Study() {
                   onClick={() => setPoolSize((p) => Math.min(deck.words.length, p + 10))}
                 >
                   เพิ่มอีก 10 คำ
+                </Button>
+              )}
+              {dueMode && chain.length > 0 && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const [next, ...rest] = chain;
+                    navigate(
+                      `/flash/study/${next}?due=1${rest.length ? `&chain=${rest.join(",")}` : ""}`,
+                    );
+                  }}
+                >
+                  ทบทวนชุดถัดไป · เหลือ {chain.length} ชุด
                 </Button>
               )}
               <Button onClick={() => navigate("/flash")}>กลับหน้าเลือกชุด</Button>

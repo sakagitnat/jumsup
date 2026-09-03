@@ -65,6 +65,20 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
             <b className="text-sm">ครบกำหนดทบทวนวันนี้ {totalDue} คำ</b>
             <p className="text-xs text-muted">ทบทวนตามรอบช่วยให้จำได้นานขึ้น</p>
           </div>
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => {
+              const dueDecks = decks.filter((d) => dueCount(srs[d.id]) > 0).map((d) => d.id);
+              if (!dueDecks.length) return;
+              const [first, ...rest] = dueDecks;
+              navigate(
+                `/flash/study/${first}?due=1${rest.length ? `&chain=${rest.join(",")}` : ""}`,
+              );
+            }}
+          >
+            ทบทวนทั้งหมด
+          </Button>
         </Card>
       )}
 
