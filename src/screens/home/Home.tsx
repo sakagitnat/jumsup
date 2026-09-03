@@ -285,7 +285,7 @@ export function Home() {
         </Link>
       </div>
 
-      <div className="mt-2 flex justify-end gap-4">
+      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
         <Link to="/leaderboard" className="text-sm font-semibold text-primary hover:underline">
           อันดับสัปดาห์นี้ →
         </Link>
@@ -293,6 +293,21 @@ export function Home() {
           ดูสถิติการเรียนทั้งหมด →
         </Link>
       </div>
+
+      {user && !checked && (
+        <Card className="mt-4 flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
+            ✓
+          </span>
+          <div className="min-w-0 flex-1">
+            <b className="block text-sm">ยังไม่ได้เช็คอินวันนี้</b>
+            <small className="text-xs text-muted">รักษา Streak และรับ +20 XP</small>
+          </div>
+          <Button variant="primary" onClick={dailyCheckin}>
+            เช็คอิน
+          </Button>
+        </Card>
+      )}
 
       {user && ownSets === 0 && (
         <Card soft className="mt-4">
@@ -311,38 +326,21 @@ export function Home() {
         </Card>
       )}
 
-      <h2 className="mb-3 mt-8 text-lg font-semibold">เริ่มฝึก</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {skillCards.map(([to, icon, title, desc]) => (
+      <h2 className="mb-3 mt-8 text-lg font-semibold">ฝึกทักษะ</h2>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {skillCards.map(([to, icon, title]) => (
           <Link
             key={to}
             to={to}
-            className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-colors hover:border-primary-border hover:bg-primary-soft"
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-primary-border hover:bg-primary-soft"
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
               {icon}
             </span>
-            <div className="min-w-0">
-              <b className="block text-sm">{title}</b>
-              <small className="text-xs text-muted">{desc}</small>
-            </div>
+            <b className="text-xs">{title}</b>
           </Link>
         ))}
       </div>
-
-      <h2 className="mb-3 mt-8 text-lg font-semibold">เช็คอินรายวัน</h2>
-      <Card className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
-          ✓
-        </span>
-        <div className="min-w-0 flex-1">
-          <b className="block text-sm">{checked ? "เช็คอินแล้ว" : "ยังไม่ได้เช็คอินวันนี้"}</b>
-          <small className="text-xs text-muted">เช็คอินเพื่อรักษา Streak และรับ XP</small>
-        </div>
-        <Button variant="primary" disabled={checked} onClick={dailyCheckin}>
-          {checked ? "เช็คอินแล้ว ✓" : "เช็คอิน +20 XP"}
-        </Button>
-      </Card>
 
       {user && profile?.referral_code && (
         <Card className="mt-4">
