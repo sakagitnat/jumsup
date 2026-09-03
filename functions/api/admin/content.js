@@ -4,37 +4,103 @@ import { assertSameOrigin, assertJson, errorStatus, noStore } from "../../_lib/s
 
 export const onRequestOptions = () => new Response(null, { headers: cors });
 
-// Parallel view of the public catalog for moderation.
+// Full catalog view for moderation — every set, public or private, plus the
+// ability to read a set's actual content.
 export async function onRequestGet({ request, env }) {
   try {
     assertSameOrigin(request, env);
     await requireAdmin(request, env);
     const sb = adminClient(env);
     const url = new URL(request.url);
+
+    // --- content detail ---
+    const detailId = url.searchParams.get("detail_id");
+    const detailKind = url.searchParams.get("detail_kind");
+    if (detailId && ["vocab", "skill"].includes(detailKind)) {
+      if (detailKind === "vocab") {
+        const { data, error } = await sb
+          .from("vocab_sets")
+          .select("id,name,vocab_words(word,stress,meaning,example,sort_order)")
+          .eq("id", detailId)
+          .maybeSingle();
+        if (error) throw error;
+        const words = (data?.vocab_words || [])
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((w) => ({ w: w.word, p: w.stress || "", m: w.meaning || "", e: w.example || "" }));
+        return json({ detail: { kind: "vocab", title: data?.name || "", words } }, 200, noStore(cors));
+      }
+      const { data, error } = await sb
+        .from("practice_sets")
+        .select("id,title,kind,payload")
+        .eq("id", detailId)
+        .maybeSingle();
+      if (error) throw error;
+      const payload = data?.payload || {};
+      const sections = (payload.sections || []).map((s) => ({
+        title: s.title || "",
+        text: s.text || s.passage || s.script || "",
+        questions: (s.questions || []).map((qq) => ({
+          prompt: qq.prompt || qq.question || "",
+          choices: qq.choices || [],
+          answer: qq.answer,
+        })),
+      }));
+      const flatQ = Array.isArray(payload.questions)
+        ? payload.questions.map((qq) => ({
+            prompt: qq.prompt || qq.question || "",
+            choices: qq.choices || [],
+            answer: qq.answer,
+          }))
+        : [];
+      return json(
+        {
+          detail: {
+            kind: "skill",
+            title: data?.title || "",
+            practice_kind: data?.kind || "",
+            text: payload.text || payload.passage || payload.script || "",
+            sections,
+            questions: flatQ,
+          },
+        },
+        200,
+        noStore(cors),
+      );
+    }
+
+    // --- catalog list ---
     const q = (url.searchParams.get("q") || "").trim().slice(0, 60).toLowerCase();
     const kind = url.searchParams.get("kind") || "all"; // all | vocab | skill
+    const scope = url.searchParams.get("scope") || "all"; // all | public
+
+    const applyScope = (query) =>
+      scope === "public" ? query.eq("visibility", "public") : query;
 
     const jobs = [];
-    if (kind !== "skill")
-      jobs.push(
-        sb
-          .from("vocab_sets")
-          .select("id,name,user_id,visibility,moderation_status,exam,level,created_at,vocab_words(count)")
-          .eq("visibility", "public")
-          .order("created_at", { ascending: false })
-          .limit(200),
-      );
-    else jobs.push(Promise.resolve({ data: [] }));
-    if (kind !== "vocab")
-      jobs.push(
-        sb
-          .from("practice_sets")
-          .select("id,title,user_id,visibility,moderation_status,kind,exam,level,created_at")
-          .eq("visibility", "public")
-          .order("created_at", { ascending: false })
-          .limit(200),
-      );
-    else jobs.push(Promise.resolve({ data: [] }));
+    jobs.push(
+      kind === "skill"
+        ? Promise.resolve({ data: [] })
+        : applyScope(
+            sb
+              .from("vocab_sets")
+              .select(
+                "id,name,user_id,visibility,moderation_status,exam,level,created_at,vocab_words(count)",
+              ),
+          )
+            .order("created_at", { ascending: false })
+            .limit(300),
+    );
+    jobs.push(
+      kind === "vocab"
+        ? Promise.resolve({ data: [] })
+        : applyScope(
+            sb
+              .from("practice_sets")
+              .select("id,title,user_id,visibility,moderation_status,kind,exam,level,created_at"),
+          )
+            .order("created_at", { ascending: false })
+            .limit(300),
+    );
 
     const [vocab, skill] = await Promise.all(jobs);
     if (vocab.error) throw vocab.error;
@@ -51,6 +117,11 @@ export async function onRequestGet({ request, env }) {
       : { data: [] };
     const nameMap = Object.fromEntries((names || []).map((p) => [p.user_id, p.username]));
 
+    const linkFor = (kindStr, id, visibility) =>
+      visibility === "public"
+        ? `https://jumsup.sakagitnat.workers.dev/s/${kindStr}/${id}`
+        : "";
+
     let items = [
       ...(vocab.data || []).map((s) => ({
         id: s.id,
@@ -58,11 +129,12 @@ export async function onRequestGet({ request, env }) {
         title: s.name,
         owner: nameMap[s.user_id] || "user",
         size: s.vocab_words?.[0]?.count ?? 0,
+        visibility: s.visibility,
         moderation_status: s.moderation_status,
         exam: s.exam,
         level: s.level,
         created_at: s.created_at,
-        link: `https://jumsup.sakagitnat.workers.dev/s/vocab/${s.id}`,
+        link: linkFor("vocab", s.id, s.visibility),
       })),
       ...(skill.data || []).map((s) => ({
         id: s.id,
@@ -70,11 +142,12 @@ export async function onRequestGet({ request, env }) {
         title: s.title,
         owner: nameMap[s.user_id] || "user",
         size: null,
+        visibility: s.visibility,
         moderation_status: s.moderation_status,
         exam: s.exam,
         level: s.level,
         created_at: s.created_at,
-        link: `https://jumsup.sakagitnat.workers.dev/s/${s.kind || "reading"}/${s.id}`,
+        link: linkFor(s.kind || "reading", s.id, s.visibility),
       })),
     ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
