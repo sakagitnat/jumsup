@@ -59,10 +59,10 @@ export async function startPracticeSession(
       const e = err as { message?: string; details?: { remaining_seconds?: number } };
       if (String(e.message).includes("DAILY_LIMIT_REACHED")) {
         proPopup(
-          "ใช้สิทธิ์ทดลองครบ 3 ครั้งแล้ว",
-          `แพ็กเกจ Free จะปลดล็อก ${kind.toUpperCase()} อีกครั้งใน ${formatWait(
+          `วันนี้ฝึก ${kind.toUpperCase()} ครบ 1 ชุดแล้ว`,
+          `Free ฝึกได้วันละ 1 ชุดต่อประเภท — ปลดล็อกอีกครั้งใน ${formatWait(
             Number(e.details?.remaining_seconds || 0),
-          )} หรืออัปเกรดเป็น Pro เพื่อใช้งานได้ทันที`,
+          )} · Pro ฝึกได้ไม่จำกัดทันที (มีทดลองฟรี 7 วัน)`,
         );
         return false;
       }

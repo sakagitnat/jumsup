@@ -2,13 +2,14 @@ export const SUPPORTED_BILLING_CURRENCIES=["THB","USD"];
 export function defaultBillingCurrency(){const locale=(typeof navigator!=="undefined"?navigator.language:"")||"";return locale.toLowerCase().startsWith("th")?"THB":"USD"}
 export const PLANS={
  free:{id:"free",name:"Jumsup Free",prices:{THB:0,USD:0},features:[
-  "Flashcard สูงสุด 100 คำต่อชุด และสร้างเองได้ 3 ชุด",
-  "เก็บชุดจาก Community ได้พร้อมกัน 3 ชุด",
+  "ทดลอง Pro ฟรี 7 วันเมื่อสมัครใหม่",
+  "Flashcard สูงสุด 100 คำต่อชุด และสร้างเองได้ 5 ชุด",
+  "เก็บชุดจาก Community ได้พร้อมกัน 5 ชุด",
+  "ทบทวนคำศัพท์ (SRS) ได้ไม่จำกัด",
+  "เช็คอิน Streak และลีดเดอร์บอร์ดครบทุกอย่าง",
   "Match 10 รอบ และ Crossword 3 รอบต่อวัน",
-  "เก็บชุด Reading, Listening, Writing และ Mock ส่วนตัวอย่างละ 1 ชุด",
-  "Reading, Listening, Writing และ Mock ทดลองอย่างละ 3 รอบต่อช่วง 3 วัน",
-  "เมื่อครบโควต้า ระบบแสดงวันและชั่วโมงจนกว่าจะปลดล็อก",
-  "คลังแปลออฟไลน์ยังไม่จำกัดระหว่างเตรียม Google API",
+  "ฝึก Reading, Listening, Writing และ Mock วันละ 1 ชุดต่อประเภท",
+  "คลังแปลออฟไลน์ไม่จำกัด",
   "ใช้งานและแชร์ชุดใน Community"
  ]},
  monthly:{id:"monthly",name:"Jumsup Pro",prices:{THB:149,USD:4.99},period:{THB:"เดือน",USD:"month"},features:[
@@ -34,6 +35,6 @@ export function money(value,currency="THB"){
  return new Intl.NumberFormat(c==="THB"?"th-TH":"en-US",{style:"currency",currency:c,minimumFractionDigits:c==="THB"?0:2,maximumFractionDigits:c==="THB"?0:2}).format(value);
 }
 
-export const FREE_LIMITS={privateVocab:3,privatePractice:1,wordsPerDeck:100,communitySets:3,matchPerDay:10,crosswordPerDay:3,translationsPerDay:Infinity};
+export const FREE_LIMITS={privateVocab:5,privatePractice:1,wordsPerDeck:100,communitySets:5,matchPerDay:10,crosswordPerDay:3,translationsPerDay:Infinity};
 export const PRO_LIMITS={privateVocab:Infinity,privatePractice:Infinity,wordsPerDeck:1000,communitySets:Infinity,matchPerDay:Infinity,crosswordPerDay:Infinity,translationsPerDay:1000,importRows:1000};
 

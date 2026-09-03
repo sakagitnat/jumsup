@@ -5,7 +5,37 @@ import { dailyCheckin } from "../../actions/session";
 import { loginGoogle } from "../../actions/auth";
 import { dueCount } from "../../lib/srs";
 import { skillLabel } from "../../lib/taxonomy";
+import { isPro } from "../../lib/entitlements.js";
 import { PageHeader, Card, Tag, Button, LinkButton } from "../../ui";
+
+/** A single contextual Pro nudge for the daily-plan card. Returns null for Pro
+ *  users (unless their trial is about to lapse) and when nothing is relevant. */
+function proNudge(opts: {
+  pro: boolean;
+  proBonusUntil?: string | null;
+  hasSub: boolean;
+  daysToExam: number | null;
+  streak: number;
+}): string | null {
+  const { pro, proBonusUntil, hasSub, daysToExam, streak } = opts;
+  if (pro) {
+    // trial (pro via bonus, no paid sub) winding down
+    if (!hasSub && proBonusUntil) {
+      const left = Math.ceil((new Date(proBonusUntil).getTime() - Date.now()) / 86_400_000);
+      if (left >= 0 && left <= 3) {
+        return `ทดลอง Pro เหลือ ${left} วัน — สมัครต่อเพื่อฝึกไม่จำกัดต่อเนื่อง`;
+      }
+    }
+    return null;
+  }
+  if (daysToExam !== null && daysToExam >= 0 && daysToExam <= 30) {
+    return "โค้งสุดท้ายก่อนสอบ — Pro ปลดล็อก Reading / Listening / Writing / Mock ไม่จำกัด";
+  }
+  if ([7, 14, 30, 60, 100].includes(streak)) {
+    return `เรียนต่อเนื่อง ${streak} วันแล้ว — จริงจังขนาดนี้ Pro รายปี (฿99/เดือน) คุ้มกว่า`;
+  }
+  return null;
+}
 
 const skillCards: Array<[string, string, string, string]> = [
   ["/flash", "Aa", "Flashcard", "วนคำจนจำครบ"],
@@ -43,6 +73,7 @@ export function Home() {
     mocks,
     lastCheckin,
     profile,
+    subscription,
     user,
   } = useStore((s) => ({
     xp: s.xp,
@@ -56,6 +87,7 @@ export function Home() {
     mocks: s.mocks,
     lastCheckin: s.lastCheckin,
     profile: s.profile,
+    subscription: s.subscription,
     user: s.user,
   }));
 
@@ -80,6 +112,15 @@ export function Home() {
     .sort((a, b) => a.days - b.days);
   const nextExam = upcomingExams[0] ?? null;
   const daysToExam = nextExam ? nextExam.days : null;
+
+  const pro = isPro({ profile, subscription });
+  const nudge = proNudge({
+    pro,
+    proBonusUntil: profile?.pro_bonus_until,
+    hasSub: subscription?.status === "active" || subscription?.status === "trialing",
+    daysToExam,
+    streak,
+  });
   const examText = !nextExam
     ? null
     : nextExam.days === 0
@@ -203,6 +244,18 @@ export function Home() {
               </li>
             ))}
           </ol>
+          {nudge && (
+            <Link
+              to="/pricing"
+              className="mt-3 flex items-center gap-2 rounded-xl border border-primary-border bg-primary-soft px-3 py-2 text-xs font-medium text-primary transition hover:brightness-95"
+            >
+              <span aria-hidden>⚡</span>
+              <span className="min-w-0 flex-1">{nudge}</span>
+              <span aria-hidden className="shrink-0">
+                →
+              </span>
+            </Link>
+          )}
         </Card>
       )}
 
