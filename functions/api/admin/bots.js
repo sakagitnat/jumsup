@@ -11,12 +11,30 @@ export async function onRequestGet({ request, env }) {
     assertSameOrigin(request, env);
     await requireAdmin(request, env);
     const sb = adminClient(env);
-    const { data, error } = await sb
+
+    const { data: bots, error } = await sb
       .from("leaderboard_bots")
-      .select("id,name,factor,base_xp,active")
+      .select("id,name,factor,base_xp,active,hidden")
       .order("factor", { ascending: false });
     if (error) throw error;
-    return json({ items: data || [] }, 200, noStore(cors));
+
+    // Live-ish preview of the board as a mid-week player (ref = 150 floor).
+    const ref = 150;
+    const { data: weekly } = await sb.rpc("weekly_leaderboard", { p_limit: 30 }).catch(() => ({ data: null }));
+    let preview = weekly?.top || null;
+    if (!preview) {
+      // Fallback: compute bot rows only.
+      preview = (bots || [])
+        .filter((b) => b.active)
+        .map((b) => ({
+          username: b.hidden ? `ผู้เรียน #${b.id.slice(0, 4)}` : b.name,
+          xp: Math.max(15, Math.round(ref * Number(b.factor))),
+        }))
+        .sort((a, b) => b.xp - a.xp)
+        .map((r, i) => ({ ...r, rank: i + 1 }));
+    }
+
+    return json({ items: bots || [], preview }, 200, noStore(cors));
   } catch (e) {
     return json({ error: e.message }, errorStatus(e.message), noStore(cors));
   }
@@ -38,7 +56,7 @@ export async function onRequestPost({ request, env }) {
       if (!(factor > 0 && factor <= 5)) throw new Error("INVALID_FACTOR");
       const { data, error } = await sb
         .from("leaderboard_bots")
-        .insert({ name, factor, base_xp: baseXp, active: true })
+        .insert({ name, factor, base_xp: baseXp, active: true, hidden: Boolean(b.hidden) })
         .select("id")
         .single();
       if (error) throw error;
@@ -63,6 +81,7 @@ export async function onRequestPost({ request, env }) {
       }
       if (b.base_xp != null) patch.base_xp = Math.max(0, Number(b.base_xp) | 0);
       if (b.active != null) patch.active = Boolean(b.active);
+      if (b.hidden != null) patch.hidden = Boolean(b.hidden);
       if (!Object.keys(patch).length) throw new Error("NOTHING_TO_UPDATE");
       const { error } = await sb.from("leaderboard_bots").update(patch).eq("id", b.id);
       if (error) throw error;

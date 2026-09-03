@@ -5,6 +5,31 @@ import { store } from "../store/store";
 import { getCurrentUser, hydrateFromCloud } from "../app/cloudSync";
 import { toast } from "../ui/toast";
 
+export async function checkUsername(name: string): Promise<boolean> {
+  if (!backendEnabled) return false;
+  const { data } = await supabase.rpc("username_available", { p_name: name });
+  return Boolean(data);
+}
+
+export async function changeUsername(name: string): Promise<{ ok: boolean; error?: string }> {
+  const user = getCurrentUser();
+  if (!user || !backendEnabled) return { ok: false, error: "กรุณาเข้าสู่ระบบก่อน" };
+  try {
+    const { data, error } = await supabase.rpc("set_username", { p_name: name });
+    if (error) throw error;
+    store.set({ profile: { ...store.get().profile, username: data } });
+    return { ok: true };
+  } catch (e) {
+    const raw = (e as Error).message || "";
+    const map: Record<string, string> = {
+      USERNAME_TAKEN: "ชื่อนี้ถูกใช้แล้ว",
+      USERNAME_INVALID: "ใช้ a–z, 0–9, _ หรือ . ยาว 3–20 ตัว",
+      UNAUTHORIZED: "กรุณาเข้าสู่ระบบใหม่",
+    };
+    return { ok: false, error: map[raw] || raw || "เปลี่ยนชื่อไม่สำเร็จ" };
+  }
+}
+
 export async function setLeaderboardAnon(value: boolean) {
   const user = getCurrentUser();
   const prev = store.get().profile;

@@ -14,13 +14,15 @@ export async function onRequestGet({ request, env }) {
     const url = new URL(request.url);
     const status = url.searchParams.get("status") || "";
 
+    const q = (url.searchParams.get("q") || "").trim().slice(0, 60);
+
     let query = sb
       .from("content_reviews")
       .select(
-        "id,user_id,content_type,content_id,rating,body,status,helpful_count,creator_reply,created_at",
+        "id,user_id,content_type,content_id,rating,body,status,helpful_count,creator_reply,creator_replied_at,anonymous,created_at,updated_at",
       )
       .order("created_at", { ascending: false })
-      .limit(120);
+      .limit(200);
     if (["visible", "hidden", "removed"].includes(status)) query = query.eq("status", status);
     const { data: reviews, error } = await query;
     if (error) throw error;
@@ -33,29 +35,56 @@ export async function onRequestGet({ request, env }) {
       ...new Set((reviews || []).filter((r) => r.content_type === "skill").map((r) => r.content_id)),
     ];
 
-    const [names, vocabNames, skillNames] = await Promise.all([
-      userIds.length
-        ? sb.from("profiles").select("user_id,username").in("user_id", userIds)
-        : { data: [] },
+    const [vocabSets, skillSets] = await Promise.all([
       vocabIds.length
-        ? sb.from("vocab_sets").select("id,name").in("id", vocabIds)
+        ? sb.from("vocab_sets").select("id,name,user_id,visibility").in("id", vocabIds)
         : { data: [] },
       skillIds.length
-        ? sb.from("practice_sets").select("id,title").in("id", skillIds)
+        ? sb.from("practice_sets").select("id,title,user_id,visibility").in("id", skillIds)
         : { data: [] },
     ]);
-
-    const nameMap = Object.fromEntries((names.data || []).map((p) => [p.user_id, p.username]));
-    const titleMap = Object.fromEntries([
-      ...(vocabNames.data || []).map((s) => [`vocab:${s.id}`, s.name]),
-      ...(skillNames.data || []).map((s) => [`skill:${s.id}`, s.title]),
+    const ownerIds = [
+      ...(vocabSets.data || []).map((s) => s.user_id),
+      ...(skillSets.data || []).map((s) => s.user_id),
+    ];
+    const allUserIds = [...new Set([...userIds, ...ownerIds])];
+    const { data: names } = allUserIds.length
+      ? await sb.from("profiles").select("user_id,username").in("user_id", allUserIds)
+      : { data: [] };
+    const nameMap = Object.fromEntries((names || []).map((p) => [p.user_id, p.username]));
+    const setMap = Object.fromEntries([
+      ...(vocabSets.data || []).map((s) => [
+        `vocab:${s.id}`,
+        { title: s.name, owner: nameMap[s.user_id] || "user", visibility: s.visibility },
+      ]),
+      ...(skillSets.data || []).map((s) => [
+        `skill:${s.id}`,
+        { title: s.title, owner: nameMap[s.user_id] || "user", visibility: s.visibility },
+      ]),
     ]);
 
-    const items = (reviews || []).map((r) => ({
-      ...r,
-      username: nameMap[r.user_id] || "user",
-      content_title: titleMap[`${r.content_type}:${r.content_id}`] || r.content_id,
-    }));
+    let items = (reviews || []).map((r) => {
+      const set = setMap[`${r.content_type}:${r.content_id}`] || {};
+      const shareKind = r.content_type === "vocab" ? "vocab" : "skill";
+      return {
+        ...r,
+        username: nameMap[r.user_id] || "user",
+        content_title: set.title || r.content_id,
+        set_owner: set.owner || "—",
+        set_visibility: set.visibility || "?",
+        set_link: `https://jumsup.sakagitnat.workers.dev/s/${shareKind}/${r.content_id}`,
+      };
+    });
+    if (q) {
+      const needle = q.toLowerCase();
+      items = items.filter(
+        (r) =>
+          r.username.toLowerCase().includes(needle) ||
+          r.set_owner.toLowerCase().includes(needle) ||
+          r.content_title.toLowerCase().includes(needle) ||
+          (r.body || "").toLowerCase().includes(needle),
+      );
+    }
 
     return json({ items }, 200, noStore(cors));
   } catch (e) {

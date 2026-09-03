@@ -2,7 +2,26 @@ import { requireAdmin,adminClient } from "../../_lib/supabase.js";
 import { json,body,cors } from "../../_lib/http.js";
 import { assertSameOrigin,assertJson,errorStatus,noStore } from "../../_lib/security.js";
 export const onRequestOptions=()=>new Response(null,{headers:cors});
-export async function onRequestGet({request,env}){try{assertSameOrigin(request,env);await requireAdmin(request,env);const sb=adminClient(env);const {data,error}=await sb.from("gift_codes").select("id,code,pro_days,max_uses,used_count,expires_at,active,created_at").order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({items:data||[]},200,noStore(cors))}catch(e){return json({error:e.message},errorStatus(e.message),noStore(cors))}}
+export async function onRequestGet({request,env}){try{
+  assertSameOrigin(request,env);await requireAdmin(request,env);const sb=adminClient(env);
+  const {data:codes,error}=await sb.from("gift_codes").select("id,code,pro_days,max_uses,used_count,expires_at,active,created_at").order("created_at",{ascending:false}).limit(200);
+  if(error)throw error;
+  const ids=(codes||[]).map(c=>c.id);
+  let redemptions=[];
+  if(ids.length){
+    const {data:reds,error:re}=await sb.from("gift_redemptions").select("gift_code_id,user_id,redeemed_at").in("gift_code_id",ids).order("redeemed_at",{ascending:false});
+    if(re)throw re;
+    redemptions=reds||[];
+    const uids=[...new Set(redemptions.map(r=>r.user_id))];
+    const {data:names}=uids.length?await sb.from("profiles").select("user_id,username").in("user_id",uids):{data:[]};
+    const nameMap=Object.fromEntries((names||[]).map(p=>[p.user_id,p.username]));
+    for(const r of redemptions)r.username=nameMap[r.user_id]||"user";
+  }
+  const byCode={};
+  for(const r of redemptions)(byCode[r.gift_code_id]=byCode[r.gift_code_id]||[]).push({username:r.username,user_id:r.user_id,redeemed_at:r.redeemed_at});
+  const items=(codes||[]).map(c=>({...c,redeemers:byCode[c.id]||[]}));
+  return json({items},200,noStore(cors));
+}catch(e){return json({error:e.message},errorStatus(e.message),noStore(cors))}}
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function randomCode(prefix) {
   let s = "";

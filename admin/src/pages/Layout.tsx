@@ -6,6 +6,7 @@ const nav: Array<[string, string]> = [
   ["/", "ภาพรวม"],
   ["/users", "ผู้ใช้"],
   ["/reviews", "รีวิว"],
+  ["/content", "เนื้อหาสาธารณะ"],
   ["/reports", "รายงานเนื้อหา"],
   ["/dictionary", "คำแปลชุมชน"],
   ["/gift-codes", "Gift Code"],

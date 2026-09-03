@@ -1,10 +1,110 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../../store/useStore";
 import { isPro } from "../../store/pro";
 import { loginGoogle, logout } from "../../actions/auth";
-import { redeemGift, claimReferral, changeAvatar } from "../../actions/account";
+import {
+  redeemGift,
+  claimReferral,
+  changeAvatar,
+  changeUsername,
+  checkUsername,
+} from "../../actions/account";
 import { AccountShell } from "./AccountShell";
-import { Card, Tag, Button } from "../../ui";
+import { Card, Tag, Button, cx, toast } from "../../ui";
+
+function UsernameEditor({ current }: { current: string }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(current);
+  const [state, setState] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const v = value.trim();
+    if (v === current) {
+      setState("idle");
+      return;
+    }
+    if (!/^[A-Za-z0-9_.]{3,20}$/.test(v)) {
+      setState("invalid");
+      return;
+    }
+    setState("checking");
+    const id = window.setTimeout(async () => {
+      const free = await checkUsername(v);
+      setState(free ? "ok" : "taken");
+    }, 450);
+    return () => window.clearTimeout(id);
+  }, [value, open, current]);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setValue(current);
+          setOpen(true);
+        }}
+        className="text-xs font-semibold text-primary hover:underline"
+      >
+        แก้ไขชื่อ
+      </button>
+    );
+  }
+
+  const hint = {
+    idle: "",
+    checking: "กำลังตรวจสอบ…",
+    ok: "ใช้ชื่อนี้ได้",
+    taken: "ชื่อนี้ถูกใช้แล้ว",
+    invalid: "ใช้ a–z, 0–9, _ หรือ . ยาว 3–20 ตัว",
+  }[state];
+
+  return (
+    <div className="mt-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          autoFocus
+          value={value}
+          maxLength={20}
+          onChange={(e) => setValue(e.target.value)}
+          className="rounded-xl border border-line bg-surface px-3 py-1.5 text-sm"
+        />
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={saving || state !== "ok"}
+          onClick={async () => {
+            setSaving(true);
+            const res = await changeUsername(value.trim());
+            setSaving(false);
+            if (res.ok) {
+              toast("เปลี่ยนชื่อแล้ว");
+              setOpen(false);
+            } else {
+              toast(res.error || "เปลี่ยนชื่อไม่สำเร็จ");
+            }
+          }}
+        >
+          บันทึก
+        </Button>
+        <Button size="sm" onClick={() => setOpen(false)}>
+          ยกเลิก
+        </Button>
+      </div>
+      {hint && (
+        <p
+          className={cx(
+            "mt-1 text-xs",
+            state === "ok" ? "text-success" : state === "checking" ? "text-subtle" : "text-danger",
+          )}
+        >
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function AccountProfile() {
   const { user, profile, subscription, xp, streak, decks } = useStore((s) => ({
@@ -59,8 +159,9 @@ export function AccountProfile() {
             <Tag tone={pro ? "success" : "info"}>{pro ? "PRO" : "FREE"}</Tag>
           </div>
           <p className="text-sm text-muted">
-            ชื่อที่ผู้ใช้อื่นมองเห็น · อีเมลของคุณเป็นข้อมูลส่วนตัว
+            ชื่อที่ผู้ใช้อื่นมองเห็น · ต้องไม่ซ้ำกับใคร · อีเมลของคุณเป็นข้อมูลส่วนตัว
           </p>
+          <UsernameEditor current={profile?.username || ""} />
           <div className="mt-3 flex flex-wrap gap-2">
             <Button onClick={() => fileRef.current?.click()}>เปลี่ยนรูป</Button>
             <input

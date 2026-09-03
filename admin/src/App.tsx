@@ -11,6 +11,7 @@ import { GiftCodes } from "./pages/GiftCodes";
 import { Refunds } from "./pages/Refunds";
 import { Bots } from "./pages/Bots";
 import { Users } from "./pages/Users";
+import { Content } from "./pages/Content";
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: "/dictionary", element: <Dictionary /> },
       { path: "/reports", element: <Reports /> },
       { path: "/reviews", element: <Reviews /> },
+      { path: "/content", element: <Content /> },
       { path: "/gift-codes", element: <GiftCodes /> },
       { path: "/refunds", element: <Refunds /> },
       { path: "/bots", element: <Bots /> },
