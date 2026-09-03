@@ -77,8 +77,8 @@ export function CrosswordGame() {
       <ul className="space-y-1 text-sm">
         {list.map((e) => (
           <li key={e.id}>
-            <b>{e.number}.</b> {e.item.m}{" "}
-            <small className="text-subtle">({e.item.w.length} ตัวอักษร)</small>
+            <b>{e.number}.</b> <span data-noi18n>{e.item.m}</span>{" "}
+            <small className="text-subtle">{`(${e.item.w.length} ตัวอักษร)`}</small>
           </li>
         ))}
       </ul>

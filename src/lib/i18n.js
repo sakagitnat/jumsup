@@ -132,14 +132,26 @@ function replaceKnown(text,map){
  for(const [from,to] of entries)if(text.includes(from))text=text.replaceAll(from,to);
  return text;
 }
+/** Translate a single UI string (used for document.title etc). Returns the
+ *  input unchanged for Thai or when no translation is known. */
+export function translatePhrase(lang,value){
+ if(lang==="th"||typeof value!=="string"||!value.trim())return value;
+ const primary=lang==="zh"?ZH:EN,secondary=LOCALIZED[lang]||{};
+ const leading=value.match(/^\s*/)?.[0]||"",trailing=value.match(/\s*$/)?.[0]||"",key=value.trim();
+ let first=primary[key];
+ if(!first&&key.startsWith("✓ "))first=`✓ ${primary[key.slice(2)]||key.slice(2)}`;
+ if(!first&&key.startsWith("Pro เริ่ม "))first=key.replace("Pro เริ่ม ",lang==="zh"?"Pro 起价 ":"Pro starts at ").replaceAll("/เดือน",lang==="zh"?"/月":"/month").replace(" หรือรายปีเฉลี่ย ",lang==="zh"?"，或年付平均 ":", or yearly equivalent to ");
+ if(!first){let m;if((m=key.match(/^(\d+) วัน$/)))first=lang==="zh"?`${m[1]} 天`:`${m[1]} days`;else if((m=key.match(/^ใน (\d+) วัน$/)))first=lang==="zh"?`${m[1]} 天后`:`in ${m[1]} days`;else if((m=key.match(/^\((\d+) ตัวอักษร\)$/)))first=lang==="zh"?`(${m[1]} 个字母)`:`(${m[1]} letters)`;else if((m=key.match(/^สมัครเพื่อใช้ (.+)$/)))first=lang==="zh"?`注册后即可使用${primary[m[1]]||m[1]}`:`Sign up to use ${primary[m[1]]||m[1]}`;else if((m=key.match(/^(\d+) ชุด$/)))first=lang==="zh"?`${m[1]} 套`:`${m[1]} sets`;else if((m=key.match(/^(\d+) คำ · สร้างโดย (.+)$/)))first=lang==="zh"?`${m[1]} 个单词 · 创建者 ${m[2]}`:`${m[1]} words · Created by ${m[2]}`;else if((m=key.match(/^เริ่ม (Flashcards|Match|Crossword)$/)))first=lang==="zh"?`开始${m[1]}`:`Start ${m[1]}`;else if((m=key.match(/^(\d+) รายการ · สร้างโดย (.+)$/)))first=lang==="zh"?`${m[1]} 项 · 创建者 ${m[2]}`:`${m[1]} items · Created by ${m[2]}`;else if((m=key.match(/^สร้างโดย (.+) · (\d+) นาที · (\d+) ข้อ$/)))first=lang==="zh"?`创建者 ${m[1]} · ${m[2]} 分钟 · ${m[3]} 题`:`Created by ${m[1]} · ${m[2]} minutes · ${m[3]} questions`;else if(key==="♡ ถูกใจ")first=lang==="zh"?"♡ 喜欢":"♡ Like";else if(key==="♥ ถูกใจแล้ว")first=lang==="zh"?"♥ 已喜欢":"♥ Liked";}
+ first=first||replaceKnown(key,primary);const localized=secondary[first]||replaceKnown(first,secondary);return leading+localized+trailing;
+}
+
 export function localizePage(root,lang){
  if(lang==="th")return;
- const primary=lang==="zh"?ZH:EN,secondary=LOCALIZED[lang]||{};
- const translate=value=>{const leading=value.match(/^\s*/)?.[0]||"",trailing=value.match(/\s*$/)?.[0]||"",key=value.trim();if(!key)return value;let first=primary[key];if(!first&&key.startsWith("✓ "))first=`✓ ${primary[key.slice(2)]||key.slice(2)}`;if(!first&&key.startsWith("Pro เริ่ม "))first=key.replace("Pro เริ่ม ",lang==="zh"?"Pro 起价 ":"Pro starts at ").replaceAll("/เดือน",lang==="zh"?"/月":"/month").replace(" หรือรายปีเฉลี่ย ",lang==="zh"?"，或年付平均 ":", or yearly equivalent to ");
-  if(!first){let m;if((m=key.match(/^(\d+) วัน$/)))first=lang==="zh"?`${m[1]} 天`:`${m[1]} days`;else if((m=key.match(/^ใน (\d+) วัน$/)))first=lang==="zh"?`${m[1]} 天后`:`in ${m[1]} days`;else if((m=key.match(/^สมัครเพื่อใช้ (.+)$/)))first=lang==="zh"?`注册后即可使用${primary[m[1]]||m[1]}`:`Sign up to use ${primary[m[1]]||m[1]}`;else if((m=key.match(/^(\d+) ชุด$/)))first=lang==="zh"?`${m[1]} 套`:`${m[1]} sets`;else if((m=key.match(/^(\d+) คำ · สร้างโดย (.+)$/)))first=lang==="zh"?`${m[1]} 个单词 · 创建者 ${m[2]}`:`${m[1]} words · Created by ${m[2]}`;else if((m=key.match(/^เริ่ม (Flashcards|Match|Crossword)$/)))first=lang==="zh"?`开始${m[1]}`:`Start ${m[1]}`;else if((m=key.match(/^(\d+) รายการ · สร้างโดย (.+)$/)))first=lang==="zh"?`${m[1]} 项 · 创建者 ${m[2]}`:`${m[1]} items · Created by ${m[2]}`;else if((m=key.match(/^สร้างโดย (.+) · (\d+) นาที · (\d+) ข้อ$/)))first=lang==="zh"?`创建者 ${m[1]} · ${m[2]} 分钟 · ${m[3]} 题`:`Created by ${m[1]} · ${m[2]} minutes · ${m[3]} questions`;else if(key==="♡ ถูกใจ")first=lang==="zh"?"♡ 喜欢":"♡ Like";else if(key==="♥ ถูกใจแล้ว")first=lang==="zh"?"♥ 已喜欢":"♥ Liked";}
-  first=first||replaceKnown(key,primary);const localized=secondary[first]||replaceKnown(first,secondary);return leading+localized+trailing};
+ const translate=value=>translatePhrase(lang,value);
  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;
- while((node=walker.nextNode())){if(node.parentElement?.closest("script,style"))continue;node.nodeValue=translate(node.nodeValue)}
- root.querySelectorAll("[placeholder],[aria-label],[title]").forEach(el=>{for(const attr of ["placeholder","aria-label","title"]){const value=el.getAttribute(attr);if(value)el.setAttribute(attr,translate(value))}});
+ // [data-noi18n] marks learner-authored content (vocab meanings, passages) that
+ // must never be machine-translated — showing English there defeats the point.
+ while((node=walker.nextNode())){if(node.parentElement?.closest("script,style,[data-noi18n]"))continue;node.nodeValue=translate(node.nodeValue)}
+ root.querySelectorAll("[placeholder],[aria-label],[title]").forEach(el=>{if(el.closest("[data-noi18n]"))return;for(const attr of ["placeholder","aria-label","title"]){const value=el.getAttribute(attr);if(value)el.setAttribute(attr,translate(value))}});
 }
 

@@ -149,7 +149,7 @@ export function MatchGame() {
                         : "border-line bg-surface hover:bg-surface-2",
                 )}
               >
-                {t.text}
+                <span data-noi18n>{t.text}</span>
               </button>
             );
           })}

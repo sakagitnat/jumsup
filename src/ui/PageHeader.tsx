@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import type { ReactNode } from "react";
+import { useStore } from "../store/useStore";
+import { translatePhrase } from "../lib/i18n.js";
 
 export interface PageHeaderProps {
   eyebrow?: string;
@@ -9,15 +11,16 @@ export interface PageHeaderProps {
 }
 
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
+  const lang = useStore((s) => s.lang);
   // Give each screen its own <title> for browser tabs and search results.
   useEffect(() => {
     if (typeof title === "string" && title.trim()) {
-      document.title = `${title} · Jumsup`;
+      document.title = `${translatePhrase(lang, title)} · Jumsup`;
       return () => {
         document.title = "Jumsup";
       };
     }
-  }, [title]);
+  }, [title, lang]);
 
   return (
     <header className="mb-6 flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-start sm:justify-between">

@@ -406,9 +406,16 @@ export function Study() {
                   {word?.e && (
                     <SpeakButton onSpeak={() => word?.e && say(word.e)} tone="primary" />
                   )}
-                  <p className="text-2xl font-semibold">{word?.m || "—"}</p>
+                  <p className="text-2xl font-semibold" data-noi18n>
+                    {word?.m || "—"}
+                  </p>
                   {word?.e && (
-                    <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">{word.e}</p>
+                    <p
+                      className="mt-4 max-w-md text-sm leading-relaxed text-muted"
+                      data-noi18n
+                    >
+                      {word.e}
+                    </p>
                   )}
                 </div>
               </div>

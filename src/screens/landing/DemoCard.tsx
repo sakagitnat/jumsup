@@ -24,8 +24,11 @@ export function DemoCard() {
     setI((n) => (n + 1) % DECK.length);
   };
 
+  const swiped = useRef(false);
+
   const onPointerDown = (e: React.PointerEvent) => {
     dragging.current = e.clientX;
+    swiped.current = false;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
@@ -36,8 +39,19 @@ export function DemoCard() {
     if (dragging.current === null) return;
     const moved = dx;
     dragging.current = null;
-    if (Math.abs(moved) > SWIPE_PX) advance();
-    else setDx(0);
+    if (Math.abs(moved) > SWIPE_PX) {
+      swiped.current = true;
+      advance();
+    } else {
+      setDx(0);
+    }
+  };
+  const onClick = () => {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    setRevealed(true);
   };
 
   return (
@@ -52,7 +66,7 @@ export function DemoCard() {
       <div
         role="button"
         tabIndex={0}
-        onClick={() => setRevealed(true)}
+        onClick={onClick}
         onKeyDown={(e) => {
           if (e.key === " " || e.key === "Enter") {
             e.preventDefault();
