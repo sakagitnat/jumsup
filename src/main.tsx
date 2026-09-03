@@ -11,6 +11,9 @@ if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
 }
 
 setOnboardingHandler(() => {
+  // Don't yank people off a deep link (shared set, creator profile) into
+  // onboarding — let them see what they opened.
+  if (/^\/(s|u)\//.test(window.location.pathname)) return;
   void router.navigate("/onboarding");
 });
 
