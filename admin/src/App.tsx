@@ -111,7 +111,10 @@ export function App() {
               const sb = await getSupabase();
               await sb.auth.signInWithOAuth({
                 provider: "google",
-                options: { redirectTo: location.origin },
+                options: {
+                  redirectTo: location.origin,
+                  queryParams: { prompt: "select_account" },
+                },
               });
             }}
           >

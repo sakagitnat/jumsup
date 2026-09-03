@@ -10,7 +10,12 @@ export async function signInGoogle(){
   if(!supabase)throw new Error("Supabase is not configured");
   const {error}=await supabase.auth.signInWithOAuth({
     provider:"google",
-    options:{redirectTo:window.location.origin}
+    options:{
+      redirectTo:window.location.origin,
+      // always show Google's account picker instead of silently reusing the
+      // one session already signed in on the device
+      queryParams:{prompt:"select_account"}
+    }
   });
   if(error)throw error;
 }
