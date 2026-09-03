@@ -4,10 +4,54 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#f7f6f3" />
+
+  <title>Jumsup — ฝึกภาษาอังกฤษเตรียมสอบเข้า TCAS / A-Level</title>
+  <meta
+    name="description"
+    content="Jumsup แอปฝึกภาษาอังกฤษครบวงจร: ท่องศัพท์แบบ Flashcard, Reading, Listening, Writing, ข้อสอบ Mock, เกมคำศัพท์ และลีดเดอร์บอร์ดสะสม XP เตรียมสอบเข้ามหาวิทยาลัย TCAS / TGAT / A-Level เริ่มฟรี"
+  />
+  <link rel="canonical" href="https://jumsup.sakagitnat.workers.dev/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Jumsup" />
+  <meta property="og:title" content="Jumsup — ฝึกภาษาอังกฤษเตรียมสอบเข้า" />
+  <meta
+    property="og:description"
+    content="ท่องศัพท์ Flashcard, Reading, Listening, Writing, ข้อสอบ Mock และเกมคำศัพท์ เตรียมสอบ TCAS / TGAT / A-Level เริ่มฟรี"
+  />
+  <meta property="og:url" content="https://jumsup.sakagitnat.workers.dev/" />
+  <meta property="og:image" content="https://jumsup.sakagitnat.workers.dev/brand/jumsup-logo.png" />
+  <meta property="og:locale" content="th_TH" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Jumsup — ฝึกภาษาอังกฤษเตรียมสอบเข้า" />
+  <meta
+    name="twitter:description"
+    content="ท่องศัพท์ Flashcard, Reading, Listening, Writing, ข้อสอบ Mock และเกมคำศัพท์ เตรียมสอบ TCAS / TGAT / A-Level"
+  />
+  <meta name="twitter:image" content="https://jumsup.sakagitnat.workers.dev/brand/jumsup-logo.png" />
+
   <link rel="icon" type="image/png" href="/brand/jumsup-logo.png" />
   <link rel="apple-touch-icon" href="/brand/jumsup-logo.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <title>Jumsup</title>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Jumsup",
+    "url": "https://jumsup.sakagitnat.workers.dev/",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "th",
+    "description": "แอปฝึกภาษาอังกฤษเตรียมสอบเข้ามหาวิทยาลัย: Flashcard, Reading, Listening, Writing, ข้อสอบ Mock, เกมคำศัพท์ และลีดเดอร์บอร์ด",
+    "offers": [
+      { "@type": "Offer", "price": "0", "priceCurrency": "THB", "name": "Free" },
+      { "@type": "Offer", "price": "149", "priceCurrency": "THB", "name": "Pro รายเดือน" },
+      { "@type": "Offer", "price": "1190", "priceCurrency": "THB", "name": "Pro รายปี" }
+    ]
+  }
+  </script>
+
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
@@ -18,6 +62,17 @@
 </head>
 <body>
   <div id="app"></div>
+  <noscript>
+    <h1>Jumsup — ฝึกภาษาอังกฤษเตรียมสอบเข้า</h1>
+    <p>
+      Jumsup เป็นแอปฝึกภาษาอังกฤษสำหรับนักเรียนไทยที่เตรียมสอบเข้ามหาวิทยาลัย
+      (TCAS, TGAT, A-Level) รวมท่องศัพท์แบบ Flashcard พร้อมระบบทบทวนตามรอบ,
+      แบบฝึก Reading / Listening / Writing, ข้อสอบ Mock จับเวลา, เกมคำศัพท์
+      Match และ Crossword, และลีดเดอร์บอร์ดสะสม XP รายสัปดาห์ เริ่มใช้งานฟรี
+      อัปเกรด Pro ได้ที่ราคา 149 บาท/เดือน หรือ 1,190 บาท/ปี
+    </p>
+    <p>เปิดใช้งาน JavaScript เพื่อเข้าใช้ Jumsup</p>
+  </noscript>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

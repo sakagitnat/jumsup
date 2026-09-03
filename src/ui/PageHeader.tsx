@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 export interface PageHeaderProps {
@@ -8,6 +9,16 @@ export interface PageHeaderProps {
 }
 
 export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
+  // Give each screen its own <title> for browser tabs and search results.
+  useEffect(() => {
+    if (typeof title === "string" && title.trim()) {
+      document.title = `${title} · Jumsup`;
+      return () => {
+        document.title = "Jumsup";
+      };
+    }
+  }, [title]);
+
   return (
     <header className="mb-6 flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-start sm:justify-between">
       <div>

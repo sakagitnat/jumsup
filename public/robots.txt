@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /$
+Allow: /pricing
+Allow: /community
+Allow: /leaderboard
+Allow: /terms/
+Allow: /privacy/
+Allow: /refund/
+Allow: /community-guidelines/
+Disallow: /account
+Disallow: /api/
+Disallow: /flash
+Disallow: /match
+Disallow: /crossword
+Disallow: /reading
+Disallow: /listening
+Disallow: /writing
+Disallow: /mock
+Disallow: /library
+Disallow: /stats
+Disallow: /onboarding
+
+Sitemap: https://jumsup.sakagitnat.workers.dev/sitemap.xml
