@@ -3,8 +3,11 @@ import { createRoot } from "react-dom/client";
 import "./styles/app.css";
 import { App } from "./app/App";
 import { initAuth, setOnboardingHandler } from "./app/cloudSync";
+import { capturePendingRef } from "./app/referral";
 import { router } from "./app/router";
 import { store } from "./store/store";
+
+capturePendingRef();
 
 if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
   (window as unknown as { __store: typeof store }).__store = store;

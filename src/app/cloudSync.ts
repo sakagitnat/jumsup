@@ -4,6 +4,7 @@
 
 import { backendEnabled, getSession, onAuthChange } from "../lib/auth.js";
 import { loadCloudState, pushCloudState } from "../lib/cloud.js";
+import { claimPendingRef } from "./referral";
 import { store } from "../store/store";
 import type { AppState } from "../store/types";
 
@@ -117,9 +118,12 @@ export async function initAuth() {
   else store.set({ backend: true, user: null });
 
   onAuthChange(async (next) => {
+    const wasSignedOut = !currentUser;
     currentUser = next?.user ?? null;
-    if (currentUser) await hydrateFromCloud(currentUser);
-    else
+    if (currentUser) {
+      await hydrateFromCloud(currentUser);
+      if (wasSignedOut) void claimPendingRef();
+    } else
       store.set({
         user: null,
         profile: null,

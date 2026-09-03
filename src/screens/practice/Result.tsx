@@ -1,11 +1,25 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { attemptStore, useAttempt } from "./session";
+import { useStore } from "../../store/useStore";
+import { isPro } from "../../lib/entitlements.js";
 import { PageHeader, Card, Tag, Button, cx, toast } from "../../ui";
+
+const KIND_LABEL: Record<string, string> = {
+  reading: "Reading",
+  listening: "Listening",
+  writing: "Writing",
+  mock: "Mock Exam",
+};
 
 export function Result() {
   const attempt = useAttempt();
   const navigate = useNavigate();
+  const { profile, subscription } = useStore((s) => ({
+    profile: s.profile,
+    subscription: s.subscription,
+  }));
+  const pro = isPro({ profile, subscription });
 
   useEffect(() => {
     if (!attempt) navigate("/home", { replace: true });
@@ -32,6 +46,21 @@ export function Result() {
     attemptStore.clear();
     navigate(`/${kind}`);
     toast("เลือกรอบใหม่จากหน้ารายการ ระบบจะตรวจสิทธิ์ทดลองหรือเวลาพักให้อัตโนมัติ");
+  };
+  const shareResult = async () => {
+    const link = `${location.origin}/?ref=${profile?.referral_code || ""}`.replace(/\?ref=$/, "");
+    const text = `ผมได้ ${percent}% (${correct}/${questions.length}) ใน ${
+      KIND_LABEL[kind] || kind
+    } บน Jumsup 🎯 มาลองกัน`;
+    try {
+      if (navigator.share) await navigator.share({ text, url: link });
+      else {
+        await navigator.clipboard.writeText(`${text}\n${link}`);
+        toast("คัดลอกผลและลิงก์แล้ว");
+      }
+    } catch {
+      /* user cancelled */
+    }
   };
 
   return (
@@ -66,9 +95,25 @@ export function Result() {
               ทำอีกครั้ง
             </Button>
             <Button onClick={backToList}>กลับไปเลือกชุด</Button>
+            <Button onClick={shareResult}>แชร์ผล</Button>
           </div>
         </div>
       </Card>
+
+      {!pro && (
+        <Link
+          to="/pricing"
+          className="mb-5 flex items-center gap-2 rounded-xl border border-primary-border bg-primary-soft px-4 py-3 text-sm font-medium text-primary transition hover:brightness-95"
+        >
+          <span aria-hidden>⚡</span>
+          <span className="min-w-0 flex-1">
+            Pro ฝึก Reading / Listening / Writing / Mock ได้ไม่จำกัด + วิเคราะห์จุดอ่อนแบบละเอียด
+          </span>
+          <span aria-hidden className="shrink-0">
+            →
+          </span>
+        </Link>
+      )}
 
       <div className="space-y-3">
         {questions.map((q, i) => {

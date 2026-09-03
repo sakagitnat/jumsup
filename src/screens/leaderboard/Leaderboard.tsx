@@ -110,7 +110,7 @@ export function Leaderboard() {
             <p className="mt-1 text-sm text-muted">สะสม XP จากเช็คอินและการเรียนเพื่อไต่อันดับ</p>
           </div>
           <Button variant="primary" className="shrink-0" onClick={loginGoogle}>
-            เข้าสู่ระบบด้วย Google
+            สมัครฟรี · รับ Pro 7 วัน
           </Button>
         </Card>
       ) : loading ? (

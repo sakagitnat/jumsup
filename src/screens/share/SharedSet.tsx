@@ -111,7 +111,7 @@ export function SharedSet() {
               </Button>
             ) : (
               <Button variant="primary" onClick={loginGoogle}>
-                เข้าสู่ระบบเพื่อนำเข้า
+                สมัครฟรีเพื่อนำเข้า · รับ Pro 7 วัน
               </Button>
             )}
           </>

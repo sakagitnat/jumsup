@@ -98,8 +98,8 @@ export function Landing() {
             </Button>
           </div>
           <div className="mt-5 flex flex-wrap gap-4 text-sm text-muted">
+            <span>✓ สมัครฟรี รับ Pro 7 วัน</span>
             <span>✓ ไม่ต้องใช้บัตร</span>
-            <span>✓ มีแพ็กเกจฟรี</span>
             <span>✓ ใช้ได้บนมือถือ</span>
           </div>
         </div>

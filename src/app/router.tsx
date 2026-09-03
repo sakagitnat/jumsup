@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "../shell/AppLayout";
 import { RootChrome } from "./RootChrome";
+import { RequireAuth } from "./RequireAuth";
 import { Root } from "./Root";
 import { Home } from "../screens/home/Home";
 import { Flashcards } from "../screens/flashcards/Flashcards";
@@ -36,27 +37,34 @@ export const router = createBrowserRouter([
           { path: "/home", element: <Home /> },
           { path: "/flash", element: <Flashcards /> },
           { path: "/flash/study/:deckId", element: <Study /> },
-          { path: "/match", element: <Flashcards mode="match" /> },
-          { path: "/match/play/:deckId", element: <MatchGame /> },
-          { path: "/crossword", element: <Flashcards mode="crossword" /> },
-          { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
-
-          { path: "/reading", element: <PracticeList kind="reading" /> },
-          { path: "/reading/play/:id", element: <PracticePlay kind="reading" /> },
-          { path: "/listening", element: <PracticeList kind="listening" /> },
-          { path: "/listening/play/:id", element: <PracticePlay kind="listening" /> },
-          { path: "/writing", element: <PracticeList kind="writing" /> },
-          { path: "/writing/play/:id", element: <PracticePlay kind="writing" /> },
-          { path: "/mock", element: <PracticeList kind="mock" /> },
-          { path: "/mock/play/:id", element: <PracticePlay kind="mock" /> },
-          { path: "/practice/result", element: <Result /> },
-
-          { path: "/library", element: <Library /> },
-          { path: "/stats", element: <Stats /> },
-          { path: "/leaderboard", element: <Leaderboard /> },
-          { path: "/community", element: <Community /> },
           { path: "/s/:kind/:id", element: <SharedSet /> },
           { path: "/u/:username", element: <CreatorProfile /> },
+
+          // Everything below needs an account (guests: Flashcard only).
+          {
+            element: <RequireAuth />,
+            children: [
+              { path: "/match", element: <Flashcards mode="match" /> },
+              { path: "/match/play/:deckId", element: <MatchGame /> },
+              { path: "/crossword", element: <Flashcards mode="crossword" /> },
+              { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
+
+              { path: "/reading", element: <PracticeList kind="reading" /> },
+              { path: "/reading/play/:id", element: <PracticePlay kind="reading" /> },
+              { path: "/listening", element: <PracticeList kind="listening" /> },
+              { path: "/listening/play/:id", element: <PracticePlay kind="listening" /> },
+              { path: "/writing", element: <PracticeList kind="writing" /> },
+              { path: "/writing/play/:id", element: <PracticePlay kind="writing" /> },
+              { path: "/mock", element: <PracticeList kind="mock" /> },
+              { path: "/mock/play/:id", element: <PracticePlay kind="mock" /> },
+              { path: "/practice/result", element: <Result /> },
+
+              { path: "/library", element: <Library /> },
+              { path: "/stats", element: <Stats /> },
+              { path: "/leaderboard", element: <Leaderboard /> },
+              { path: "/community", element: <Community /> },
+            ],
+          },
 
           { path: "/account", element: <Account /> },
           { path: "/account/profile", element: <AccountProfile /> },
