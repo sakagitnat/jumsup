@@ -4,7 +4,6 @@ import { useStore, store } from "../../store/useStore";
 import { PLANS, money } from "../../lib/plans.js";
 import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
-import { markEntered } from "../../app/entered";
 import { Button } from "../../ui";
 
 const features = [
@@ -26,10 +25,7 @@ export function Landing() {
   const [revealed, setRevealed] = useState(false);
   const currency = lang === "th" ? "THB" : "USD";
 
-  const enter = () => {
-    markEntered();
-    navigate("/home");
-  };
+  const enter = loginGoogle;
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -87,7 +83,7 @@ export function Landing() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button size="lg" variant="primary" onClick={enter}>
-              เริ่มฝึกฟรี
+              สมัครฟรี · รับ Pro 7 วัน
             </Button>
             <Button
               size="lg"
@@ -220,7 +216,7 @@ export function Landing() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Button size="lg" variant="primary" onClick={enter}>
-            เริ่มฝึกฟรี
+            สมัครฟรี · รับ Pro 7 วัน
           </Button>
           <Button size="lg" variant="secondary" onClick={() => navigate("/pricing")}>
             ดูแพ็กเกจทั้งหมด

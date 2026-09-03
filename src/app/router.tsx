@@ -35,15 +35,17 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: "/home", element: <Home /> },
-          { path: "/flash", element: <Flashcards /> },
-          { path: "/flash/study/:deckId", element: <Study /> },
+          // Public preview surfaces (inbound share links) — the actions on them
+          // still require sign-in.
           { path: "/s/:kind/:id", element: <SharedSet /> },
           { path: "/u/:username", element: <CreatorProfile /> },
 
-          // Everything below needs an account (guests: Flashcard only).
+          // Everything else requires a Google sign-in.
           {
             element: <RequireAuth />,
             children: [
+              { path: "/flash", element: <Flashcards /> },
+              { path: "/flash/study/:deckId", element: <Study /> },
               { path: "/match", element: <Flashcards mode="match" /> },
               { path: "/match/play/:deckId", element: <MatchGame /> },
               { path: "/crossword", element: <Flashcards mode="crossword" /> },
