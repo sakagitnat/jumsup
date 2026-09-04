@@ -1,4 +1,4 @@
-import { frequentExamWords,shouldKnowWords,defaultReading,defaultListening,defaultWriting,defaultMocks } from "../data/defaultData.js";
+import { officialVocabDecks,defaultReading,defaultListening,defaultWriting,defaultMocks } from "../data/defaultData.js";
 const KEY="jumsup.production.v4";
 const LEGACY_KEYS=["jumsup.production.v1","vantage.production.v1"];
 if(!localStorage.getItem(KEY)){
@@ -7,10 +7,7 @@ if(!localStorage.getItem(KEY)){
 const initial=()=>({
  theme:"light",lang:"th",sound:true,lastCheckin:"",xp:0,streak:0,
  user:null,profile:null,subscription:null,payments:[],refunds:[],backend:false,syncing:false,
- decks:[
-  {id:"jumsup-tcas-frequent",name:"TCAS English · ออกบ่อย",visibility:"public",creator:"Jumsup Official",official:true,words:frequentExamWords},
-  {id:"jumsup-tcas-should-know",name:"TCAS English · ควรรู้",visibility:"public",creator:"Jumsup Official",official:true,words:shouldKnowWords}
- ],
+ decks:officialVocabDecks.map(d=>({...d})),
  progress:{},
  srs:{},
  examTargets:[],

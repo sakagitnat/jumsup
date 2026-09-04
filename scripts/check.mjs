@@ -3,7 +3,11 @@
 // and were dropped when the UI moved to React. Everything that guards data
 // integrity, migrations and security markers is kept.
 import fs from "node:fs";
-import { frequentExamWords, shouldKnowWords } from "../src/data/vocabulary/coreWords.js";
+import {
+  frequentExamWords,
+  shouldKnowWords,
+  officialVocabDecks,
+} from "../src/data/vocabulary/coreWords.js";
 import {
   defaultReading,
   defaultListening,
@@ -69,13 +73,22 @@ const fail = (message) => {
   process.exit(1);
 };
 
-const vocab = [...frequentExamWords, ...shouldKnowWords];
-const normalized = vocab.map((x) => x.w.trim().toLowerCase());
 if (frequentExamWords.length < 80 || shouldKnowWords.length < 80)
-  fail("vocabulary groups must each contain at least 80 words");
-if (new Set(normalized).size !== normalized.length) fail("duplicate vocabulary word");
-for (const word of vocab)
-  if (!word.w || !word.m || !/^[a-z-]+$/.test(word.w)) fail(`invalid vocabulary row ${word.w}`);
+  fail("master vocabulary decks must each contain at least 80 words");
+const deckIds = new Set();
+for (const d of officialVocabDecks) {
+  if (deckIds.has(d.id)) fail(`duplicate official deck id ${d.id}`);
+  deckIds.add(d.id);
+  if (!d.name || !Array.isArray(d.words) || d.words.length < 10)
+    fail(`official deck ${d.id} looks malformed`);
+  const seen = new Set();
+  for (const word of d.words) {
+    if (!word.w || !word.m || !word.e || !/^[a-z-]+$/.test(word.w))
+      fail(`invalid vocabulary row "${word.w}" in ${d.id}`);
+    if (seen.has(word.w)) fail(`duplicate word "${word.w}" within ${d.id}`);
+    seen.add(word.w);
+  }
+}
 
 const expected = [
   [defaultListening, 20],
