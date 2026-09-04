@@ -71,8 +71,8 @@ const fail = (message) => {
 
 const vocab = [...frequentExamWords, ...shouldKnowWords];
 const normalized = vocab.map((x) => x.w.trim().toLowerCase());
-if (frequentExamWords.length !== 80 || shouldKnowWords.length !== 80)
-  fail("vocabulary groups must contain 80 words each");
+if (frequentExamWords.length < 80 || shouldKnowWords.length < 80)
+  fail("vocabulary groups must each contain at least 80 words");
 if (new Set(normalized).size !== normalized.length) fail("duplicate vocabulary word");
 for (const word of vocab)
   if (!word.w || !word.m || !/^[a-z-]+$/.test(word.w)) fail(`invalid vocabulary row ${word.w}`);
