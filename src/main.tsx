@@ -9,9 +9,13 @@ import { store, applyOfficialContent } from "./store/store";
 
 capturePendingRef();
 
-// Official seed content (vocab decks + practice sets) is code-split; kick off
-// the download now so it loads in parallel with auth and the main bundle.
-const officialContent = import("./data/defaultData.js").then(applyOfficialContent);
+// Official seed content (vocab decks + practice sets) is code-split. Start the
+// download now, but DON'T hold up the first render for it — applyOfficialContent
+// notifies store listeners, so vocab/practice screens fill in reactively once
+// it lands (they show a skeleton via `contentLoaded` in the meantime).
+void import("./data/defaultData.js")
+  .then(applyOfficialContent)
+  .catch(() => {});
 
 if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
   (window as unknown as { __store: typeof store }).__store = store;
@@ -26,10 +30,12 @@ setOnboardingHandler(() => {
 
 const mount = document.getElementById("app")!;
 
-Promise.all([initAuth().catch(() => {}), officialContent.catch(() => {})]).finally(() => {
-  createRoot(mount).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-});
+initAuth()
+  .catch(() => {})
+  .finally(() => {
+    createRoot(mount).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+  });

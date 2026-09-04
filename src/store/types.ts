@@ -160,6 +160,9 @@ export interface AppState {
   refunds: Array<Record<string, unknown>>;
   backend: boolean;
   syncing: boolean;
+  /** True once the code-split official seed content (vocab + practice) has been
+   *  applied at boot. Screens show a skeleton while this is false. */
+  contentLoaded: boolean;
   decks: Deck[];
   progress: Record<string, { mastered: number[] }>;
   srs: Record<string, Record<number, SrsCard>>;

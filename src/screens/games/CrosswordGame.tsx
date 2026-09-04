@@ -9,6 +9,7 @@ export function CrosswordGame() {
   const { deckId = "" } = useParams();
   const navigate = useNavigate();
   const deck = useStore((s) => s.decks.find((d) => d.id === deckId));
+  const contentLoaded = useStore((s) => s.contentLoaded);
 
   const puzzle = useMemo(
     () => buildCrossword(masteredWords(deckId)),
@@ -26,6 +27,15 @@ export function CrosswordGame() {
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  if (!deck && !contentLoaded) {
+    return (
+      <>
+        <PageHeader eyebrow="VOCABULARY GAME" title="กำลังโหลด…" />
+        <div className="mx-auto mt-6 h-48 max-w-md animate-pulse rounded-3xl bg-surface-2" />
+      </>
+    );
+  }
 
   if (!deck || !puzzle) {
     return (

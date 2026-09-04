@@ -21,6 +21,7 @@ const titles: Record<PracticeKind, string> = {
 export function PracticeList({ kind }: { kind: PracticeKind }) {
   const navigate = useNavigate();
   const all = useStore((s) => (kind === "mock" ? s.mocks : s[kind])) as PracticeSet[];
+  const contentLoaded = useStore((s) => s.contentLoaded);
   const [examFilter, setExamFilter] = useState("");
   const list = examFilter ? all.filter((x) => x.exam === examFilter) : all;
   const [editor, setEditor] = useState<{ open: boolean; id: string | null }>({
@@ -69,7 +70,16 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {list.length === 0 && <EmptyState>ยังไม่มีชุดฝึกในหมวดนี้</EmptyState>}
+        {list.length === 0 && !contentLoaded && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="h-24 animate-pulse bg-surface-2" />
+            ))}
+          </div>
+        )}
+        {list.length === 0 && contentLoaded && (
+          <EmptyState>ยังไม่มีชุดฝึกในหมวดนี้</EmptyState>
+        )}
         {list.map((x) => {
           const official = x.official;
           const count = typeof x.questions === "number" ? x.questions : x.itemCount;

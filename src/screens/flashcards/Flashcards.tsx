@@ -25,6 +25,7 @@ const headMeta: Record<Mode, { title: string; desc: string }> = {
 
 export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
   const decks = useStore((s) => s.decks);
+  const contentLoaded = useStore((s) => s.contentLoaded);
   const srs = useStore((s) => s.srs);
   const navigate = useNavigate();
   const totalDue = decks.reduce((n, d) => n + dueCount(srs[d.id]), 0);
@@ -80,6 +81,14 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
             ทบทวนทั้งหมด
           </Button>
         </Card>
+      )}
+
+      {!contentLoaded && decks.length === 0 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="h-28 animate-pulse bg-surface-2" />
+          ))}
+        </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">

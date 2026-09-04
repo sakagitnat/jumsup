@@ -3,12 +3,13 @@ const LEGACY_KEYS=["jumsup.production.v1","vantage.production.v1"];
 if(!localStorage.getItem(KEY)){
   for(const k of LEGACY_KEYS){if(localStorage.getItem(k)){localStorage.setItem(KEY,localStorage.getItem(k));break}}
 }
-// Official seed content (vocab decks + practice sets) is code-split and loaded
-// after boot via applyOfficialContent() — see main.tsx. Until then it's empty,
-// which is fine: main.tsx awaits the content chunk before the first render.
+// Official seed content (vocab decks + practice sets) is code-split and applied
+// after boot via applyOfficialContent() — see main.tsx. The app renders before
+// this lands, so `contentLoaded` lets screens show a skeleton for the brief gap.
 let official={decks:[],reading:[],listening:[],writing:[],mocks:[]};
 const initial=()=>({
  theme:"light",lang:"th",sound:true,lastCheckin:"",xp:0,streak:0,
+ contentLoaded:official.decks.length>0,
  user:null,profile:null,subscription:null,payments:[],refunds:[],backend:false,syncing:false,
  decks:official.decks.map(d=>({...d})),
  progress:{},
@@ -21,7 +22,7 @@ const initial=()=>({
  community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{}
 });
 function mergeSamples(saved){
- const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false};
+ const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false,contentLoaded:official.decks.length>0};
  const retiredDeckIds=new Set(["deck-1","deck-2","core-vocabulary","reading-words","jumsup-tcas-frequent","jumsup-tcas-should-know"]);
  const savedDecks=(Array.isArray(next.decks)?next.decks:[]).filter(deck=>{
   if(retiredDeckIds.has(deck?.id))return false;
@@ -47,7 +48,7 @@ function mergeSamples(saved){
 }
 let state=(()=>{try{return mergeSamples(JSON.parse(localStorage.getItem(KEY)||"{}"))}catch{return initial()}})();
 const listeners=new Set();
-function persist(){const copy={...state,user:null,subscription:null,syncing:false};localStorage.setItem(KEY,JSON.stringify(copy))}
+function persist(){const copy={...state,user:null,subscription:null,syncing:false};delete copy.contentLoaded;localStorage.setItem(KEY,JSON.stringify(copy))}
 export const store={
  get:()=>state,
  set(patch){state={...state,...patch};persist();listeners.forEach(fn=>fn(state))},

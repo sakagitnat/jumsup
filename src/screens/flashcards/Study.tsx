@@ -61,6 +61,7 @@ export function Study() {
   const chain = (params.get("chain") || "").split(",").filter(Boolean);
 
   const deck = useStore((s) => s.decks.find((d) => d.id === deckId));
+  const contentLoaded = useStore((s) => s.contentLoaded);
   const flashSettings = useStore((s) => s.flashSettings);
   const storedMastered = useStore((s) => s.progress[deckId]?.mastered ?? []);
   const deckSrs = useStore((s) => s.srs[deckId]);
@@ -271,6 +272,17 @@ export function Study() {
   };
 
   if (!deck) {
+    // The official decks are code-split and land a beat after boot; a deep link
+    // to a deck can arrive first. Show a loader, not "not found", until content
+    // has been applied.
+    if (!contentLoaded) {
+      return (
+        <>
+          <PageHeader eyebrow="FLASHCARDS" title="กำลังโหลดชุดคำศัพท์…" />
+          <div className="mx-auto mt-6 h-64 max-w-md animate-pulse rounded-3xl bg-surface-2" />
+        </>
+      );
+    }
     return (
       <>
         <PageHeader eyebrow="FLASHCARDS" title="ไม่พบชุดคำศัพท์" />
