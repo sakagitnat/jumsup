@@ -1,10 +1,21 @@
 import { useRef, useState } from "react";
-import { frequentExamWords } from "../../data/vocabulary/coreWords.js";
 
 type DemoWord = { w: string; p: string; m: string; e: string };
 
-// A short taste of the real "TCAS English · ออกบ่อย" deck.
-const DECK: DemoWord[] = frequentExamWords.slice(0, 10);
+// A short taste of the "TCAS English · ออกบ่อย" deck. Inlined so the landing
+// page does not pull the full vocabulary module into the initial bundle.
+const DECK: DemoWord[] = [
+  ["according", "uh-KOR-ding", "ตามที่ (ใช้ according to = ตามที่…ระบุ)", "According to the survey, most students study best in the morning."],
+  ["accurate", "AK-yuh-rit", "ถูกต้องแม่นยำ", "The old map was not accurate, so the hikers took the wrong path."],
+  ["achieve", "uh-CHEEV", "บรรลุ, ทำสำเร็จ", "She worked hard all year to achieve a top score on the exam."],
+  ["analyze", "AN-uh-lyze", "วิเคราะห์", "Scientists analyze the data carefully before drawing any conclusion."],
+  ["apparent", "uh-PA-rent", "เห็นได้ชัด, ที่ปรากฏ", "It soon became apparent that the original plan would not work."],
+  ["benefit", "BEN-uh-fit", "ประโยชน์; ได้ประโยชน์", "Regular exercise has a lasting benefit for mental health."],
+  ["crucial", "KROO-shul", "สำคัญอย่างยิ่ง", "The first few minutes after an accident are crucial."],
+  ["evidence", "EV-i-dens", "หลักฐาน", "There is strong evidence that the climate is warming."],
+  ["significant", "sig-NIF-i-kunt", "สำคัญ, มีนัยสำคัญ", "There was a significant rise in temperature over the decade."],
+  ["however", "how-EV-er", "อย่างไรก็ตาม", "The plan is cheap. However, it may not be safe."],
+].map(([w, p, m, e]) => ({ w, p, m, e }));
 
 const SWIPE_PX = 64;
 

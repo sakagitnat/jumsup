@@ -1,25 +1,28 @@
-import { officialVocabDecks,defaultReading,defaultListening,defaultWriting,defaultMocks } from "../data/defaultData.js";
 const KEY="jumsup.production.v4";
 const LEGACY_KEYS=["jumsup.production.v1","vantage.production.v1"];
 if(!localStorage.getItem(KEY)){
   for(const k of LEGACY_KEYS){if(localStorage.getItem(k)){localStorage.setItem(KEY,localStorage.getItem(k));break}}
 }
+// Official seed content (vocab decks + practice sets) is code-split and loaded
+// after boot via applyOfficialContent() — see main.tsx. Until then it's empty,
+// which is fine: main.tsx awaits the content chunk before the first render.
+let official={decks:[],reading:[],listening:[],writing:[],mocks:[]};
 const initial=()=>({
  theme:"light",lang:"th",sound:true,lastCheckin:"",xp:0,streak:0,
  user:null,profile:null,subscription:null,payments:[],refunds:[],backend:false,syncing:false,
- decks:officialVocabDecks.map(d=>({...d})),
+ decks:official.decks.map(d=>({...d})),
  progress:{},
  srs:{},
  examTargets:[],
  practiceHistory:[],
  flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,voiceURI:"",rate:0.9},
- reading:defaultReading,listening:defaultListening,writing:defaultWriting,
- mocks:defaultMocks,
+ reading:official.reading,listening:official.listening,writing:official.writing,
+ mocks:official.mocks,
  community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{}
 });
 function mergeSamples(saved){
  const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false};
- const retiredDeckIds=new Set(["deck-1","deck-2","core-vocabulary","reading-words"]);
+ const retiredDeckIds=new Set(["deck-1","deck-2","core-vocabulary","reading-words","jumsup-tcas-frequent","jumsup-tcas-should-know"]);
  const savedDecks=(Array.isArray(next.decks)?next.decks:[]).filter(deck=>{
   if(retiredDeckIds.has(deck?.id))return false;
   if(deck?.creator==="Jumsup Official"&&!base.decks.some(sample=>sample.id===deck.id))return false;
@@ -53,4 +56,20 @@ export const store={
  reset(){state=initial();persist();listeners.forEach(fn=>fn(state))},
  subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)}
 };
+
+/** Feed in the code-split official seed content, then re-merge it into the live
+ *  state (keeping the user's own decks, progress and practice sets). Called once
+ *  at boot from main.tsx before the app renders. */
+export function applyOfficialContent(content){
+ official={
+  decks:content.officialVocabDecks||[],
+  reading:content.defaultReading||[],
+  listening:content.defaultListening||[],
+  writing:content.defaultWriting||[],
+  mocks:content.defaultMocks||[],
+ };
+ state=mergeSamples(state);
+ persist();
+ listeners.forEach(fn=>fn(state));
+}
 
