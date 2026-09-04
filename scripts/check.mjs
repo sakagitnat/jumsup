@@ -82,8 +82,11 @@ for (const d of officialVocabDecks) {
   if (!d.name || !Array.isArray(d.words) || d.words.length < 10)
     fail(`official deck ${d.id} looks malformed`);
   const seen = new Set();
+  // Mostly single lowercase words; skill decks also carry multi-word exam
+  // terms ("main idea", "in fact"), so a space / apostrophe / slash is allowed
+  // between letters.
   for (const word of d.words) {
-    if (!word.w || !word.m || !word.e || !/^[a-z-]+$/.test(word.w))
+    if (!word.w || !word.m || !word.e || !/^[a-z][a-z '/-]*[a-z]$/.test(word.w))
       fail(`invalid vocabulary row "${word.w}" in ${d.id}`);
     if (seen.has(word.w)) fail(`duplicate word "${word.w}" within ${d.id}`);
     seen.add(word.w);
