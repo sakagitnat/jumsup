@@ -1,5 +1,5 @@
 // Compatibility entry point. New data belongs in a domain module below.
-export { defaultWords,frequentExamWords,shouldKnowWords,topicDecks,officialVocabDecks } from "./vocabulary/coreWords.js";
+export { defaultWords,frequentExamWords,shouldKnowWords,topicDecks,coreDecks,officialVocabDecks } from "./vocabulary/coreWords.js";
 export {
   defaultReading,
   defaultListening,

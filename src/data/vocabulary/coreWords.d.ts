@@ -18,4 +18,5 @@ export const frequentExamWords: CoreWord[];
 export const shouldKnowWords: CoreWord[];
 export const defaultWords: CoreWord[];
 export const topicDecks: OfficialDeck[];
+export const coreDecks: OfficialDeck[];
 export const officialVocabDecks: OfficialDeck[];
