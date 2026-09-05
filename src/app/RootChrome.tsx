@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Toaster } from "../ui/toast";
+import { UpgradeModalHost } from "../ui/upgradeModal";
 import { WeekRecap } from "../screens/leaderboard/WeekRecap";
 import { useLocalize } from "./useLocalize";
 
@@ -10,6 +11,7 @@ export function RootChrome() {
     <>
       <Outlet />
       <Toaster />
+      <UpgradeModalHost />
       <WeekRecap />
     </>
   );

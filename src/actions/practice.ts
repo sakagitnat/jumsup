@@ -4,7 +4,8 @@ import { startDailyFeature } from "../lib/policy.js";
 import { savePracticeAttempt } from "../lib/cloud.js";
 import { store } from "../store/store";
 import { getCurrentUser } from "../app/cloudSync";
-import { proPopup, toast } from "../ui/toast";
+import { toast } from "../ui/toast";
+import { openUpgradeModal } from "../ui/upgradeModal";
 import type { PracticeSet } from "../store/types";
 import {
   attemptStore,
@@ -43,6 +44,7 @@ export async function startPracticeSession(
   }
 
   const minutes = Math.max(1, Number(set.minutes || 10));
+  const itemCount = buildAttemptQuestions(set, kind).length;
   let endsAt = Date.now() + minutes * 60000;
 
   if (getCurrentUser() && backendEnabled) {
@@ -52,13 +54,34 @@ export async function startPracticeSession(
       const usage = (await startDailyFeature(kind, sessionKey, {
         content_id: set.id,
         minutes,
+        item_count: itemCount,
       })) as { existing_session_key?: string; ends_at?: string };
       activeUsageSessions[kind] = usage.existing_session_key || sessionKey;
       if (usage.ends_at) endsAt = new Date(usage.ends_at).getTime();
     } catch (err) {
-      const e = err as { message?: string; details?: { remaining_seconds?: number } };
+      const e = err as {
+        message?: string;
+        details?: { reason?: string; remaining_seconds?: number };
+      };
+      const reason = e.details?.reason;
+      if (reason === "PRO_ONLY_LARGE_SET") {
+        openUpgradeModal(
+          "ชุดนี้มีมากกว่า 10 ข้อ",
+          `Free ฝึกได้เฉพาะชุดที่มีคำถามไม่เกิน 10 ข้อ ชุดนี้มี ${itemCount} ข้อ — อัปเกรดเป็น Pro เพื่อฝึกได้ทุกขนาดชุด`,
+        );
+        return false;
+      }
+      if (reason === "WEEKLY_LIMIT") {
+        openUpgradeModal(
+          "ทำ Mock ไปแล้วในรอบ 7 วันนี้",
+          `Free ทำ Mock ได้ 1 ชุดทุก 7 วัน — ทำได้อีกครั้งใน ${formatWait(
+            Number(e.details?.remaining_seconds || 0),
+          )} · Pro ทำได้ไม่จำกัดทันที`,
+        );
+        return false;
+      }
       if (String(e.message).includes("DAILY_LIMIT_REACHED")) {
-        proPopup(
+        openUpgradeModal(
           `วันนี้ฝึก ${kind.toUpperCase()} ครบ 1 ชุดแล้ว`,
           `Free ฝึกได้วันละ 1 ชุดต่อประเภท — ปลดล็อกอีกครั้งใน ${formatWait(
             Number(e.details?.remaining_seconds || 0),

@@ -16,7 +16,8 @@ import {
 import { store } from "../store/store";
 import { displayName } from "../store/name";
 import { getCurrentUser, hydrateFromCloud, scheduleSync } from "../app/cloudSync";
-import { toast, proPopup } from "../ui/toast";
+import { toast } from "../ui/toast";
+import { openUpgradeModal } from "../ui/upgradeModal";
 import type { AppState, CommunityItem } from "../store/types";
 
 type Tab = "vocab" | "skill";
@@ -187,8 +188,8 @@ export async function importCommunity(item: CommunityItem, refresh: () => void) 
     await importCommunityItem(user, item);
   } catch (err) {
     if (String((err as Error).message).includes("COMMUNITY_SET_LIMIT_REACHED")) {
-      return proPopup(
-        "เก็บชุด Community ครบ 3 ชุดแล้ว",
+      return openUpgradeModal(
+        "เก็บชุด Community ครบแล้ว",
         "ลบชุด Community เดิมก่อนเลือกชุดใหม่ หรืออัปเกรดเป็น Pro เพื่อเก็บได้ไม่จำกัด",
       );
     }

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export interface ToastItem {
   id: number;
-  kind: "info" | "pro";
   title?: string;
   message: string;
 }
@@ -18,15 +16,6 @@ function emit() {
   for (const fn of listeners) fn(items);
 }
 
-function push(item: Omit<ToastItem, "id">) {
-  const id = ++seq;
-  items = [...items, { ...item, id }];
-  emit();
-  if (item.kind === "info") {
-    setTimeout(() => dismiss(id), 4200);
-  }
-}
-
 function dismiss(id: number) {
   items = items.filter((t) => t.id !== id);
   emit();
@@ -34,17 +23,14 @@ function dismiss(id: number) {
 
 /** Fire-and-forget notice — safe to call from non-React action modules. */
 export function toast(message: string) {
-  push({ kind: "info", message });
-}
-
-/** Upgrade prompt with a CTA to the pricing screen. */
-export function proPopup(title: string, message: string) {
-  push({ kind: "pro", title, message });
+  const id = ++seq;
+  items = [...items, { id, message }];
+  emit();
+  setTimeout(() => dismiss(id), 4200);
 }
 
 export function Toaster() {
   const [list, setList] = useState<ToastItem[]>(items);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fn: Listener = (next) => setList(next);
@@ -66,19 +52,7 @@ export function Toaster() {
         >
           {t.title && <p className="mb-1 font-semibold">{t.title}</p>}
           <p className="text-sm text-muted">{t.message}</p>
-          <div className="mt-3 flex justify-end gap-2">
-            {t.kind === "pro" && (
-              <button
-                type="button"
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary"
-                onClick={() => {
-                  dismiss(t.id);
-                  navigate("/pricing");
-                }}
-              >
-                ดู Jumsup Pro
-              </button>
-            )}
+          <div className="mt-3 flex justify-end">
             <button
               type="button"
               className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-2"

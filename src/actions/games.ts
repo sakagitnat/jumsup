@@ -2,7 +2,9 @@ import { supabase, backendEnabled } from "../lib/supabase.js";
 import { startDailyFeature } from "../lib/policy.js";
 import { store } from "../store/store";
 import { getCurrentUser } from "../app/cloudSync";
-import { proPopup, toast } from "../ui/toast";
+import { toast } from "../ui/toast";
+import { openUpgradeModal } from "../ui/upgradeModal";
+import { FREE_LIMITS } from "../lib/plans.js";
 import type { Word } from "../store/types";
 
 export type Game = "match" | "crossword";
@@ -43,11 +45,11 @@ export async function startGameSession(game: Game, deckId: string): Promise<bool
       await startDailyFeature(game, `${game}:${crypto.randomUUID()}`, { content_id: deckId });
     } catch (err) {
       if (String((err as Error).message).includes("DAILY_LIMIT_REACHED")) {
-        proPopup(
+        openUpgradeModal(
           `${game === "match" ? "Match" : "Crossword"} ครบโควต้าแล้ว`,
           game === "match"
-            ? "Free เล่น Match ได้ 10 รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด"
-            : "Free เล่น Crossword ได้ 3 รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด",
+            ? `Free เล่น Match ได้ ${FREE_LIMITS.matchPerDay} รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด`
+            : `Free เล่น Crossword ได้ ${FREE_LIMITS.crosswordPerDay} รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด`,
         );
         return false;
       }

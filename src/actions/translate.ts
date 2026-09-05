@@ -4,7 +4,7 @@ import { isPro } from "../lib/entitlements.js";
 import { FREE_LIMITS, PRO_LIMITS } from "../lib/plans.js";
 import { store } from "../store/store";
 import { getCurrentUser, scheduleSync } from "../app/cloudSync";
-import { proPopup } from "../ui/toast";
+import { openUpgradeModal } from "../ui/upgradeModal";
 
 export function localMeaning(word: string): string | undefined {
   return store
@@ -39,7 +39,7 @@ export function addWordToDeck(deckId: string, word: string, meaning: string): bo
   if (!deck) return false;
   const limit = isPro(s) ? PRO_LIMITS.wordsPerDeck : FREE_LIMITS.wordsPerDeck;
   if ((deck.words?.length || 0) >= limit) {
-    proPopup(
+    openUpgradeModal(
       "คำศัพท์ในชุดเต็มแล้ว",
       `แพ็กเกจปัจจุบันเก็บได้สูงสุด ${limit.toLocaleString()} คำต่อชุด`,
     );
