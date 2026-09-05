@@ -258,7 +258,7 @@ export async function loadCommunity(query="",type="vocab"){
   })),"skill");
 }
 
-async function withCommunityMetrics(items,type){
+export async function withCommunityMetrics(items,type){
   if(!items.length)return items;
   const ids=items.map(x=>x.id);
   const [{data:likes},{data:reviews},{data:imports},{data:userData}]=await Promise.all([
