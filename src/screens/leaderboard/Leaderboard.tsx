@@ -115,7 +115,7 @@ export function Leaderboard() {
             <p className="mt-1 text-sm text-muted">สะสม XP จากเช็คอินและการเรียนเพื่อไต่อันดับ</p>
           </div>
           <Button variant="primary" className="shrink-0" onClick={loginGoogle}>
-            สมัครฟรี · รับ Pro 7 วัน
+            สมัครฟรี
           </Button>
         </Card>
       ) : loading ? (

@@ -194,7 +194,7 @@ export function Home() {
             </p>
           </div>
           <Button variant="primary" className="shrink-0" onClick={loginGoogle}>
-            สมัครฟรี · รับ Pro 7 วัน
+            สมัครฟรี
           </Button>
         </Card>
       ) : !profile?.onboarding_completed_at ? (
@@ -364,7 +364,7 @@ export function Home() {
               className="shrink-0"
               onClick={async () => {
                 const link = `${location.origin}/?ref=${profile.referral_code}`;
-                const text = "มาฝึกภาษาอังกฤษเตรียมสอบกับ Jumsup กัน — สมัครฟรีรับ Pro 7 วัน";
+                const text = "มาฝึกภาษาอังกฤษเตรียมสอบกับ Jumsup กัน — สมัครฟรีได้เลย";
                 try {
                   if (navigator.share) await navigator.share({ text, url: link });
                   else {
