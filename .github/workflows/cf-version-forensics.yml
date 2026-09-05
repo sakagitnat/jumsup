@@ -1,0 +1,61 @@
+name: CF Version Forensics
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: "Full or partial Cloudflare Worker version ID to inspect (leave blank to just list versions)"
+        required: false
+        default: ""
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List worker versions
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/jumsup/versions?per_page=50" \
+            -o versions.json
+          python3 -m json.tool versions.json | head -400
+
+      - name: Inspect a specific version's metadata + preview
+        if: ${{ inputs.version_id != '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION_ID: ${{ inputs.version_id }}
+        run: |
+          FULL_ID=$(python3 -c "
+          import json
+          data = json.load(open('versions.json'))
+          vid = '$VERSION_ID'
+          for v in data.get('result', []):
+              if v['id'].startswith(vid):
+                  print(v['id'])
+                  break
+          ")
+          echo "Resolved full version id: $FULL_ID"
+          if [ -z "$FULL_ID" ]; then
+            echo "No matching version found for prefix $VERSION_ID"
+            exit 1
+          fi
+          echo '--- version detail ---'
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/jumsup/versions/$FULL_ID" \
+            | python3 -m json.tool
+
+          echo '--- fetching bundled content for this version ---'
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/jumsup/content/v2?version=$FULL_ID" \
+            -o version_content.bin
+          echo "downloaded bytes: $(wc -c < version_content.bin)"
+          file version_content.bin || true
+          echo '--- key string search (referral / fake-stats / deck counts) ---'
+          for needle in "ชวนเพื่อน" "claim_referral" "referral_code" "24 - i" "4.9 - i" "jumsup-vocab-core" "TGAT" "A-Level"; do
+            echo "== $needle =="
+            grep -a -c -- "$needle" version_content.bin || echo "0"
+          done
