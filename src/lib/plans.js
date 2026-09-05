@@ -2,7 +2,6 @@ export const SUPPORTED_BILLING_CURRENCIES=["THB","USD"];
 export function defaultBillingCurrency(){const locale=(typeof navigator!=="undefined"?navigator.language:"")||"";return locale.toLowerCase().startsWith("th")?"THB":"USD"}
 export const PLANS={
  free:{id:"free",name:"Jumsup Free",prices:{THB:0,USD:0},features:[
-  "ทดลอง Pro ฟรี 7 วันเมื่อสมัครใหม่",
   "Flashcard สูงสุด 100 คำต่อชุด และสร้างเองได้ 5 ชุด",
   "เก็บชุดจาก Community ได้พร้อมกัน 5 ชุด",
   "ทบทวนคำศัพท์ (SRS) ได้ไม่จำกัด",

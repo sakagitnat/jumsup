@@ -62,7 +62,7 @@ export async function startPracticeSession(
           `วันนี้ฝึก ${kind.toUpperCase()} ครบ 1 ชุดแล้ว`,
           `Free ฝึกได้วันละ 1 ชุดต่อประเภท — ปลดล็อกอีกครั้งใน ${formatWait(
             Number(e.details?.remaining_seconds || 0),
-          )} · Pro ฝึกได้ไม่จำกัดทันที (มีทดลองฟรี 7 วัน)`,
+          )} · Pro ฝึกได้ไม่จำกัดทันที`,
         );
         return false;
       }

@@ -182,7 +182,7 @@ export function Community() {
             คุณดูชุดและสถิติได้โดยไม่ต้อง Login แต่ต้องเข้าสู่ระบบก่อนนำเข้าหรือให้คะแนนบนระบบออนไลน์
           </p>
           <Button variant="primary" className="mt-3" onClick={loginGoogle}>
-            สมัครฟรี · รับ Pro 7 วัน
+            สมัครฟรี
           </Button>
         </Card>
       )}

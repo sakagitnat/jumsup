@@ -83,7 +83,7 @@ export function Landing() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button size="lg" variant="primary" onClick={enter}>
-              สมัครฟรี · รับ Pro 7 วัน
+              สมัครฟรี
             </Button>
             <Button
               size="lg"
@@ -96,7 +96,7 @@ export function Landing() {
             </Button>
           </div>
           <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
-            {["สมัครฟรี รับ Pro 7 วัน", "ไม่ต้องใช้บัตร", "ใช้ได้บนมือถือ"].map((t) => (
+            {["มีแพ็กเกจฟรี", "ไม่ต้องใช้บัตร", "ใช้ได้บนมือถือ"].map((t) => (
               <span key={t} className="inline-flex items-center gap-1.5">
                 <IconCheck size={15} className="text-success" />
                 {t}
@@ -191,7 +191,7 @@ export function Landing() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Button size="lg" variant="primary" onClick={enter}>
-            สมัครฟรี · รับ Pro 7 วัน
+            สมัครฟรี
           </Button>
           <Button size="lg" variant="secondary" onClick={() => navigate("/pricing")}>
             ดูแพ็กเกจทั้งหมด

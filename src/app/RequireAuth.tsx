@@ -33,7 +33,7 @@ export function RequireAuth() {
       <PageHeader
         eyebrow="สมัครฟรี"
         title={`สมัครเพื่อใช้ ${label}`}
-        description="สมัครฟรีด้วย Google เพื่อเริ่มใช้ Jumsup เก็บความคืบหน้า สะสม XP/Streak และรับ Pro 7 วันทันที"
+        description="สมัครฟรีด้วย Google เพื่อเริ่มใช้ Jumsup เก็บความคืบหน้า และสะสม XP/Streak"
       />
       <Card className="flex flex-col items-center gap-4 py-10 text-center">
         <div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary-soft">
@@ -44,7 +44,7 @@ export function RequireAuth() {
           ใช้ได้เมื่อสมัคร เพื่อบันทึกผลและซิงก์ทุกอุปกรณ์
         </p>
         <Button variant="primary" onClick={loginGoogle}>
-          สมัครฟรีด้วย Google · รับ Pro 7 วัน
+          สมัครฟรีด้วย Google
         </Button>
       </Card>
     </>

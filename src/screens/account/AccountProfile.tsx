@@ -186,7 +186,7 @@ export function AccountProfile() {
             <h2 className="text-lg font-semibold">Guest</h2>
             <p className="text-sm text-muted">ข้อมูลตอนนี้อยู่บนอุปกรณ์นี้</p>
             <Button variant="primary" className="mt-3" onClick={loginGoogle}>
-              สมัครฟรี · รับ Pro 7 วัน
+              สมัครฟรี
             </Button>
           </div>
         </Card>
