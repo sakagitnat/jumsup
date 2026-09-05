@@ -12,7 +12,6 @@ import {
   Tag,
   Button,
   LinkButton,
-  toast,
   IconBolt,
   IconArrowRight,
   IconCheck,
@@ -40,7 +39,7 @@ function proNudge(opts: {
   }
   // trial already ended
   if (!hasSub && proBonusUntil && new Date(proBonusUntil).getTime() < Date.now()) {
-    return "ทดลอง Pro หมดแล้ว — สมัคร Pro รายปี ฿99/เดือน หรือชวนเพื่อนสมัคร Pro รับ +14 วัน";
+    return "ทดลอง Pro หมดแล้ว — สมัคร Pro รายปี ฿99/เดือน เพื่อฝึกไม่จำกัดต่อเนื่อง";
   }
   if (daysToExam !== null && daysToExam >= 0 && daysToExam <= 30) {
     return "โค้งสุดท้ายก่อนสอบ — Pro ปลดล็อก Reading / Listening / Writing / Mock ไม่จำกัด";
@@ -350,37 +349,6 @@ export function Home() {
         ))}
       </div>
 
-      {user && profile?.referral_code && (
-        <Card className="mt-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <b className="block text-sm">ชวนเพื่อน รับ Pro ฟรี</b>
-              <small className="text-xs text-muted">
-                เมื่อเพื่อนสมัคร Pro: คุณ +14 วัน · เพื่อน +7 วัน · ลิงก์กรอกโค้ดให้อัตโนมัติ
-              </small>
-            </div>
-            <Button
-              variant="primary"
-              className="shrink-0"
-              onClick={async () => {
-                const link = `${location.origin}/?ref=${profile.referral_code}`;
-                const text = "มาฝึกภาษาอังกฤษเตรียมสอบกับ Jumsup กัน — สมัครฟรีได้เลย";
-                try {
-                  if (navigator.share) await navigator.share({ text, url: link });
-                  else {
-                    await navigator.clipboard.writeText(`${text}\n${link}`);
-                    toast("คัดลอกลิงก์ชวนเพื่อนแล้ว");
-                  }
-                } catch {
-                  /* user cancelled */
-                }
-              }}
-            >
-              แชร์ลิงก์ชวนเพื่อน
-            </Button>
-          </div>
-        </Card>
-      )}
     </>
   );
 }
