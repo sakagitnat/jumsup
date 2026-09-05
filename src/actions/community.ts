@@ -1,6 +1,7 @@
 import { backendEnabled } from "../lib/supabase.js";
 import {
   loadCommunity,
+  withCommunityMetrics,
   importCommunityItem,
   toggleCommunityLike,
   saveCommunityReview,
@@ -31,28 +32,30 @@ function friendly(e: unknown): string {
   return m || "ทำรายการไม่สำเร็จ";
 }
 
-/** Synthesize the official catalog entries from local seed data. */
+/** Build the official catalog entries from local seed data, with honest zero
+ *  stats — no signed-in backend means no way to know the real counts, and a
+ *  simulated number is worse than none. `refreshCommunity` overwrites these
+ *  with real aggregates (from content_likes/content_reviews/content_imports)
+ *  once a user is signed in. */
 function buildDemoCommunity(s: AppState): CommunityItem[] {
   const likes = s.communityLikes || {};
   const reviews = s.communityReviews || {};
   const imports = s.communityImportCounts || {};
   const decorate = (x: CommunityItem): CommunityItem => {
     const review = reviews[x.id];
-    const rating = review?.rating || x.rating || 0;
-    const ratingCount = review ? 1 : x.ratingCount || 0;
     return {
       ...x,
       liked: !!likes[x.id],
       likeCount: (x.likeCount || 0) + (likes[x.id] ? 1 : 0),
       importCount: (x.importCount || 0) + (imports[x.id] || 0),
-      rating,
-      ratingCount,
+      rating: review?.rating ?? x.rating ?? 0,
+      ratingCount: (x.ratingCount || 0) + (review ? 1 : 0),
     };
   };
 
   const vocab = (s.decks || [])
     .filter((x) => x.official)
-    .map((x, i) =>
+    .map((x) =>
       decorate({
         id: x.id,
         type: "vocab",
@@ -60,10 +63,10 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
         creator: "Jumsup Official",
         count: x.words?.length || 0,
         official: true,
-        likeCount: 18 - i * 5,
-        importCount: 42 - i * 11,
-        rating: 4.7 - i * 0.2,
-        ratingCount: 12 - i * 3,
+        likeCount: 0,
+        importCount: 0,
+        rating: 0,
+        ratingCount: 0,
         createdAt: "2026-08-25",
       }),
     );
@@ -75,7 +78,7 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
     ...(s.mocks || []).map((x) => ({ ...x, kind: "mock" })),
   ].filter((x) => x.creator === "Jumsup Official");
 
-  const skill = skillSource.map((x, i) =>
+  const skill = skillSource.map((x) =>
     decorate({
       id: x.id,
       type: "skill",
@@ -85,10 +88,10 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
       creator: x.creator || "Jumsup Official",
       count: x.itemCount || (Array.isArray(x.questions) ? x.questions.length : 1),
       official: true,
-      likeCount: 24 - i * 2,
-      importCount: 61 - i * 7,
-      rating: Math.max(4.2, 4.9 - i * 0.12),
-      ratingCount: 18 - i,
+      likeCount: 0,
+      importCount: 0,
+      rating: 0,
+      ratingCount: 0,
       createdAt: "2026-08-21",
     }),
   );
@@ -98,15 +101,18 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
 
 export async function refreshCommunity(query: string, tab: Tab) {
   const user = getCurrentUser();
+  const demo = buildDemoCommunity(store.get()).filter((item) =>
+    tab === "vocab" ? item.type === "vocab" : item.type === "skill",
+  );
   if (!user || !backendEnabled) {
-    store.set({ community: buildDemoCommunity(store.get()) });
+    store.set({ community: demo });
     return;
   }
   try {
-    const remote = await loadCommunity(query, tab);
-    const official = buildDemoCommunity(store.get()).filter(
-      (item) => item.official && (tab === "vocab" ? item.type === "vocab" : item.type === "skill"),
-    );
+    const [remote, official] = await Promise.all([
+      loadCommunity(query, tab),
+      withCommunityMetrics(demo, tab),
+    ]);
     const items = [
       ...official,
       ...remote.filter((item) => !official.some((seed) => seed.id === item.id)),

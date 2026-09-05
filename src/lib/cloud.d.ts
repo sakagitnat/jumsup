@@ -50,6 +50,10 @@ export function loadLeaderboardHistory(
   limit?: number,
 ): Promise<HistoryLeaderboard>;
 export function loadCommunity(query?: string, type?: string): Promise<CommunityItem[]>;
+export function withCommunityMetrics(
+  items: CommunityItem[],
+  type: "vocab" | "skill",
+): Promise<CommunityItem[]>;
 export function importCommunityItem(user: User, item: CommunityItem): Promise<void>;
 
 export interface CommunityPreview {
