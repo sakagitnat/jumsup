@@ -1,0 +1,32 @@
+name: DB Status
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Row counts and migration history (read-only)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          echo '--- table row counts ---'
+          psql "$SUPABASE_DB_URL" -c "
+            select 'profiles' as table_name, count(*) from profiles
+            union all select 'vocab_sets', count(*) from vocab_sets
+            union all select 'practice_sets', count(*) from practice_sets
+            union all select 'content_reviews', count(*) from content_reviews
+            union all select 'content_likes', count(*) from content_likes
+            order by 1;"
+          echo '--- vocab_sets by source_type/visibility ---'
+          psql "$SUPABASE_DB_URL" -c "select source_type, visibility, count(*) from vocab_sets group by 1,2 order by 1,2;"
+          echo '--- practice_sets by kind/visibility ---'
+          psql "$SUPABASE_DB_URL" -c "select kind, visibility, count(*) from practice_sets group by 1,2 order by 1,2;"
+          echo '--- sample content_reviews (up to 10) ---'
+          psql "$SUPABASE_DB_URL" -c "select id, content_id, rating, created_at from content_reviews order by created_at desc limit 10;"
+          echo '--- _schema_migrations ---'
+          psql "$SUPABASE_DB_URL" -c "select version, applied_at from _schema_migrations order by version;"
