@@ -33,7 +33,7 @@ jobs:
           import json
           data = json.load(open('versions.json'))
           vid = '$VERSION_ID'
-          for v in data.get('result', []):
+          for v in data.get('result', {}).get('items', []):
               if v['id'].startswith(vid):
                   print(v['id'])
                   break
