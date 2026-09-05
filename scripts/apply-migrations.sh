@@ -27,14 +27,12 @@ for f in "$MIGRATIONS_DIR"/*.sql; do
 
   if [[ "$version" < "$BASELINE_UP_TO" || "$version" == "$BASELINE_UP_TO" ]]; then
     psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q \
-      -v base="$base" \
-      -c "insert into public._schema_migrations(version) values (:'base') on conflict do nothing;"
+      -c "insert into public._schema_migrations(version) values ('$base') on conflict do nothing;"
     continue
   fi
 
   already=$(psql "$SUPABASE_DB_URL" -At -v ON_ERROR_STOP=1 \
-    -v base="$base" \
-    -c "select 1 from public._schema_migrations where version = :'base';")
+    -c "select 1 from public._schema_migrations where version = '$base';")
 
   if [[ "$already" == "1" ]]; then
     echo "skip (already applied): $base"
@@ -44,7 +42,6 @@ for f in "$MIGRATIONS_DIR"/*.sql; do
   echo "applying: $base"
   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -1 -f "$f"
   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q \
-    -v base="$base" \
-    -c "insert into public._schema_migrations(version) values (:'base');"
+    -c "insert into public._schema_migrations(version) values ('$base');"
   echo "applied: $base"
 done
