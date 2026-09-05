@@ -6,7 +6,8 @@ import {
   needsPublicUpgrade,
   deckWordLimit,
 } from "../../actions/content";
-import { Modal, Button, toast, proPopup } from "../../ui";
+import { Modal, Button, toast, openUpgradeModal } from "../../ui";
+import { FREE_LIMITS } from "../../lib/plans.js";
 import { TagPickers } from "../common/TagPickers";
 import type { Word } from "../../store/types";
 
@@ -52,13 +53,13 @@ export function DeckEditor({
     if (!words.length || words.some((w) => !w.w))
       return toast("กรุณากรอกคำศัพท์ให้ครบทุกรายการ");
     if (!canAddPrivateDeck(deckId))
-      return proPopup(
-        "สร้าง Flashcard ครบ 3 ชุดแล้ว",
-        "Free สร้างชุดของตัวเองได้สูงสุด 3 ชุด อัปเกรดเป็น Pro เพื่อสร้างได้ไม่จำกัด",
+      return openUpgradeModal(
+        `สร้าง Flashcard ครบ ${FREE_LIMITS.privateVocab} ชุดแล้ว`,
+        `Free สร้างชุดของตัวเองได้สูงสุด ${FREE_LIMITS.privateVocab} ชุด อัปเกรดเป็น Pro เพื่อสร้างได้ไม่จำกัด`,
       );
     const limit = deckWordLimit();
     if (words.length > limit)
-      return proPopup(
+      return openUpgradeModal(
         "คำศัพท์เกินจำนวนที่แพ็กเกจรองรับ",
         `แพ็กเกจปัจจุบันบันทึกได้สูงสุด ${limit.toLocaleString()} คำต่อชุด`,
       );
@@ -208,7 +209,7 @@ export function DeckEditor({
         }
       >
         <p className="text-sm text-muted">
-          Free เก็บ Flashcard ส่วนตัวได้ 3 ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่
+          {`Free เก็บ Flashcard ส่วนตัวได้ ${FREE_LIMITS.privateVocab} ชุด ชุดนี้จะเป็น Public เฉพาะเมื่อคุณกดยืนยันเผยแพร่`}
         </p>
       </Modal>
     </>
