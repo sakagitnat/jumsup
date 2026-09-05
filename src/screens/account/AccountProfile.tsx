@@ -4,7 +4,6 @@ import { isPro } from "../../store/pro";
 import { loginGoogle, logout } from "../../actions/auth";
 import {
   redeemGift,
-  claimReferral,
   changeAvatar,
   changeUsername,
   checkUsername,
@@ -172,7 +171,6 @@ export function AccountProfile() {
     decks: s.decks,
   }));
   const giftRef = useRef<HTMLInputElement>(null);
-  const refRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) {
@@ -263,41 +261,20 @@ export function AccountProfile() {
         ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Card>
-          <h3 className="text-sm font-semibold">Gift Code</h3>
-          <p className="text-sm text-muted">แลกโค้ดเพื่อรับสิทธิ์ Pro</p>
-          <div className="mt-3 flex gap-2">
-            <input
-              ref={giftRef}
-              placeholder="กรอกโค้ด"
-              className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-            />
-            <Button onClick={() => redeemGift(giftRef.current?.value.trim() || "")}>
-              แลกโค้ด
-            </Button>
-          </div>
-        </Card>
-        <Card>
-          <h3 className="text-sm font-semibold">ชวนเพื่อน</h3>
-          <p className="text-sm text-muted">คนชวน +14 วัน · คนถูกชวน +7 วัน</p>
-          <div className="mt-3 flex gap-2">
-            <input
-              ref={refRef}
-              placeholder="โค้ดผู้ชวน"
-              className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-            />
-            <Button onClick={() => claimReferral(refRef.current?.value.trim() || "")}>
-              ใช้โค้ด
-            </Button>
-          </div>
-          {profile?.referral_code && (
-            <p className="mt-3 text-sm">
-              โค้ดของคุณ: <b>{profile.referral_code}</b>
-            </p>
-          )}
-        </Card>
-      </div>
+      <Card>
+        <h3 className="text-sm font-semibold">Gift Code</h3>
+        <p className="text-sm text-muted">แลกโค้ดเพื่อรับสิทธิ์ Pro</p>
+        <div className="mt-3 flex gap-2">
+          <input
+            ref={giftRef}
+            placeholder="กรอกโค้ด"
+            className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+          />
+          <Button onClick={() => redeemGift(giftRef.current?.value.trim() || "")}>
+            แลกโค้ด
+          </Button>
+        </div>
+      </Card>
     </AccountShell>
   );
 }

@@ -48,7 +48,7 @@ export function Result() {
     toast("เลือกรอบใหม่จากหน้ารายการ ระบบจะตรวจสิทธิ์ทดลองหรือเวลาพักให้อัตโนมัติ");
   };
   const shareResult = async () => {
-    const link = `${location.origin}/?ref=${profile?.referral_code || ""}`.replace(/\?ref=$/, "");
+    const link = location.origin;
     const text = `ผมได้ ${percent}% (${correct}/${questions.length}) ใน ${
       KIND_LABEL[kind] || kind
     } บน Jumsup มาลองกัน`;
