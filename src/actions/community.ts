@@ -146,6 +146,12 @@ export async function refreshCommunity(query: string, tab: Tab) {
     });
   } catch (e) {
     console.error(e);
+    // A transient fetch failure (e.g. the access token was mid-refresh after
+    // the tab was backgrounded) used to leave whatever was already in
+    // `community` -- often nothing yet, on a fresh reload -- so the page
+    // looked permanently empty. Fall back to the local official catalog
+    // instead of showing nothing.
+    if (store.get().community.length === 0) store.set({ community: demo });
   }
 }
 

@@ -2,7 +2,7 @@
 // old src/app/createApp.js (hydrateFromCloud / scheduleSync / onAuthChange) so
 // logged-in users keep the exact same sync semantics.
 
-import { backendEnabled, getSession, onAuthChange } from "../lib/auth.js";
+import { backendEnabled, getSession, onAuthChange, refreshSessionIfNeeded } from "../lib/auth.js";
 import { loadCloudState, pushCloudState } from "../lib/cloud.js";
 import { claimPendingRef } from "./referral";
 import { store } from "../store/store";
@@ -117,7 +117,18 @@ export async function initAuth() {
   if (currentUser) await hydrateFromCloud(currentUser);
   else store.set({ backend: true, user: null });
 
-  onAuthChange(async (next) => {
+  onAuthChange(async (next, event) => {
+    // TOKEN_REFRESHED and INITIAL_SESSION fire for the same signed-in user on
+    // every silent token renewal (roughly hourly) and on every tab-visibility
+    // recheck. Re-running the full cloud hydration on those was pure overhead
+    // and, if it landed mid-navigation, could show a screen as briefly empty
+    // for no reason -- treat them as a no-op unless the user actually changed.
+    if (
+      (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") &&
+      (next?.user?.id ?? null) === (currentUser?.id ?? null)
+    ) {
+      return;
+    }
     const wasSignedOut = !currentUser;
     currentUser = next?.user ?? null;
     if (currentUser) {
@@ -132,4 +143,18 @@ export async function initAuth() {
         backend: true,
       });
   });
+
+  // Mobile Safari (and PWAs added to the home screen) pause JS timers while
+  // the tab is backgrounded, so autoRefreshToken's proactive renewal never
+  // fires there -- the access token can sit expired for the whole time away.
+  // Force a session check the moment the tab is foregrounded again, instead
+  // of waiting for some other request to fail first and surface it as a
+  // forced logout or a screen that looks empty.
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && currentUser) {
+        void refreshSessionIfNeeded();
+      }
+    });
+  }
 }

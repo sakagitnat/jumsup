@@ -26,7 +26,18 @@ export async function signOut(){
 }
 export function onAuthChange(callback){
   if(!supabase)return()=>{};
-  const {data}=supabase.auth.onAuthStateChange((_event,session)=>callback(session));
+  const {data}=supabase.auth.onAuthStateChange((event,session)=>callback(session,event));
   return()=>data.subscription.unsubscribe();
+}
+/** Force a session check (refreshes the access token from the stored refresh
+ *  token if it's expired). Call this when the tab regains visibility -- on
+ *  mobile Safari, autoRefreshToken's timer is paused while the tab/PWA is
+ *  backgrounded, so a long time away can leave the access token expired with
+ *  nothing having tried to renew it until something else fails first. */
+export async function refreshSessionIfNeeded(){
+  if(!supabase)return null;
+  const {data,error}=await supabase.auth.getSession();
+  if(error){console.error(error);return null}
+  return data.session;
 }
 export { backendEnabled };
