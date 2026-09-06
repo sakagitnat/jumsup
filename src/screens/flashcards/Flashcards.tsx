@@ -29,13 +29,21 @@ export function Flashcards() {
         title="ชุดคำศัพท์ของฉัน"
         description="3 ชุดหลักจาก Jumsup พร้อมชุดที่คุณสร้างหรือนำเข้า — เปิดชุดเพื่อเล่น Flashcard, Match หรือ Crossword และหาชุดเพิ่มเติมได้ที่ Community"
         actions={
-          <>
-            <Button variant="primary" onClick={() => setEditor({ open: true, id: null })}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              variant="primary"
+              className="w-full sm:w-auto"
+              onClick={() => setEditor({ open: true, id: null })}
+            >
               + สร้างชุดใหม่
             </Button>
-            <Button onClick={() => setImporting(true)}>นำเข้าหลายคำ</Button>
-            <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
-          </>
+            <Button className="w-full sm:w-auto" onClick={() => setImporting(true)}>
+              นำเข้าหลายคำ
+            </Button>
+            <Button className="w-full sm:w-auto" onClick={() => navigate("/community")}>
+              ค้นหาใน Community
+            </Button>
+          </div>
         }
       />
 
