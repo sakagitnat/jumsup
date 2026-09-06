@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../../store/useStore";
-import { startGameSession, type Game } from "../../actions/games";
 import { deleteContent } from "../../actions/content";
 import { DeckEditor } from "./DeckEditor";
 import { DeleteDialog } from "../common/DeleteDialog";
@@ -10,23 +9,7 @@ import { PageHeader, Card, Tag, Button, LinkButton, IconEdit, IconTrash } from "
 import { examLabel, levelLabel } from "../../lib/taxonomy";
 import { dueCount } from "../../lib/srs";
 
-type Mode = "flash" | Game;
-
-const modeLabel: Record<Mode, string> = {
-  flash: "Flashcards",
-  match: "Match",
-  crossword: "Crossword",
-};
-const headMeta: Record<Mode, { title: string; desc: string }> = {
-  flash: {
-    title: "ชุดคำศัพท์ของฉัน",
-    desc: "3 ชุดหลักจาก Jumsup พร้อมชุดที่คุณสร้างหรือนำเข้า — หาชุดเพิ่มเติมได้ที่ Community",
-  },
-  match: { title: "Match", desc: "จับคู่คำศัพท์กับความหมาย — ต้องจำศัพท์ในชุดนั้นอย่างน้อย 4 คำ" },
-  crossword: { title: "Crossword", desc: "เติมคำไขว้จากคำที่จำแล้ว — ต้องจำอย่างน้อย 3 คำ" },
-};
-
-export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
+export function Flashcards() {
   const decks = useStore((s) => s.decks);
   const contentLoaded = useStore((s) => s.contentLoaded);
   const srs = useStore((s) => s.srs);
@@ -39,34 +22,24 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
   const [del, setDel] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
-  const start = async (deckId: string) => {
-    if (mode === "flash") {
-      navigate(`/flash/study/${deckId}`);
-      return;
-    }
-    if (await startGameSession(mode, deckId)) navigate(`/${mode}/play/${deckId}`);
-  };
-
   return (
     <>
       <PageHeader
         eyebrow="VOCABULARY"
-        title={headMeta[mode].title}
-        description={headMeta[mode].desc}
+        title="ชุดคำศัพท์ของฉัน"
+        description="3 ชุดหลักจาก Jumsup พร้อมชุดที่คุณสร้างหรือนำเข้า — เปิดชุดเพื่อเล่น Flashcard, Match หรือ Crossword และหาชุดเพิ่มเติมได้ที่ Community"
         actions={
           <>
             <Button variant="primary" onClick={() => setEditor({ open: true, id: null })}>
               + สร้างชุดใหม่
             </Button>
             <Button onClick={() => setImporting(true)}>นำเข้าหลายคำ</Button>
-            {mode === "flash" && (
-              <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
-            )}
+            <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
           </>
         }
       />
 
-      {mode === "flash" && totalDue > 0 && (
+      {totalDue > 0 && (
         <Card soft className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <b className="text-sm">ครบกำหนดทบทวนวันนี้ {totalDue} คำ</b>
@@ -121,25 +94,13 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                {mode === "flash" ? (
-                  <>
-                    <LinkButton variant="primary" size="sm" to={`/flash/study/${d.id}`}>
-                      เริ่ม Flashcards
-                    </LinkButton>
-                    {deckDue > 0 && (
-                      <LinkButton
-                        variant="success"
-                        size="sm"
-                        to={`/flash/study/${d.id}?due=1`}
-                      >
-                        ทบทวน {deckDue} คำ
-                      </LinkButton>
-                    )}
-                  </>
-                ) : (
-                  <Button variant="primary" size="sm" onClick={() => start(d.id)}>
-                    เริ่ม {modeLabel[mode]}
-                  </Button>
+                <LinkButton variant="primary" size="sm" to={`/flash/deck/${d.id}`}>
+                  เปิดชุด
+                </LinkButton>
+                {deckDue > 0 && (
+                  <LinkButton variant="success" size="sm" to={`/flash/study/${d.id}?due=1`}>
+                    ทบทวน {deckDue} คำ
+                  </LinkButton>
                 )}
                 {!d.official && (
                   <div className="ml-auto flex gap-1">

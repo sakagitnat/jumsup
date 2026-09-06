@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import { Link } from "react-router-dom";
 import { todayKey } from "../../lib/utils.js";
 import { useStore } from "../../store/useStore";
@@ -15,6 +16,14 @@ import {
   IconBolt,
   IconArrowRight,
   IconCheck,
+  IconFlashcard,
+  IconMatch,
+  IconCrossword,
+  IconReading,
+  IconListening,
+  IconWriting,
+  IconMock,
+  IconCommunity,
 } from "../../ui";
 
 /** A single contextual Pro nudge for the daily-plan card. Returns null for Pro
@@ -50,15 +59,15 @@ function proNudge(opts: {
   return null;
 }
 
-const skillCards: Array<[string, string, string, string]> = [
-  ["/flash", "Aa", "Flashcard", "วนคำจนจำครบ"],
-  ["/match", "Mt", "Match", "จับคู่แข่งกับเวลาและทำลายสถิติ"],
-  ["/crossword", "Cw", "Crossword", "เติมคำศัพท์ลงตารางไขว้จริง"],
-  ["/reading", "R", "Reading", "อ่าน แตะคำ แปล และเก็บศัพท์"],
-  ["/listening", "L", "Listening", "ฟังบทสนทนาและตอบคำถาม"],
-  ["/writing", "W", "Writing", "Text Completion และเรียงย่อหน้า"],
-  ["/mock", "M", "Mock Exam", "สร้างและเลือกชุดข้อสอบ"],
-  ["/community", "Cm", "Community", "ค้นหาชุดจากผู้ใช้อื่น"],
+const skillCards: Array<[string, ComponentType<{ size?: number }>, string, string]> = [
+  ["/flash", IconFlashcard, "Flashcard", "วนคำจนจำครบ"],
+  ["/flash", IconMatch, "Match", "จับคู่แข่งกับเวลาและทำลายสถิติ"],
+  ["/flash", IconCrossword, "Crossword", "เติมคำศัพท์ลงตารางไขว้จริง"],
+  ["/reading", IconReading, "Reading", "อ่าน แตะคำ แปล และเก็บศัพท์"],
+  ["/listening", IconListening, "Listening", "ฟังบทสนทนาและตอบคำถาม"],
+  ["/writing", IconWriting, "Writing", "Text Completion และเรียงย่อหน้า"],
+  ["/mock", IconMock, "Mock Exam", "สร้างและเลือกชุดข้อสอบ"],
+  ["/community", IconCommunity, "Community", "ค้นหาชุดจากผู้ใช้อื่น"],
 ];
 
 const skillRoute = (s: string) => (s === "vocabulary" ? "/flash" : `/${s}`);
@@ -335,14 +344,14 @@ export function Home() {
 
       <h2 className="mb-3 mt-8 text-lg font-semibold">ฝึกทักษะ</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {skillCards.map(([to, icon, title]) => (
+        {skillCards.map(([to, Icon, title], i) => (
           <Link
-            key={to}
+            key={`${title}-${i}`}
             to={to}
             className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-primary-border hover:bg-primary-soft"
           >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
-              {icon}
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+              <Icon size={20} />
             </span>
             <b className="text-xs">{title}</b>
           </Link>

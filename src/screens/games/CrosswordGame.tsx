@@ -44,7 +44,7 @@ export function CrosswordGame() {
         <EmptyState>
           คำที่จำแล้วต้องมีตัวอักษรร่วมกันอย่างน้อย 3 คำ — จำคำเพิ่มแล้วลองอีกครั้ง
           <div className="mt-3">
-            <Button variant="primary" onClick={() => navigate("/crossword")}>
+            <Button variant="primary" onClick={() => navigate(`/flash/deck/${deckId}`)}>
               กลับหน้าเลือกชุด
             </Button>
           </div>
@@ -97,7 +97,7 @@ export function CrosswordGame() {
 
   return (
     <>
-      <Button variant="ghost" className="mb-3" onClick={() => navigate("/crossword")}>
+      <Button variant="ghost" className="mb-3" onClick={() => navigate(`/flash/deck/${deckId}`)}>
         <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
         ออกจากเกม
       </Button>
