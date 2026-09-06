@@ -21,6 +21,9 @@ interface Limits {
   matchPerDay: number;
   crosswordPerDay: number;
   translationsPerDay: number;
+  maxFreeQuestions: number;
+  maxFreeMockQuestions: number;
+  mockCooldownDays: number;
   importRows?: number;
 }
 export const FREE_LIMITS: Limits;

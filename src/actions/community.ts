@@ -53,7 +53,9 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
     };
   };
 
-  const vocab = (s.decks || [])
+  const catalog = s.officialCatalog;
+
+  const vocab = (catalog?.decks || [])
     .filter((x) => x.official)
     .map((x) =>
       decorate({
@@ -72,11 +74,11 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
     );
 
   const skillSource = [
-    ...(s.reading || []).map((x) => ({ ...x, kind: "reading" })),
-    ...(s.listening || []).map((x) => ({ ...x, kind: "listening" })),
-    ...(s.writing || []).map((x) => ({ ...x, kind: "writing" })),
-    ...(s.mocks || []).map((x) => ({ ...x, kind: "mock" })),
-  ].filter((x) => x.creator === "Jumsup Official");
+    ...(catalog?.reading || []).map((x) => ({ ...x, kind: "reading" })),
+    ...(catalog?.listening || []).map((x) => ({ ...x, kind: "listening" })),
+    ...(catalog?.writing || []).map((x) => ({ ...x, kind: "writing" })),
+    ...(catalog?.mocks || []).map((x) => ({ ...x, kind: "mock" })),
+  ];
 
   const skill = skillSource.map((x) =>
     decorate({
@@ -132,7 +134,7 @@ function localCommunityImport(item: CommunityItem) {
       [item.id]: (s.communityImportCounts?.[item.id] || 0) + 1,
     };
     if (item.type === "vocab") {
-      const source = s.decks.find((x) => x.id === item.id);
+      const source = s.officialCatalog?.decks.find((x) => x.id === item.id);
       if (!source) return { ...s, communityImportCounts: counts };
       return {
         ...s,
@@ -156,7 +158,7 @@ function localCommunityImport(item: CommunityItem) {
       | "listening"
       | "writing"
       | "mocks";
-    const source = (s[key] || []).find((x) => x.id === item.id);
+    const source = (s.officialCatalog?.[key] || []).find((x) => x.id === item.id);
     if (!source) return { ...s, communityImportCounts: counts };
     return {
       ...s,
@@ -350,7 +352,7 @@ export async function getCommunityPreview(
   const s = store.get();
   if (item.official || !backendEnabled) {
     if (item.type === "vocab") {
-      const deck = s.decks.find((d) => d.id === item.id);
+      const deck = s.officialCatalog?.decks.find((d) => d.id === item.id);
       if (!deck) return null;
       return { type: "vocab", title: deck.name, words: deck.words };
     }
@@ -359,7 +361,7 @@ export async function getCommunityPreview(
       | "listening"
       | "writing"
       | "mocks";
-    const set = (s[key] || []).find((x) => x.id === item.id);
+    const set = (s.officialCatalog?.[key] || []).find((x) => x.id === item.id);
     if (!set) return null;
     return {
       type: "skill",
