@@ -19,7 +19,6 @@ import {
   Button,
   EmptyState,
   Modal,
-  StarRating,
   toast,
   cx,
   IconChat,
@@ -223,24 +222,9 @@ export function Community() {
               </div>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-              <span className="inline-flex items-center gap-1">
-                <StarRating value={Math.round(x.rating || 0)} size="sm" readOnly />
-                <b>{Number(x.rating || 0).toFixed(1)}</b>
-                <small>({x.ratingCount || 0})</small>
-              </span>
               <span className="inline-flex items-center gap-1" title="นำเข้า">
                 <IconDownload size={14} /> {x.importCount || 0}
               </span>
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-              <button
-                type="button"
-                onClick={() => setReviewFor(x)}
-                className="text-primary hover:underline"
-              >
-                รีวิว ({x.ratingCount || 0})
-              </button>
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
