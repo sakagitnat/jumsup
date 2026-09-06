@@ -13,13 +13,24 @@ export function BottomNav() {
           to={item.to}
           className={({ isActive }) =>
             cx(
-              "flex flex-col items-center gap-1 py-2 text-[10px] font-semibold",
+              "flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold",
               isActive ? "text-primary" : "text-muted",
             )
           }
         >
-          {item.icon}
-          {t(item.key)}
+          {({ isActive }) => (
+            <>
+              <span
+                className={cx(
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-xl transition-colors",
+                  isActive && "bg-primary-soft",
+                )}
+              >
+                {item.icon}
+              </span>
+              <span className="leading-tight">{t(item.key)}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
