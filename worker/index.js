@@ -12,6 +12,7 @@ import * as adminBots from "../functions/api/admin/bots.js";
 import * as adminUsers from "../functions/api/admin/users.js";
 import * as adminReviews from "../functions/api/admin/reviews.js";
 import * as adminContent from "../functions/api/admin/content.js";
+import * as adminCatalogOverrides from "../functions/api/admin/catalog-overrides.js";
 import * as adminSeasons from "../functions/api/admin/seasons.js";
 import * as adminXpIntegrity from "../functions/api/admin/xp-integrity.js";
 import * as adminFunnel from "../functions/api/admin/funnel.js";
@@ -48,6 +49,7 @@ const routes = new Map([
   ["/api/admin/users", adminUsers],
   ["/api/admin/reviews", adminReviews],
   ["/api/admin/content", adminContent],
+  ["/api/admin/catalog-overrides", adminCatalogOverrides],
   ["/api/admin/seasons", adminSeasons],
   ["/api/admin/xp-integrity", adminXpIntegrity],
   ["/api/admin/funnel", adminFunnel],
