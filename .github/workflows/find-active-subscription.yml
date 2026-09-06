@@ -1,0 +1,26 @@
+name: Find Active Subscription
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: List active/trialing Stripe subscriptions with the account email (read-only)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGCLIENTENCODING: UTF8
+        run: |
+          psql "$SUPABASE_DB_URL" -c "
+            select u.email, p.username, s.status, s.plan, s.billing_currency,
+                   s.stripe_customer_id, s.stripe_subscription_id,
+                   s.current_period_end, s.cancel_at_period_end, s.updated_at
+            from public.subscriptions s
+            join auth.users u on u.id = s.user_id
+            left join public.profiles p on p.user_id = s.user_id
+            where s.payment_account = 'stripe_live_th'
+            order by s.updated_at desc;"
