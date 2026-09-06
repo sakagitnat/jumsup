@@ -19,8 +19,10 @@ import {
   IconFlashcard,
   IconMatch,
   IconCrossword,
+  IconSpeaker,
 } from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
+import { speak } from "../../lib/utils.js";
 
 const MIN_WORDS = { match: 4, crossword: 3 } as const;
 
@@ -148,21 +150,47 @@ export function DeckDetail() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="flex flex-col gap-3">
         {modes.map((m) => (
-          <Card key={m.key} className="flex flex-col">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
+          <Card key={m.key} className="flex flex-wrap items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
               <m.icon size={20} />
             </span>
-            <h3 className="mt-3 text-base font-semibold">{m.label}</h3>
-            <p className="mt-1 flex-1 text-sm text-muted">{m.desc}</p>
-            {m.locked ? (
-              <p className="mt-3 text-xs text-subtle">{m.locked}</p>
-            ) : (
-              <Button variant="primary" size="sm" className="mt-3" onClick={m.onStart}>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold">{m.label}</h3>
+              <p className="text-sm text-muted">{m.locked || m.desc}</p>
+            </div>
+            {!m.locked && (
+              <Button variant="primary" size="sm" className="w-full sm:w-auto" onClick={m.onStart}>
                 เริ่ม {m.label}
               </Button>
             )}
+          </Card>
+        ))}
+      </div>
+
+      <h2 className="mb-3 mt-8 text-lg font-semibold">คำศัพท์ในชุดนี้ ({deck.words.length})</h2>
+      <div className="flex flex-col gap-2">
+        {deck.words.map((w, i) => (
+          <Card key={i} className="flex items-center gap-3 py-3">
+            <button
+              type="button"
+              aria-label="ฟังเสียง"
+              onClick={() => speak(w.w)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 hover:text-text"
+            >
+              <IconSpeaker size={16} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold" data-noi18n>
+                {w.w}
+                {(w.p || w.stress) && (
+                  <span className="ml-2 font-normal text-subtle">{w.p || w.stress}</span>
+                )}
+              </p>
+              {w.e && <p className="truncate text-xs text-subtle">{w.e}</p>}
+            </div>
+            <p className="max-w-[45%] text-right text-sm text-muted">{w.m}</p>
           </Card>
         ))}
       </div>

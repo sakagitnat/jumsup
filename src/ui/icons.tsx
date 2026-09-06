@@ -199,7 +199,7 @@ export const IconFlashcard = (p: Props) => (
 
 export const IconMatch = (p: Props) => (
   <Svg {...p}>
-    <path d="m8 7-4 4 4 4M4 11h16M16 17l4-4-4-4" />
+    <path d="m8 7-4 4 4 4M4 11h16M16 7l4 4-4 4" />
   </Svg>
 );
 
@@ -244,5 +244,19 @@ export const IconCommunity = (p: Props) => (
     <circle cx="9" cy="8" r="3" />
     <circle cx="17" cy="9" r="2" />
     <path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M15 15c3-.4 5 1.3 6 4" />
+  </Svg>
+);
+
+export const IconSpeaker = (p: Props) => (
+  <Svg {...p}>
+    <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+    <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+  </Svg>
+);
+
+export const IconMenu = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 6h16M4 12h16M4 18h16" />
   </Svg>
 );

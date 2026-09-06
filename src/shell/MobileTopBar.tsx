@@ -1,15 +1,26 @@
 import { Link } from "react-router-dom";
 import { icons } from "./nav";
 import { Logo } from "../ui/Logo";
+import { IconMenu } from "../ui/icons";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function MobileTopBar() {
+export function MobileTopBar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface px-4 py-3 lg:hidden">
-      <Link to="/home" className="flex items-center gap-2">
-        <Logo size={32} />
-        <span className="text-sm font-semibold">Jumsup</span>
-      </Link>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="เปิดเมนู"
+          onClick={onMenuClick}
+          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted"
+        >
+          <IconMenu size={18} />
+        </button>
+        <Link to="/home" className="flex items-center gap-2">
+          <Logo size={32} />
+          <span className="text-sm font-semibold">Jumsup</span>
+        </Link>
+      </div>
       <div className="flex items-center gap-2">
         <ThemeToggle />
         <Link

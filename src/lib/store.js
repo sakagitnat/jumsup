@@ -8,10 +8,12 @@ if(!localStorage.getItem(KEY)){
 // this lands, so `contentLoaded` lets screens show a skeleton for the brief gap.
 //
 // Only a small curated "starter" subset of the official vocab decks is merged
-// into a user's own Flashcard list by default; the full catalog (all official
-// decks and practice sets) lives in `officialCatalog` for Community browsing
-// only and is never merged into `decks`/`reading`/`listening`/`writing`/`mocks`
-// — those arrays are the user's own content.
+// into a user's own Flashcard list by default (the full 60+ deck catalog lives
+// in `officialCatalog` for Community browsing only). Official practice sets are
+// a much smaller curated set to begin with (a handful per skill, mixing a few
+// free-tier-sized sets with a couple of larger Pro showcase sets), so the whole
+// thing is merged into `reading`/`listening`/`writing`/`mocks` directly — those
+// same items are also what `officialCatalog` exposes to Community.
 let official={starterDecks:[],decks:[],reading:[],listening:[],writing:[],mocks:[]};
 const initial=()=>({
  theme:"light",lang:"th",sound:true,lastCheckin:"",xp:0,streak:0,
@@ -23,7 +25,7 @@ const initial=()=>({
  examTargets:[],
  practiceHistory:[],
  flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,voiceURI:"",rate:0.9},
- reading:[],listening:[],writing:[],mocks:[],
+ reading:[...official.reading],listening:[...official.listening],writing:[...official.writing],mocks:[...official.mocks],
  officialCatalog:official,
  community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{}
 });
@@ -43,12 +45,12 @@ function mergeSamples(saved){
  });
  next.decks=[...starters,...savedDecks.filter(deck=>!starters.some(sample=>sample.id===deck.id))];
  for(const key of ["reading","listening","writing","mocks"]){
-  const existing=(Array.isArray(next[key])?next[key]:[]).filter(item=>{
-   const official=item?.creator==="Jumsup Official";
+  const savedItems=(Array.isArray(next[key])?next[key]:[]).filter(item=>{
+   const isOfficial=item?.creator==="Jumsup Official";
    const legacy=/^(reading|listening|writing|mock)(-alevel|-parallel)|^mock-parallel-1$/.test(item?.id||"");
-   return !official&&!legacy;
+   return !isOfficial&&!legacy;
   });
-  next[key]=existing;
+  next[key]=[...official[key],...savedItems];
  }
  return next;
 }

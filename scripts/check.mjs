@@ -93,15 +93,14 @@ for (const d of officialVocabDecks) {
   }
 }
 
-const expected = [
-  [defaultListening, 20],
-  [defaultReading, 40],
-  [defaultWriting, 20],
-  [defaultMocks, null],
-];
-for (const [sets, fixedCount] of expected) {
+// Each skill now ships several sets of varying size (a few small enough for
+// the Free tier, plus larger Pro showcase sets) rather than one fixed-size
+// set, so every set is checked against its own itemCount instead of one
+// hardcoded count per skill.
+const expected = [defaultListening, defaultReading, defaultWriting, defaultMocks];
+for (const sets of expected) {
   for (const set of sets) {
-    const count = fixedCount ?? set.itemCount;
+    const count = set.itemCount;
     const questions = (set.sections || []).flatMap((section) => section.questions || []);
     if (questions.length !== count)
       fail(`${set.id} expected ${count} questions, found ${questions.length}`);
