@@ -83,7 +83,7 @@ export function MatchGame() {
       <>
         <PageHeader eyebrow="VOCABULARY GAME" title="ไม่พบชุดคำศัพท์" />
         <EmptyState>
-          <Button variant="primary" onClick={() => navigate("/match")}>
+          <Button variant="primary" onClick={() => navigate("/flash")}>
             กลับหน้าเลือกชุด
           </Button>
         </EmptyState>
@@ -114,7 +114,7 @@ export function MatchGame() {
 
   return (
     <>
-      <Button variant="ghost" className="mb-3" onClick={() => navigate("/match")}>
+      <Button variant="ghost" className="mb-3" onClick={() => navigate(`/flash/deck/${deckId}`)}>
         <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
         ออกจากเกม
       </Button>
@@ -190,7 +190,7 @@ export function MatchGame() {
                 <Button variant="primary" onClick={restart}>
                   เล่นอีกครั้ง
                 </Button>
-                <Button onClick={() => navigate("/match")}>กลับ</Button>
+                <Button onClick={() => navigate(`/flash/deck/${deckId}`)}>กลับ</Button>
               </div>
             </Card>
           </div>

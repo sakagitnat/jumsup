@@ -1,17 +1,26 @@
+import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore, store } from "../../store/useStore";
 import { PLANS, money } from "../../lib/plans.js";
 import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
 import { COMMUNITY_URL } from "../../lib/community";
-import { Button, Logo, IconCheck } from "../../ui";
+import {
+  Button,
+  Logo,
+  IconCheck,
+  IconFlashcard,
+  IconReading,
+  IconListening,
+  IconMock,
+} from "../../ui";
 import { DemoCard } from "./DemoCard";
 
-const features = [
-  ["Aa", "จำศัพท์ด้วย Loop", "คำที่ยังไม่จำจะวนกลับมา และบันทึกไว้ทบทวนได้เสมอ"],
-  ["R", "Reading พร้อมเครื่องมือ", "ไฮไลต์ แตะคำ แปล และเก็บคำที่ไม่รู้เข้า Flashcard"],
-  ["L", "Listening ตามรูปแบบข้อสอบ", "ฟังบทสนทนา ซ่อน Transcript และตอบคำถามตามบริบท"],
-  ["M", "Mock Exam คู่ขนาน", "ซ้อมเวลา ตรวจคะแนน และดูคำอธิบายหลังส่งคำตอบ"],
+const features: Array<[ComponentType<{ size?: number }>, string, string]> = [
+  [IconFlashcard, "จำศัพท์ด้วย Loop", "คำที่ยังไม่จำจะวนกลับมา และบันทึกไว้ทบทวนได้เสมอ"],
+  [IconReading, "Reading พร้อมเครื่องมือ", "ไฮไลต์ แตะคำ แปล และเก็บคำที่ไม่รู้เข้า Flashcard"],
+  [IconListening, "Listening ตามรูปแบบข้อสอบ", "ฟังบทสนทนา ซ่อน Transcript และตอบคำถามตามบริบท"],
+  [IconMock, "Mock Exam คู่ขนาน", "ซ้อมเวลา ตรวจคะแนน และดูคำอธิบายหลังส่งคำตอบ"],
 ];
 
 const steps = [
@@ -140,10 +149,10 @@ export function Landing() {
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {features.map(([icon, title, desc]) => (
+          {features.map(([Icon, title, desc]) => (
             <article key={title} className="rounded-2xl border border-line bg-surface p-5">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft font-bold text-primary">
-                {icon}
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
+                <Icon size={20} />
               </span>
               <h3 className="mt-3 text-lg font-semibold">{title}</h3>
               <p className="mt-1 text-sm text-muted">{desc}</p>

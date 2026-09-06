@@ -5,6 +5,7 @@ import { RequireAuth } from "./RequireAuth";
 import { Root } from "./Root";
 import { Home } from "../screens/home/Home";
 import { Flashcards } from "../screens/flashcards/Flashcards";
+import { DeckDetail } from "../screens/flashcards/DeckDetail";
 import { Study } from "../screens/flashcards/Study";
 import { PracticeList } from "../screens/practice/PracticeList";
 import { PracticePlay } from "../screens/practice/PracticePlay";
@@ -45,10 +46,9 @@ export const router = createBrowserRouter([
             element: <RequireAuth />,
             children: [
               { path: "/flash", element: <Flashcards /> },
+              { path: "/flash/deck/:deckId", element: <DeckDetail /> },
               { path: "/flash/study/:deckId", element: <Study /> },
-              { path: "/match", element: <Flashcards mode="match" /> },
               { path: "/match/play/:deckId", element: <MatchGame /> },
-              { path: "/crossword", element: <Flashcards mode="crossword" /> },
               { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
 
               { path: "/reading", element: <PracticeList kind="reading" /> },

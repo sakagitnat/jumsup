@@ -101,11 +101,7 @@ export const icons = {
 export const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "vocab",
-    items: [
-      { to: "/flash", key: "flash", icon: icons.flash },
-      { to: "/match", key: "match", icon: icons.match },
-      { to: "/crossword", key: "cross", icon: icons.cross },
-    ],
+    items: [{ to: "/flash", key: "flash", icon: icons.flash }],
   },
   {
     label: "practice",
