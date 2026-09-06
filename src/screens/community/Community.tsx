@@ -6,6 +6,7 @@ import {
   importCommunity,
   likeCommunity,
   reportCommunity,
+  setCommunityOverride,
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
 import { COMMUNITY_URL } from "../../lib/community";
@@ -34,6 +35,7 @@ export function Community() {
   const community = useStore((s) => s.community);
   const sort = useStore((s) => s.communitySort);
   const user = useStore((s) => s.user);
+  const isAdmin = useStore((s) => s.profile?.role === "admin");
 
   const [tab, setTab] = useState<Tab>("vocab");
   const [query, setQuery] = useState("");
@@ -193,9 +195,12 @@ export function Community() {
         {items.map((x) => (
           <Card key={x.id} className="flex flex-col">
             <div className="flex items-center justify-between gap-2">
-              <Tag tone={x.official ? "info" : "success"}>
-                {x.official ? "OFFICIAL" : "COMMUNITY"}
-              </Tag>
+              <div className="flex items-center gap-1.5">
+                <Tag tone={x.official ? "info" : "success"}>
+                  {x.official ? "OFFICIAL" : "COMMUNITY"}
+                </Tag>
+                {x.hidden && <Tag tone="danger">ซ่อนอยู่</Tag>}
+              </div>
               <span className="text-xs text-subtle">{x.kind || x.type}</span>
             </div>
             <button
@@ -261,10 +266,33 @@ export function Community() {
               <button
                 type="button"
                 onClick={() => setReportFor(x)}
-                className="ml-auto text-xs text-subtle hover:text-muted"
+                className={cx("text-xs text-subtle hover:text-muted", !isAdmin && "ml-auto")}
               >
                 รายงาน
               </button>
+              {isAdmin && (
+                <div className="ml-auto flex items-center gap-2 border-l border-line pl-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const title = prompt("ตั้งชื่อใหม่", x.title)?.trim();
+                      if (title) setCommunityOverride(x, "rename", reload, title);
+                    }}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    แก้ไขชื่อ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCommunityOverride(x, x.hidden ? "unhide" : "hide", reload)
+                    }
+                    className="text-xs font-semibold text-danger hover:underline"
+                  >
+                    {x.hidden ? "เลิกซ่อน" : "ซ่อน"}
+                  </button>
+                </div>
+              )}
             </div>
           </Card>
         ))}

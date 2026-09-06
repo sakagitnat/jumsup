@@ -144,6 +144,9 @@ export interface CommunityItem {
   exam?: string;
   skill?: string;
   level?: string;
+  /** Set client-side from catalogOverrides — only ever present for admins,
+   *  since non-admins never receive hidden items from refreshCommunity(). */
+  hidden?: boolean;
 }
 
 export interface AppState {
@@ -189,6 +192,9 @@ export interface AppState {
   communityLikes: Record<string, boolean>;
   communityReviews: Record<string, { rating: number; body: string; createdAt: string }>;
   communityImportCounts: Record<string, number>;
+  /** Admin hide/rename overrides for Community listings, fetched fresh on
+   *  every refreshCommunity() call — never persisted locally. */
+  catalogOverrides: Record<string, { hidden: boolean; title: string | null }>;
 }
 
 export interface Store {

@@ -124,3 +124,13 @@ export function reportCommunityContent(
   item: CommunityItem,
   reason: string,
 ): Promise<void>;
+
+export function loadCatalogOverrides(): Promise<
+  Record<string, { hidden: boolean; title: string | null }>
+>;
+export function setCatalogOverride(
+  contentId: string,
+  kind: "vocab" | "skill",
+  action: "hide" | "unhide" | "rename",
+  title?: string,
+): Promise<void>;
