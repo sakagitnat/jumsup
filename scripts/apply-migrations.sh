@@ -11,6 +11,10 @@ set -euo pipefail
 
 : "${SUPABASE_DB_URL:?SUPABASE_DB_URL is not set}"
 
+# Migration 036 embeds Thai string literals; make sure psql doesn't fall back
+# to a non-UTF8 client encoding based on the runner's locale.
+export PGCLIENTENCODING=UTF8
+
 BASELINE_UP_TO="032"
 MIGRATIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../supabase/migrations" && pwd)"
 
