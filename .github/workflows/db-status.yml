@@ -13,6 +13,7 @@ jobs:
       - name: Row counts and migration history (read-only)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGCLIENTENCODING: UTF8
         run: |
           echo '--- table row counts ---'
           psql "$SUPABASE_DB_URL" -c "
@@ -21,7 +22,13 @@ jobs:
             union all select 'practice_sets', count(*) from practice_sets
             union all select 'content_reviews', count(*) from content_reviews
             union all select 'content_likes', count(*) from content_likes
+            union all select 'dictionary_entries', count(*) from dictionary_entries
+            union all select 'dictionary_suggestions', count(*) from dictionary_suggestions
             order by 1;"
+          echo '--- dictionary_entries by target_language/status/source ---'
+          psql "$SUPABASE_DB_URL" -c "select target_language, status, source, count(*) from dictionary_entries group by 1,2,3 order by 1,2,3;"
+          echo '--- sample dictionary_entries (up to 10, checking Thai text integrity) ---'
+          psql "$SUPABASE_DB_URL" -c "select source_word, meaning from dictionary_entries where target_language='th' order by source_word limit 10;"
           echo '--- vocab_sets by source_type/visibility ---'
           psql "$SUPABASE_DB_URL" -c "select source_type, visibility, count(*) from vocab_sets group by 1,2 order by 1,2;"
           echo '--- practice_sets by kind/visibility ---'
