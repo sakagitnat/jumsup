@@ -18,7 +18,10 @@ const modeLabel: Record<Mode, string> = {
   crossword: "Crossword",
 };
 const headMeta: Record<Mode, { title: string; desc: string }> = {
-  flash: { title: "เลือกชุดคำศัพท์", desc: "เลือกชุดก่อนเริ่มฝึก แก้ไข ลบ และกำหนดการมองเห็นได้" },
+  flash: {
+    title: "ชุดคำศัพท์ของฉัน",
+    desc: "3 ชุดหลักจาก Jumsup พร้อมชุดที่คุณสร้างหรือนำเข้า — หาชุดเพิ่มเติมได้ที่ Community",
+  },
   match: { title: "Match", desc: "จับคู่คำศัพท์กับความหมาย — ต้องจำศัพท์ในชุดนั้นอย่างน้อย 4 คำ" },
   crossword: { title: "Crossword", desc: "เติมคำไขว้จากคำที่จำแล้ว — ต้องจำอย่างน้อย 3 คำ" },
 };
@@ -56,6 +59,9 @@ export function Flashcards({ mode = "flash" }: { mode?: Mode }) {
               + สร้างชุดใหม่
             </Button>
             <Button onClick={() => setImporting(true)}>นำเข้าหลายคำ</Button>
+            {mode === "flash" && (
+              <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
+            )}
           </>
         }
       />

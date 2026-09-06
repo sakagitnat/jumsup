@@ -14,14 +14,18 @@ interface Popover {
   y: number;
   loading: boolean;
   meaning: string;
+  found: boolean;
   saved: boolean;
 }
 
 export function WordText({ text }: { text: string }) {
-  const decks = useStore((s) => s.decks);
+  const allDecks = useStore((s) => s.decks);
   const user = useStore((s) => s.user);
+  // Words can only be filed into decks the user made themselves — not the
+  // official starter decks or ones imported from Community.
+  const ownDecks = allDecks.filter((d) => (d.sourceType || "own") === "own");
   const [pop, setPop] = useState<Popover | null>(null);
-  const [deckId, setDeckId] = useState(decks[0]?.id ?? "");
+  const [deckId, setDeckId] = useState(ownDecks[0]?.id ?? "");
 
   const open = async (e: React.MouseEvent<HTMLSpanElement>, raw: string) => {
     const word = raw.toLowerCase().replace(/[^a-z-]/g, "");
@@ -33,6 +37,7 @@ export function WordText({ text }: { text: string }) {
       y: r.bottom + 8,
       loading: true,
       meaning: "",
+      found: false,
       saved: false,
     });
     if (!user) {
@@ -41,11 +46,9 @@ export function WordText({ text }: { text: string }) {
     }
     try {
       const meaning = await translateWord(word);
-      setPop((p) =>
-        p ? { ...p, loading: false, meaning: meaning || "ยังไม่พบคำแปล — เพิ่มคำไว้แล้วเติมความหมายภายหลังได้" } : p,
-      );
-    } catch (err) {
-      setPop((p) => (p ? { ...p, loading: false, meaning: (err as Error).message || "แปลไม่สำเร็จ" } : p));
+      setPop((p) => (p ? { ...p, loading: false, meaning, found: !!meaning } : p));
+    } catch {
+      setPop((p) => (p ? { ...p, loading: false, meaning: "", found: false } : p));
     }
   };
 
@@ -92,9 +95,16 @@ export function WordText({ text }: { text: string }) {
                 </button>
               </div>
               <p className="mt-1 min-h-[2.5rem] text-sm text-muted">
-                {pop.loading ? "กำลังค้นหาคำแปล…" : pop.meaning}
+                {pop.loading
+                  ? "กำลังค้นหาคำแปล…"
+                  : pop.meaning || "ยังไม่พบคำแปล — เพิ่มคำไว้แล้วเติมความหมายภายหลังได้"}
               </p>
-              {user && (
+              {user && ownDecks.length === 0 && (
+                <p className="mt-2 text-xs text-muted">
+                  สร้างชุดคำศัพท์ของคุณเองก่อน จึงจะเพิ่มคำเข้าชุดได้
+                </p>
+              )}
+              {user && ownDecks.length > 0 && (
                 <>
                   <label className="mt-2 block text-xs text-muted">
                     บันทึกลงชุด
@@ -103,7 +113,7 @@ export function WordText({ text }: { text: string }) {
                       onChange={(e) => setDeckId(e.target.value)}
                       className="mt-1 w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-sm"
                     >
-                      {decks.map((d) => (
+                      {ownDecks.map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.name}
                         </option>
@@ -114,7 +124,7 @@ export function WordText({ text }: { text: string }) {
                     type="button"
                     disabled={pop.loading || pop.saved}
                     onClick={() => {
-                      if (addWordToDeck(deckId, pop.word, pop.meaning)) {
+                      if (addWordToDeck(deckId, pop.word, pop.found ? pop.meaning : "")) {
                         setPop((p) => (p ? { ...p, saved: true } : p));
                         setTimeout(() => setPop(null), 600);
                       }

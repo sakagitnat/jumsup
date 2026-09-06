@@ -61,13 +61,14 @@ export async function startPracticeSession(
     } catch (err) {
       const e = err as {
         message?: string;
-        details?: { reason?: string; remaining_seconds?: number };
+        details?: { reason?: string; remaining_seconds?: number; limit?: number };
       };
       const reason = e.details?.reason;
       if (reason === "PRO_ONLY_LARGE_SET") {
+        const limit = e.details?.limit ?? 10;
         openUpgradeModal(
-          "ชุดนี้มีมากกว่า 10 ข้อ",
-          `Free ฝึกได้เฉพาะชุดที่มีคำถามไม่เกิน 10 ข้อ ชุดนี้มี ${itemCount} ข้อ — อัปเกรดเป็น Pro เพื่อฝึกได้ทุกขนาดชุด`,
+          `ชุดนี้มีมากกว่า ${limit} ข้อ`,
+          `Free ฝึกได้เฉพาะชุดที่มีคำถามไม่เกิน ${limit} ข้อ ชุดนี้มี ${itemCount} ข้อ — อัปเกรดเป็น Pro เพื่อฝึกได้ทุกขนาดชุด`,
         );
         return false;
       }

@@ -39,8 +39,8 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
     <>
       <PageHeader
         eyebrow="PRACTICE"
-        title={titles[kind]}
-        description="เลือกชุดก่อนเข้าสู่หน้าฝึกจริง หรือสร้างชุดของคุณเอง"
+        title={`${titles[kind]} ของฉัน`}
+        description="ชุดที่คุณสร้างหรือนำเข้ามา — หาชุดทางการและชุดอื่นๆ เพิ่มเติมได้ที่ Community"
         actions={
           <>
             <Button variant="primary" onClick={() => setEditor({ open: true, id: null })}>

@@ -173,6 +173,17 @@ export interface AppState {
   listening: PracticeSet[];
   writing: PracticeSet[];
   mocks: PracticeSet[];
+  /** Full official catalog (all vocab decks + all practice sets), independent of
+   *  the user's own content — used to populate Community, never merged into
+   *  decks/reading/listening/writing/mocks (only a curated starter subset of
+   *  decks is merged into the user's own Flashcard list). */
+  officialCatalog: {
+    decks: Deck[];
+    reading: PracticeSet[];
+    listening: PracticeSet[];
+    writing: PracticeSet[];
+    mocks: PracticeSet[];
+  };
   community: CommunityItem[];
   communitySort: "popular" | "rating" | "new";
   communityLikes: Record<string, boolean>;
