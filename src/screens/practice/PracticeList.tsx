@@ -42,13 +42,21 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
         title={`${titles[kind]} ของฉัน`}
         description="ชุดที่คุณสร้างหรือนำเข้ามา — หาชุดทางการและชุดอื่นๆ เพิ่มเติมได้ที่ Community"
         actions={
-          <>
-            <Button variant="primary" onClick={() => setEditor({ open: true, id: null })}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              variant="primary"
+              className="w-full sm:w-auto"
+              onClick={() => setEditor({ open: true, id: null })}
+            >
               + สร้างชุดใหม่
             </Button>
-            <Button onClick={() => setImporting(true)}>นำเข้าจาก CSV</Button>
-            <Button onClick={() => navigate("/community")}>ค้นหาใน Community</Button>
-          </>
+            <Button className="w-full sm:w-auto" onClick={() => setImporting(true)}>
+              นำเข้าจาก CSV
+            </Button>
+            <Button className="w-full sm:w-auto" onClick={() => navigate("/community")}>
+              ค้นหาใน Community
+            </Button>
+          </div>
         }
       />
 
@@ -78,7 +86,14 @@ export function PracticeList({ kind }: { kind: PracticeKind }) {
           </div>
         )}
         {list.length === 0 && contentLoaded && (
-          <EmptyState>ยังไม่มีชุดฝึกในหมวดนี้</EmptyState>
+          <EmptyState>
+            ยังไม่มีชุดฝึกในหมวดนี้ — ชุดทางการอยู่ที่ Community แล้ว นำเข้ามาใช้ได้ฟรี
+            <div className="mt-3">
+              <Button variant="primary" size="sm" onClick={() => navigate("/community")}>
+                ค้นหาใน Community
+              </Button>
+            </div>
+          </EmptyState>
         )}
         {list.map((x) => {
           const official = x.official;

@@ -17,8 +17,6 @@ import {
   IconArrowRight,
   IconCheck,
   IconFlashcard,
-  IconMatch,
-  IconCrossword,
   IconReading,
   IconListening,
   IconWriting,
@@ -60,9 +58,7 @@ function proNudge(opts: {
 }
 
 const skillCards: Array<[string, ComponentType<{ size?: number }>, string, string]> = [
-  ["/flash", IconFlashcard, "Flashcard", "วนคำจนจำครบ"],
-  ["/flash", IconMatch, "Match", "จับคู่แข่งกับเวลาและทำลายสถิติ"],
-  ["/flash", IconCrossword, "Crossword", "เติมคำศัพท์ลงตารางไขว้จริง"],
+  ["/flash", IconFlashcard, "Flashcard", "วนคำจนจำครบ — เปิดชุดเพื่อเล่น Match/Crossword ได้ด้วย"],
   ["/reading", IconReading, "Reading", "อ่าน แตะคำ แปล และเก็บศัพท์"],
   ["/listening", IconListening, "Listening", "ฟังบทสนทนาและตอบคำถาม"],
   ["/writing", IconWriting, "Writing", "Text Completion และเรียงย่อหน้า"],
@@ -343,10 +339,10 @@ export function Home() {
       )}
 
       <h2 className="mb-3 mt-8 text-lg font-semibold">ฝึกทักษะ</h2>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {skillCards.map(([to, Icon, title], i) => (
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {skillCards.map(([to, Icon, title]) => (
           <Link
-            key={`${title}-${i}`}
+            key={to}
             to={to}
             className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-primary-border hover:bg-primary-soft"
           >
