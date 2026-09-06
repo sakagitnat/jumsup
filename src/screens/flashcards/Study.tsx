@@ -69,6 +69,11 @@ export function Study() {
   const [poolSize, setPoolSize] = useState(() =>
     Math.min(flashSettings.loopSize, deck?.words.length ?? flashSettings.loopSize),
   );
+  // Separate from `poolSize` so the field can be cleared/backspaced while
+  // typing a new number — a controlled input bound straight to poolSize
+  // forced empty input back to 1 on every keystroke, making it impossible
+  // to clear the field and type a different number.
+  const [poolSizeInput, setPoolSizeInput] = useState(() => String(poolSize));
   const [mastered, setMastered] = useState<number[]>(() => [...storedMastered]);
   const [cursor, setCursor] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -141,6 +146,13 @@ export function Study() {
   useEffect(() => {
     setFlipped(false);
   }, [idx, duePos]);
+
+  // Re-sync the loop-size text field to the real value whenever the settings
+  // modal opens (covers poolSize changing elsewhere, e.g. the "+10" button).
+  useEffect(() => {
+    if (settingsOpen) setPoolSizeInput(String(poolSize));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsOpen]);
 
   const know = useCallback(async () => {
     if (idx < 0) return;
@@ -479,13 +491,21 @@ export function Study() {
               type="number"
               min={1}
               max={maxWords}
-              value={Math.min(poolSize, maxWords)}
+              value={poolSizeInput}
               onChange={(e) => {
-                const n = Math.max(1, Math.min(maxWords, Number(e.target.value) || 1));
+                const raw = e.target.value;
+                setPoolSizeInput(raw);
+                if (raw === "") return;
+                const parsed = Number(raw);
+                if (!Number.isFinite(parsed)) return;
+                const n = Math.max(1, Math.min(maxWords, Math.trunc(parsed)));
                 setPoolSize(n);
                 setMastered((m) => m.filter((i) => i < n));
                 setCursor(0);
                 store.set({ flashSettings: { ...flashSettings, loopSize: n } });
+              }}
+              onBlur={() => {
+                if (poolSizeInput !== String(poolSize)) setPoolSizeInput(String(poolSize));
               }}
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2"
             />
