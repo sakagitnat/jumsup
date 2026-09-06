@@ -27,7 +27,7 @@ const initial=()=>({
  flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,voiceURI:"",rate:0.9},
  reading:[...official.reading],listening:[...official.listening],writing:[...official.writing],mocks:[...official.mocks],
  officialCatalog:official,
- community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{}
+ community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{},catalogOverrides:{}
 });
 function mergeSamples(saved){
  const base=initial(),next={...base,...saved,user:null,subscription:null,syncing:false,contentLoaded:official.decks.length>0,officialCatalog:official};
@@ -56,7 +56,7 @@ function mergeSamples(saved){
 }
 let state=(()=>{try{return mergeSamples(JSON.parse(localStorage.getItem(KEY)||"{}"))}catch{return initial()}})();
 const listeners=new Set();
-function persist(){const copy={...state,user:null,subscription:null,syncing:false};delete copy.contentLoaded;delete copy.officialCatalog;localStorage.setItem(KEY,JSON.stringify(copy))}
+function persist(){const copy={...state,user:null,subscription:null,syncing:false};delete copy.contentLoaded;delete copy.officialCatalog;delete copy.catalogOverrides;localStorage.setItem(KEY,JSON.stringify(copy))}
 export const store={
  get:()=>state,
  set(patch){state={...state,...patch};persist();listeners.forEach(fn=>fn(state))},

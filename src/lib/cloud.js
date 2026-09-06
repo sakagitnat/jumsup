@@ -328,6 +328,21 @@ export async function reportCommunityContent(user,item,reason){
   const {error}=await supabase.from("content_reports").insert({reporter_user_id:user?.id||null,content_type:item.type,content_id:item.id,reason});if(error)throw error;
 }
 
+/** Admin hide/rename overrides for Community listings, keyed by content id --
+ *  the only way to moderate bundled official catalog items, which have no row
+ *  in vocab_sets/practice_sets. Readable by anyone (RLS-public) so every
+ *  viewer's Community list reflects the same overrides immediately. */
+export async function loadCatalogOverrides(){
+  if(!backendEnabled)return {};
+  const {data,error}=await supabase.from("catalog_overrides").select("content_id,hidden,title_override");
+  if(error){console.error(error);return {}}
+  return Object.fromEntries((data||[]).map(x=>[x.content_id,{hidden:!!x.hidden,title:x.title_override||null}]));
+}
+
+export async function setCatalogOverride(contentId,kind,action,title){
+  return api("/api/admin/catalog-overrides",{method:"POST",body:JSON.stringify({content_id:contentId,kind,action,title})});
+}
+
 export async function importCommunityItem(user,item){
   if(!backendEnabled||!user)throw new Error("Login required");
   if(item.type==="vocab"){

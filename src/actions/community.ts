@@ -11,6 +11,8 @@ import {
   replyToReview,
   reportCommunityContent,
   loadCommunityPreview,
+  loadCatalogOverrides,
+  setCatalogOverride,
   type CommunityPreview,
   type ContentReview,
 } from "../lib/cloud.js";
@@ -101,9 +103,27 @@ function buildDemoCommunity(s: AppState): CommunityItem[] {
   return [...vocab, ...skill];
 }
 
+/** Apply admin hide/rename overrides. Non-admins never see a hidden item at
+ *  all; admins see it (marked via `hidden`) so they can unhide it again. */
+function applyCatalogOverrides(
+  items: CommunityItem[],
+  overrides: Record<string, { hidden: boolean; title: string | null }>,
+  isAdmin: boolean,
+): CommunityItem[] {
+  return items
+    .map((item) => {
+      const ov = overrides[item.id];
+      if (!ov) return item;
+      return { ...item, title: ov.title || item.title, hidden: ov.hidden };
+    })
+    .filter((item) => isAdmin || !item.hidden);
+}
+
 export async function refreshCommunity(query: string, tab: Tab) {
   const user = getCurrentUser();
-  const demo = buildDemoCommunity(store.get()).filter((item) =>
+  const s = store.get();
+  const isAdmin = s.profile?.role === "admin";
+  const demo = buildDemoCommunity(s).filter((item) =>
     tab === "vocab" ? item.type === "vocab" : item.type === "skill",
   );
   if (!user || !backendEnabled) {
@@ -111,18 +131,41 @@ export async function refreshCommunity(query: string, tab: Tab) {
     return;
   }
   try {
-    const [remote, official] = await Promise.all([
+    const [remote, official, overrides] = await Promise.all([
       loadCommunity(query, tab),
       withCommunityMetrics(demo, tab),
+      loadCatalogOverrides(),
     ]);
-    const items = [
+    const merged = [
       ...official,
       ...remote.filter((item) => !official.some((seed) => seed.id === item.id)),
     ];
-    store.set({ community: items });
+    store.set({
+      community: applyCatalogOverrides(merged, overrides, isAdmin),
+      catalogOverrides: overrides,
+    });
   } catch (e) {
     console.error(e);
   }
+}
+
+/** Admin-only: hide/unhide or rename a Community listing, including bundled
+ *  official catalog items that have no row in vocab_sets/practice_sets. */
+export async function setCommunityOverride(
+  item: CommunityItem,
+  action: "hide" | "unhide" | "rename",
+  refresh: () => void,
+  title?: string,
+) {
+  try {
+    await setCatalogOverride(item.id, item.type, action, title);
+  } catch (e) {
+    return toast(friendly(e));
+  }
+  refresh();
+  toast(
+    action === "hide" ? "ซ่อนแล้ว" : action === "unhide" ? "เลิกซ่อนแล้ว" : "แก้ไขชื่อแล้ว",
+  );
 }
 
 function localCommunityImport(item: CommunityItem) {
