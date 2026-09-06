@@ -36,6 +36,7 @@ export function Community() {
   const sort = useStore((s) => s.communitySort);
   const user = useStore((s) => s.user);
   const isAdmin = useStore((s) => s.profile?.role === "admin");
+  const contentLoaded = useStore((s) => s.contentLoaded);
 
   const [tab, setTab] = useState<Tab>("vocab");
   const [query, setQuery] = useState("");
@@ -49,7 +50,20 @@ export function Community() {
   const reload = () => refreshCommunity(query, tab);
 
   useEffect(() => {
+    // Also re-run once contentLoaded flips to true: on a slow/backgrounded
+    // reload (common on mobile Safari after switching apps), this effect can
+    // fire before the official catalog has finished loading, which used to
+    // leave the list stuck empty until the user hit "รีเฟรช" by hand.
     refreshCommunity(query, tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, query, contentLoaded]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshCommunity(query, tab);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, query]);
 
