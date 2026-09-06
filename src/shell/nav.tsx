@@ -36,7 +36,7 @@ export const icons = {
   ),
   match: s(
     <>
-      <path d="m8 7-4 4 4 4M4 11h16M16 17l4-4-4-4" />
+      <path d="m8 7-4 4 4 4M4 11h16M16 7l4 4-4 4" />
     </>,
   ),
   cross: s(

@@ -1,32 +1,11 @@
-import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
 import { useT } from "../store/useT";
 import { useStore } from "../store/useStore";
 import { logout } from "../actions/auth";
-import { cx } from "../ui/cx";
 import { Logo } from "../ui/Logo";
 import { navGroups, homeItem } from "./nav";
+import { NavItemRow as Item } from "./NavItemRow";
 import { ProfileMini } from "./ProfileMini";
 import { ThemeToggle } from "./ThemeToggle";
-
-function Item({ to, label, icon }: { to: string; label: string; icon: ReactNode }) {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        cx(
-          "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
-          isActive
-            ? "bg-primary-soft text-primary"
-            : "text-muted hover:bg-surface-2 hover:text-text",
-        )
-      }
-    >
-      <span className="shrink-0">{icon}</span>
-      {label}
-    </NavLink>
-  );
-}
 
 export function Sidebar() {
   const t = useT();
