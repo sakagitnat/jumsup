@@ -29,6 +29,17 @@ jobs:
           psql "$SUPABASE_DB_URL" -c "select target_language, status, source, count(*) from dictionary_entries group by 1,2,3 order by 1,2,3;"
           echo '--- sample dictionary_entries (up to 10, checking Thai text integrity) ---'
           psql "$SUPABASE_DB_URL" -c "select source_word, meaning from dictionary_entries where target_language='th' order by source_word limit 10;"
+          echo '--- dictionary_suggestions by status ---'
+          psql "$SUPABASE_DB_URL" -c "select status, count(*) from dictionary_suggestions group by 1 order by 1;"
+          echo '--- dictionary_suggestions: distinct (word, meaning, target_language) pending ---'
+          psql "$SUPABASE_DB_URL" -c "select count(distinct (normalized_word, target_language, suggested_meaning)) as distinct_pairs, count(distinct normalized_word) as distinct_words from dictionary_suggestions where status='pending';"
+          echo '--- dictionary_suggestions: consensus (how many users independently suggested the same pair), top 30 ---'
+          psql "$SUPABASE_DB_URL" -c "select normalized_word, target_language, suggested_meaning, count(*) as contributors from dictionary_suggestions where status='pending' group by 1,2,3 order by contributors desc, normalized_word limit 30;"
+          echo '--- dictionary_suggestions: raw sample, 30 arbitrary pending rows (eyeballing for junk/bad content) ---'
+          psql "$SUPABASE_DB_URL" -c "select source_word, target_language, suggested_meaning, user_id from dictionary_suggestions where status='pending' order by created_at limit 15;"
+          psql "$SUPABASE_DB_URL" -c "select source_word, target_language, suggested_meaning, user_id from dictionary_suggestions where status='pending' order by created_at desc limit 15;"
+          echo '--- dictionary_suggestions: words already covered by an approved entry (would be redundant to approve) ---'
+          psql "$SUPABASE_DB_URL" -c "select count(*) as pending_for_already_covered_word from dictionary_suggestions s where s.status='pending' and exists (select 1 from dictionary_entries e where e.normalized_word=s.normalized_word and e.target_language=s.target_language and e.status='approved');"
           echo '--- vocab_sets by source_type/visibility ---'
           psql "$SUPABASE_DB_URL" -c "select source_type, visibility, count(*) from vocab_sets group by 1,2 order by 1,2;"
           echo '--- practice_sets by kind/visibility ---'
