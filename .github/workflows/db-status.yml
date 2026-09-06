@@ -25,6 +25,9 @@ jobs:
             union all select 'dictionary_entries', count(*) from dictionary_entries
             union all select 'dictionary_suggestions', count(*) from dictionary_suggestions
             order by 1;"
+          echo '--- profiles by role, with email for any admin ---'
+          psql "$SUPABASE_DB_URL" -c "select p.role, count(*) from profiles p group by 1 order by 1;"
+          psql "$SUPABASE_DB_URL" -c "select u.email, p.username, p.role from profiles p join auth.users u on u.id = p.user_id where p.role='admin';"
           echo '--- dictionary_entries by target_language/status/source ---'
           psql "$SUPABASE_DB_URL" -c "select target_language, status, source, count(*) from dictionary_entries group by 1,2,3 order by 1,2,3;"
           echo '--- sample dictionary_entries (up to 10, checking Thai text integrity) ---'
