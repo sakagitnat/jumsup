@@ -3488,14 +3488,14 @@ export const topicDecks = [
 ];
 
 // ---------------------------------------------------------------------------
-// "แกนหลักต้องจำ" — the tight priority core. If a student learns nothing else,
+// "คำศัพท์ · พื้นฐาน" — the tight priority core. If a student learns nothing else,
 // these ~300 words carry the most weight in A-Level / TCAS English reading:
 // the connectors, the exam question-stem verbs, and the highest-frequency
 // academic vocabulary. Deliberately overlaps other decks; this is the
 // "start here" set.
 // ---------------------------------------------------------------------------
 export const coreDecks = [
-  deck("jumsup-vocab-core-1", "แกนหลักต้องจำ 1 (สำคัญสุด)", [
+  deck("jumsup-vocab-core-1", "คำศัพท์ · พื้นฐาน 1", [
     ["according", "uh-KOR-ding", "ตามที่ (ใช้ according to)", "According to the passage, the change began in 2015."],
     ["however", "how-EV-er", "อย่างไรก็ตาม (แย้งประโยคก่อน)", "The plan is cheap. However, it is slow."],
     ["therefore", "THAIR-for", "ดังนั้น", "The road was closed; therefore, we turned back."],
@@ -3597,7 +3597,7 @@ export const coreDecks = [
     ["necessary", "NES-uh-suh-ree", "จำเป็น", "No prior knowledge of the topic is necessary."],
   ]),
 
-  deck("jumsup-vocab-core-2", "แกนหลักต้องจำ 2", [
+  deck("jumsup-vocab-core-2", "คำศัพท์ · พื้นฐาน 2", [
     ["approach", "uh-PROHCH", "แนวทาง, วิธีจัดการ", "The teacher tried a new approach to the topic."],
     ["assume", "uh-SEWM", "สันนิษฐาน, คิดเอาเอง", "Don't assume the reader knows the topic."],
     ["assess", "uh-SES", "ประเมิน", "Doctors assess the patient before choosing a treatment."],
@@ -3698,7 +3698,7 @@ export const coreDecks = [
     ["impact", "im-PAKT", "กระทบ (กริยา: impact on)", "The change is likely to impact on the poorest most."],
   ]),
 
-  deck("jumsup-vocab-core-3", "แกนหลักต้องจำ 3", [
+  deck("jumsup-vocab-core-3", "คำศัพท์ · พื้นฐาน 3", [
     ["accurate", "AK-yuh-rit", "ถูกต้องแม่นยำ", "The old map was not accurate."],
     ["appropriate", "uh-PROH-pree-it", "เหมาะสม", "Formal language is appropriate when you write to a company."],
     ["adequate", "AD-uh-kwit", "เพียงพอ (พอใช้ได้)", "The budget was adequate for basic needs only."],
@@ -3817,7 +3817,7 @@ const splitDeck = (baseId, baseName, words, size) => {
 };
 
 /** Every official vocabulary deck, in the order they should appear. The
- *  priority "แกนหลักต้องจำ" decks come first as the recommended starting point. */
+ *  priority "คำศัพท์ · พื้นฐาน" decks come first as the recommended starting point. */
 export const officialVocabDecks = [
   ...coreDecks,
   ...splitDeck("jumsup-tcas-frequent", "TCAS · ออกบ่อย", frequentExamWords, 95),
