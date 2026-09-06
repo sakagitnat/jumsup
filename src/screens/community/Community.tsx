@@ -5,7 +5,6 @@ import {
   refreshCommunity,
   importCommunity,
   likeCommunity,
-  reviewCommunity,
   reportCommunity,
 } from "../../actions";
 import { loginGoogle } from "../../actions/auth";
@@ -235,12 +234,6 @@ export function Community() {
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted">ให้คะแนน:</span>
-              <StarRating
-                value={0}
-                size="sm"
-                onChange={(n) => reviewCommunity(x, n, "", false, reload)}
-              />
               <button
                 type="button"
                 onClick={() => setReviewFor(x)}
