@@ -127,8 +127,6 @@ export const homeItem: NavItem = { to: "/home", key: "home", icon: icons.home };
 
 export const bottomNavItems: NavItem[] = [
   homeItem,
-  { to: "/flash", key: "flash", icon: icons.flash },
-  { to: "/reading", key: "reading", icon: icons.reading },
-  { to: "/mock", key: "mock", icon: icons.mock },
+  { to: "/community", key: "community", icon: icons.community },
   { to: "/account", key: "account", icon: icons.account },
 ];
