@@ -148,11 +148,23 @@ export function Study() {
   }, [idx, duePos]);
 
   // Re-sync the loop-size text field to the real value whenever the settings
-  // modal opens (covers poolSize changing elsewhere, e.g. the "+10" button).
+  // modal opens (covers poolSize changing elsewhere, e.g. the auto-continue
+  // below).
   useEffect(() => {
     if (settingsOpen) setPoolSizeInput(String(poolSize));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsOpen]);
+
+  // Once every word in the current pool is mastered, silently pull in the
+  // next batch instead of stopping at a manual "เพิ่มอีก 10 คำ" prompt --
+  // swiping should stay continuous until the whole deck is mastered, with
+  // the loop-size setting only shaping how the session starts, not gating
+  // how far it can go.
+  useEffect(() => {
+    if (dueMode || !deck || remaining.length !== 0 || pool >= deck.words.length) return;
+    setPoolSize((p) => Math.min(deck.words.length, p + 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dueMode, deck, remaining.length, pool]);
 
   const know = useCallback(async () => {
     if (idx < 0) return;
@@ -347,7 +359,7 @@ export function Study() {
           <PageHeader
             eyebrow="FLASHCARDS"
             title={deck.name}
-            description={dueMode ? "ทบทวนครบรอบนี้แล้ว" : "จำครบ Loop นี้แล้ว"}
+            description={dueMode ? "ทบทวนครบรอบนี้แล้ว" : "จำครบทั้งชุดนี้แล้ว"}
           />
           <Card soft className="text-center">
             <h2 className="text-xl font-semibold">
@@ -361,15 +373,6 @@ export function Study() {
               <p className="mt-1 text-sm text-muted">ครบกำหนดรอบถัดไป {doneHint}</p>
             )}
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {!dueMode && (
-                <Button
-                  variant="primary"
-                  disabled={deck.words.length - pool <= 0}
-                  onClick={() => setPoolSize((p) => Math.min(deck.words.length, p + 10))}
-                >
-                  เพิ่มอีก 10 คำ
-                </Button>
-              )}
               {dueMode && chain.length > 0 && (
                 <Button
                   variant="primary"
