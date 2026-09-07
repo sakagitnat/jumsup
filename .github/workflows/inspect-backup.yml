@@ -1,0 +1,68 @@
+name: Inspect DB backup
+
+# One-off diagnostic: restore a specific db-backup workflow-run artifact into a
+# throwaway local Postgres instance (never touches production) and print row
+# counts + samples for the tables we're investigating. Used to check whether a
+# pre-migration-032 backup still has real vocab_sets/practice_sets rows before
+# deciding whether/how to restore them into production.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "The DB backup workflow run ID whose artifact to inspect"
+        required: true
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL 17 server + client
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-17
+
+      - name: Download backup artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id="${{ github.event.inputs.run_id }}"
+          artifact_id=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/$run_id/artifacts" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['artifacts'][0]['id'])")
+          echo "artifact_id=$artifact_id"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            -o backup.zip \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$artifact_id/zip"
+          unzip -o backup.zip
+          ls -lh jumsup-*.dump
+
+      - name: Start local scratch Postgres and restore
+        run: |
+          PGBIN="$(ls -d /usr/lib/postgresql/17/bin)"
+          sudo -u postgres "$PGBIN/pg_ctlcluster" 17 main start || sudo service postgresql start
+          sudo -u postgres psql -c "alter user postgres password 'scratch';"
+          export PGPASSWORD=scratch
+          psql -h localhost -U postgres -c "create database scratch;"
+          "$PGBIN/pg_restore" --no-owner --no-privileges -h localhost -U postgres \
+            -d scratch --schema=public jumsup-*.dump 2>&1 | tail -80 || true
+
+      - name: Row counts + samples in restored backup
+        run: |
+          export PGPASSWORD=scratch
+          echo '--- row counts ---'
+          psql -h localhost -U postgres -d scratch -c "
+            select 'vocab_sets' t, count(*) from vocab_sets
+            union all select 'practice_sets', count(*) from practice_sets
+            union all select 'content_reviews', count(*) from content_reviews
+            order by 1;" || true
+          echo '--- vocab_sets sample ---'
+          psql -h localhost -U postgres -d scratch -c "select id,name,user_id,visibility,created_at from vocab_sets order by created_at limit 20;" || true
+          echo '--- practice_sets sample ---'
+          psql -h localhost -U postgres -d scratch -c "select id,title,kind,user_id,visibility,created_at from practice_sets order by created_at limit 30;" || true
+          echo '--- practice_sets by kind/visibility ---'
+          psql -h localhost -U postgres -d scratch -c "select kind, visibility, count(*) from practice_sets group by 1,2 order by 1,2;" || true
+          echo '--- content_reviews sample ---'
+          psql -h localhost -U postgres -d scratch -c "select id,content_id,rating,created_at from content_reviews order by created_at limit 20;" || true
