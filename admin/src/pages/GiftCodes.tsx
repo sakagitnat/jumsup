@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import { Card, Section, Btn, Field, Tag, Empty, useToast, useAsync } from "../ui";
 
+// The server only accepts A-Z, 0-9, "_" and "-" (see functions/api/admin/
+// gift-code.js's INVALID_CODE / gift-codes.js's INVALID_PREFIX checks) --
+// strip anything else as it's typed instead of letting the admin submit an
+// invalid code and hit a raw server error code.
+const sanitizeCode = (raw: string, maxLen: number) =>
+  raw.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, maxLen);
+
 interface Redeemer {
   username: string;
   user_id: string;
@@ -45,9 +52,9 @@ export function GiftCodes() {
           <h3 className="mb-2 text-sm font-bold">สร้างโค้ดเดี่ยว</h3>
           <div className="flex flex-wrap items-end gap-2">
             <Field
-              label="โค้ด"
+              label="โค้ด (ตัวพิมพ์ใหญ่/ตัวเลข/_/- อย่างน้อย 4 ตัว)"
               value={single.code}
-              onChange={(e) => setSingle({ ...single, code: e.target.value.toUpperCase() })}
+              onChange={(e) => setSingle({ ...single, code: sanitizeCode(e.target.value, 32) })}
               placeholder="LAUNCH2026"
             />
             <Field
@@ -99,9 +106,9 @@ export function GiftCodes() {
           <h3 className="mb-2 text-sm font-bold">สร้างชุด (แจกสุ่ม/การตลาด)</h3>
           <div className="flex flex-wrap items-end gap-2">
             <Field
-              label="Prefix"
+              label="Prefix (ตัวพิมพ์ใหญ่/ตัวเลข/_/- 2-16 ตัว)"
               value={bulk.prefix}
-              onChange={(e) => setBulk({ ...bulk, prefix: e.target.value.toUpperCase() })}
+              onChange={(e) => setBulk({ ...bulk, prefix: sanitizeCode(e.target.value, 16) })}
             />
             <Field
               label="จำนวนโค้ด"

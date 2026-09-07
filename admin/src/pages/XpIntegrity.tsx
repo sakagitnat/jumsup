@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { apiGet } from "../api";
 import { Card, Section, Btn, Tag, Empty, useToast } from "../ui";
+import { friendlyError } from "../errors";
 
 interface Row {
   user_id: string;
@@ -38,7 +39,7 @@ export function XpIntegrity() {
     setLoading(true);
     apiGet<Payload>(`/api/admin/xp-integrity?days=${d}`)
       .then(setData)
-      .catch((e) => toast((e as Error).message))
+      .catch((e) => toast(friendlyError((e as Error).message)))
       .finally(() => setLoading(false));
   };
   useEffect(() => load(), []); // eslint-disable-line react-hooks/exhaustive-deps
