@@ -6,12 +6,9 @@ import { buildCrossword, type Entry } from "../../lib/crossword";
 import { PageHeader, Card, Button, Progress, Switch, EmptyState, cx, toast, IconArrowLeft } from "../../ui";
 
 const MAX_HINTS = 3;
-const DIFFICULTIES = [
-  { label: "ง่าย", maxWords: 6 },
-  { label: "ปกติ", maxWords: 10 },
-] as const;
-const DIFFICULTY_KEY = "jumsup:crossword:maxWords";
 const LIVE_CHECK_KEY = "jumsup:crossword:liveCheck";
+const SHOW_CLUES_KEY = "jumsup:crossword:showClues";
+const SHOW_WORD_BANK_KEY = "jumsup:crossword:showWordBank";
 
 export function CrosswordGame() {
   const { deckId = "" } = useParams();
@@ -19,16 +16,20 @@ export function CrosswordGame() {
   const deck = useStore((s) => s.decks.find((d) => d.id === deckId));
   const contentLoaded = useStore((s) => s.contentLoaded);
 
-  const [maxWords, setMaxWords] = useState<number>(() => {
-    const saved = Number(localStorage.getItem(DIFFICULTY_KEY));
-    return DIFFICULTIES.some((d) => d.maxWords === saved) ? saved : 10;
-  });
   const [liveCheck, setLiveCheck] = useState(() => localStorage.getItem(LIVE_CHECK_KEY) === "1");
+  // Clues (meaning + position, in the sidebar and the floating bar) are the
+  // main difficulty knob -- on by default. The word bank (the raw English
+  // words, unordered, no position) is a lighter, separate hint some players
+  // want without giving away where each word goes -- off by default.
+  const [showClues, setShowClues] = useState(() => localStorage.getItem(SHOW_CLUES_KEY) !== "0");
+  const [showWordBank, setShowWordBank] = useState(
+    () => localStorage.getItem(SHOW_WORD_BANK_KEY) === "1",
+  );
 
   const puzzle = useMemo(
-    () => buildCrossword(masteredWords(deckId), maxWords),
+    () => buildCrossword(masteredWords(deckId)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deckId, maxWords],
+    [deckId],
   );
 
   const [values, setValues] = useState<Record<string, string>>({});
@@ -69,20 +70,18 @@ export function CrosswordGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, liveCheck, puzzle]);
 
-  const changeDifficulty = (n: number) => {
-    localStorage.setItem(DIFFICULTY_KEY, String(n));
-    setMaxWords(n);
-    setValues({});
-    setChecked({});
-    setHintsUsed(0);
-    setSeconds(0);
-    doneRef.current = false;
-  };
-
   const toggleLiveCheck = (next: boolean) => {
     setLiveCheck(next);
     localStorage.setItem(LIVE_CHECK_KEY, next ? "1" : "0");
     if (!next) setChecked({});
+  };
+  const toggleShowClues = (next: boolean) => {
+    setShowClues(next);
+    localStorage.setItem(SHOW_CLUES_KEY, next ? "1" : "0");
+  };
+  const toggleShowWordBank = (next: boolean) => {
+    setShowWordBank(next);
+    localStorage.setItem(SHOW_WORD_BANK_KEY, next ? "1" : "0");
   };
 
   if (!deck && !contentLoaded) {
@@ -118,6 +117,7 @@ export function CrosswordGame() {
     }
   }
   const filledCount = cellKeys.filter((k) => values[k]).length;
+  const wordBank = Array.from(new Set(puzzle.entries.map((e) => e.item.w.toUpperCase()))).sort();
 
   // Every entry (word) covering each cell -- most cells belong to one, cells
   // where an across and a down word cross belong to two.
@@ -234,52 +234,60 @@ export function CrosswordGame() {
       <PageHeader
         eyebrow="VOCABULARY GAME"
         title={`Crossword · ${deck.name}`}
-        description="เติมคำแนวนอนและแนวตั้งที่ตัดกันจากคำใบ้ · แตะคำใบ้เพื่อไปที่ช่องนั้น"
+        description="เติมคำแนวนอนและแนวตั้งที่ตัดกันจากคำใบ้"
         actions={<span className="tabular-nums text-sm text-muted">{clock}</span>}
       />
       <div className="mb-4 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted">ระดับ:</span>
-          {DIFFICULTIES.map((d) => (
-            <button
-              key={d.label}
-              type="button"
-              onClick={() => changeDifficulty(d.maxWords)}
-              className={cx(
-                "rounded-full border px-3 py-1 text-xs font-semibold",
-                maxWords === d.maxWords
-                  ? "border-primary bg-primary-soft text-primary"
-                  : "border-line text-muted hover:bg-surface-2",
-              )}
-            >
-              {d.label} ({d.maxWords} คำ)
-            </button>
-          ))}
-        </div>
+        <label className="flex items-center gap-2">
+          <span className="text-sm text-muted">แสดงคำใบ้ (แนวนอน/แนวตั้ง)</span>
+          <Switch checked={showClues} label="แสดงคำใบ้" onChange={toggleShowClues} />
+        </label>
+        <label className="flex items-center gap-2">
+          <span className="text-sm text-muted">แสดงคำศัพท์ภาษาอังกฤษ (ไม่เรียงตำแหน่ง)</span>
+          <Switch checked={showWordBank} label="แสดงคำศัพท์ภาษาอังกฤษ" onChange={toggleShowWordBank} />
+        </label>
         <label className="flex items-center gap-2">
           <span className="text-sm text-muted">ตรวจทันทีที่พิมพ์</span>
           <Switch checked={liveCheck} label="ตรวจทันทีที่พิมพ์" onChange={toggleLiveCheck} />
         </label>
       </div>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+      {showWordBank && (
+        <Card className="mb-4">
+          <h3 className="mb-2 text-sm font-semibold">คำศัพท์ในปริศนา (ไม่เรียงตำแหน่ง)</h3>
+          <div className="flex flex-wrap gap-2">
+            {wordBank.map((w) => (
+              <span
+                key={w}
+                className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-semibold"
+              >
+                {w}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+      <div className={cx(showClues && "grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]")}>
         <Card>
           {/* Floating clue bar -- shows the clue for whatever word is being
               filled right now, so the player doesn't have to look away from
-              the grid to the sidebar list to remember what they're solving. */}
-          <div className="mb-3 min-h-[2.75rem] rounded-xl border border-primary-border bg-primary-soft px-3 py-2 text-sm">
-            {activeEntry ? (
-              <>
-                <b>
-                  {activeEntry.number}
-                  {activeEntry.direction === "across" ? " แนวนอน" : " แนวตั้ง"}:
-                </b>{" "}
-                <span data-noi18n>{activeEntry.item.m}</span>{" "}
-                <small className="text-subtle">{`(${activeEntry.item.w.length} ตัวอักษร)`}</small>
-              </>
-            ) : (
-              <span className="text-subtle">แตะช่องหรือคำใบ้เพื่อเริ่ม</span>
-            )}
-          </div>
+              the grid to the sidebar list to remember what they're solving.
+              Part of the same "clues" hint as the sidebar list. */}
+          {showClues && (
+            <div className="mb-3 min-h-[2.75rem] rounded-xl border border-primary-border bg-primary-soft px-3 py-2 text-sm">
+              {activeEntry ? (
+                <>
+                  <b>
+                    {activeEntry.number}
+                    {activeEntry.direction === "across" ? " แนวนอน" : " แนวตั้ง"}:
+                  </b>{" "}
+                  <span data-noi18n>{activeEntry.item.m}</span>{" "}
+                  <small className="text-subtle">{`(${activeEntry.item.w.length} ตัวอักษร)`}</small>
+                </>
+              ) : (
+                <span className="text-subtle">แตะช่องเพื่อเริ่ม</span>
+              )}
+            </div>
+          )}
           <div className="mb-3 flex items-center gap-2 text-xs text-muted">
             <span className="tabular-nums">
               {filledCount}/{cellKeys.length}
@@ -375,16 +383,18 @@ export function CrosswordGame() {
             </Button>
           </div>
         </Card>
-        <aside className="space-y-4">
-          <Card>
-            <h3 className="mb-2 text-sm font-semibold">แนวนอน</h3>
-            {clues("across")}
-          </Card>
-          <Card>
-            <h3 className="mb-2 text-sm font-semibold">แนวตั้ง</h3>
-            {clues("down")}
-          </Card>
-        </aside>
+        {showClues && (
+          <aside className="space-y-4">
+            <Card>
+              <h3 className="mb-2 text-sm font-semibold">แนวนอน</h3>
+              {clues("across")}
+            </Card>
+            <Card>
+              <h3 className="mb-2 text-sm font-semibold">แนวตั้ง</h3>
+              {clues("down")}
+            </Card>
+          </aside>
+        )}
       </div>
     </>
   );
