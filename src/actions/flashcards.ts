@@ -65,6 +65,30 @@ export async function markWordMastered(deckId: string, index: number): Promise<n
   return mastered;
 }
 
+/** Reset all mastered-word progress (and the SRS review schedule) for one
+ *  deck, so studying starts over from scratch. Only ever runs when the user
+ *  explicitly asks for it in flashcard settings -- mastery otherwise only
+ *  grows over time. Official/starter decks are local-only (see
+ *  markWordMastered above); user-owned decks also need the server's copy
+ *  cleared, or the next sign-in/reload would bring the old mastered list
+ *  right back via hydrateFromCloud's sync. */
+export async function resetDeckMastery(deckId: string): Promise<void> {
+  const state = store.get();
+  const deck = state.decks.find((d) => d.id === deckId);
+  const serverBacked = Boolean(getCurrentUser()) && backendEnabled && !deck?.official;
+
+  if (serverBacked) {
+    const { error } = await supabase.rpc("reset_word_mastery", { p_set_id: deckId });
+    if (error) throw error;
+  }
+
+  store.update((s) => ({
+    ...s,
+    progress: { ...s.progress, [deckId]: { mastered: [] } },
+    srs: { ...s.srs, [deckId]: {} },
+  }));
+}
+
 /** Record a spaced-repetition grade for word `index` of `deckId`.
  *  Stored device-locally under `srs[deckId][index]`; a "good" grade also runs
  *  the existing mastery/XP path so Stats and games are unaffected. */

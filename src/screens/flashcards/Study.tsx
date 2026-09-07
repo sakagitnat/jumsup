@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { speak, englishVoices } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
-import { gradeWord } from "../../actions/flashcards";
+import { gradeWord, resetDeckMastery } from "../../actions/flashcards";
 import { isDue, nextReviewHint } from "../../lib/srs";
 import {
   PageHeader,
@@ -320,9 +320,24 @@ export function Study() {
       )
     : "";
 
+  const resetMastery = async () => {
+    if (!confirm(`รีเซ็ตความจำทั้งหมดของ "${deck.name}"? คำที่จำแล้วทั้งหมดในชุดนี้จะกลับไปเป็นยังไม่ได้จำ`))
+      return;
+    try {
+      await resetDeckMastery(deckId);
+    } catch (e) {
+      toast((e as Error).message || "รีเซ็ตความจำไม่สำเร็จ");
+      return;
+    }
+    setMastered([]);
+    setCursor(0);
+    setSettingsOpen(false);
+    toast("รีเซ็ตความจำแล้ว");
+  };
+
   return (
     <>
-      <Button variant="ghost" className="mb-3" onClick={() => navigate("/flash")}>
+      <Button variant="ghost" className="mb-3" onClick={() => navigate(`/flash/deck/${deckId}`)}>
         <IconArrowLeft size={15} className="mr-1.5 inline align-[-2px]" />
         ย้อนกลับ
       </Button>
@@ -368,7 +383,7 @@ export function Study() {
                   ทบทวนชุดถัดไป · เหลือ {chain.length} ชุด
                 </Button>
               )}
-              <Button onClick={() => navigate("/flash")}>กลับหน้าเลือกชุด</Button>
+              <Button onClick={() => navigate(`/flash/deck/${deckId}`)}>กลับหน้าเลือกชุด</Button>
             </div>
           </Card>
         </>
@@ -578,6 +593,15 @@ export function Study() {
               />
             </div>
           ))}
+
+          <div className="border-t border-line pt-4">
+            <Button variant="danger" block onClick={() => void resetMastery()}>
+              รีเซ็ตความจำ Flashcard ชุดนี้
+            </Button>
+            <p className="mt-1.5 text-xs text-subtle">
+              คำที่จำแล้วทั้งหมดในชุดนี้จะกลับไปเป็นยังไม่ได้จำ ย้อนกลับไม่ได้
+            </p>
+          </div>
         </div>
       </Modal>
     </>
