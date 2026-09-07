@@ -212,6 +212,14 @@ export const IconCrossword = (p: Props) => (
   </Svg>
 );
 
+export const IconWordle = (p: Props) => (
+  <Svg {...p}>
+    <rect x="2.5" y="9" width="5" height="6" rx="1" fill="currentColor" stroke="none" />
+    <rect x="9.5" y="9" width="5" height="6" rx="1" />
+    <rect x="16.5" y="9" width="5" height="6" rx="1" fill="currentColor" stroke="none" fillOpacity={0.5} />
+  </Svg>
+);
+
 export const IconReading = (p: Props) => (
   <Svg {...p}>
     <path d="M4 5c4-1 6 0 8 2v14c-2-2-4-3-8-2V5ZM20 5c-4-1-6 0-8 2v14c2-2 4-3 8-2V5Z" />

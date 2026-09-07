@@ -7,7 +7,9 @@ import { openUpgradeModal } from "../ui/upgradeModal";
 import { FREE_LIMITS } from "../lib/plans.js";
 import type { Word } from "../store/types";
 
-export type Game = "match" | "crossword";
+export type Game = "match" | "crossword" | "wordle";
+
+const GAME_LABEL: Record<Game, string> = { match: "Match", crossword: "Crossword", wordle: "Wordle" };
 
 /** +12 XP for finishing a game, once per game per day (server-enforced). */
 export async function awardGameXp(game: Game) {
@@ -46,13 +48,18 @@ export function masteredWords(deckId: string): Word[] {
   return shuffled(mastered.map((i) => deck.words[i]).filter(Boolean));
 }
 
-const minWords: Record<Game, number> = { match: 4, crossword: 3 };
+const minWords: Record<Game, number> = { match: 4, crossword: 3, wordle: 1 };
+const perDayLimit: Record<Game, number> = {
+  match: FREE_LIMITS.matchPerDay,
+  crossword: FREE_LIMITS.crosswordPerDay,
+  wordle: FREE_LIMITS.wordlePerDay,
+};
 
 /** Returns true if the game may start. Shows a popup/toast otherwise. */
 export async function startGameSession(game: Game, deckId: string): Promise<boolean> {
   const words = masteredWords(deckId);
   if (words.length < minWords[game]) {
-    toast(`ต้องจำศัพท์อย่างน้อย ${minWords[game]} คำก่อนเล่น${game === "match" ? " Match" : " Crossword"}`);
+    toast(`ต้องจำศัพท์อย่างน้อย ${minWords[game]} คำก่อนเล่น ${GAME_LABEL[game]}`);
     return false;
   }
   if (getCurrentUser() && backendEnabled) {
@@ -61,10 +68,8 @@ export async function startGameSession(game: Game, deckId: string): Promise<bool
     } catch (err) {
       if (String((err as Error).message).includes("DAILY_LIMIT_REACHED")) {
         openUpgradeModal(
-          `${game === "match" ? "Match" : "Crossword"} ครบโควต้าแล้ว`,
-          game === "match"
-            ? `Free เล่น Match ได้ ${FREE_LIMITS.matchPerDay} รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด`
-            : `Free เล่น Crossword ได้ ${FREE_LIMITS.crosswordPerDay} รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด`,
+          `${GAME_LABEL[game]} ครบโควต้าแล้ว`,
+          `Free เล่น ${GAME_LABEL[game]} ได้ ${perDayLimit[game]} รอบต่อวัน อัปเกรดเป็น Pro เพื่อเล่นได้ไม่จำกัด`,
         );
         return false;
       }

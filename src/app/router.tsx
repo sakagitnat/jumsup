@@ -12,6 +12,7 @@ import { PracticePlay } from "../screens/practice/PracticePlay";
 import { Result } from "../screens/practice/Result";
 import { MatchGame } from "../screens/games/MatchGame";
 import { CrosswordGame } from "../screens/games/CrosswordGame";
+import { WordleGame } from "../screens/games/WordleGame";
 import { Onboarding } from "../screens/onboarding/Onboarding";
 import { Community } from "../screens/community/Community";
 import { Library } from "../screens/library/Library";
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
               { path: "/flash/study/:deckId", element: <Study /> },
               { path: "/match/play/:deckId", element: <MatchGame /> },
               { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
+              { path: "/wordle/play/:deckId", element: <WordleGame /> },
 
               { path: "/reading", element: <PracticeList kind="reading" /> },
               { path: "/reading/play/:id", element: <PracticePlay kind="reading" /> },

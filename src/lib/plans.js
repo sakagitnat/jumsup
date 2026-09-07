@@ -36,6 +36,6 @@ export function money(value,currency="THB"){
  return new Intl.NumberFormat(c==="THB"?"th-TH":"en-US",{style:"currency",currency:c,minimumFractionDigits:c==="THB"?0:2,maximumFractionDigits:c==="THB"?0:2}).format(value);
 }
 
-export const FREE_LIMITS={privateVocab:2,privatePractice:1,wordsPerDeck:100,communitySets:5,matchPerDay:5,crosswordPerDay:2,translationsPerDay:Infinity,maxFreeQuestions:10,maxFreeMockQuestions:30,mockCooldownDays:7};
-export const PRO_LIMITS={privateVocab:Infinity,privatePractice:Infinity,wordsPerDeck:1000,communitySets:Infinity,matchPerDay:Infinity,crosswordPerDay:Infinity,translationsPerDay:1000,importRows:1000,maxFreeQuestions:Infinity,maxFreeMockQuestions:Infinity,mockCooldownDays:0};
+export const FREE_LIMITS={privateVocab:2,privatePractice:1,wordsPerDeck:100,communitySets:5,matchPerDay:5,crosswordPerDay:2,wordlePerDay:5,translationsPerDay:Infinity,maxFreeQuestions:10,maxFreeMockQuestions:30,mockCooldownDays:7};
+export const PRO_LIMITS={privateVocab:Infinity,privatePractice:Infinity,wordsPerDeck:1000,communitySets:Infinity,matchPerDay:Infinity,crosswordPerDay:Infinity,wordlePerDay:Infinity,translationsPerDay:1000,importRows:1000,maxFreeQuestions:Infinity,maxFreeMockQuestions:Infinity,mockCooldownDays:0};
 
