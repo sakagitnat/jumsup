@@ -19,12 +19,13 @@ import {
   IconFlashcard,
   IconMatch,
   IconCrossword,
+  IconWordle,
   IconSpeaker,
 } from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
 import { speak } from "../../lib/utils.js";
 
-const MIN_WORDS = { match: 4, crossword: 3 } as const;
+const MIN_WORDS = { match: 4, crossword: 3, wordle: 1 } as const;
 
 export function DeckDetail() {
   const { deckId = "" } = useParams();
@@ -60,7 +61,7 @@ export function DeckDetail() {
   const due = dueCount(srs[deck.id]);
   const mastered = masteredWords(deck.id).length;
 
-  const playGame = async (game: "match" | "crossword") => {
+  const playGame = async (game: "match" | "crossword" | "wordle") => {
     if (await startGameSession(game, deck.id)) navigate(`/${game}/play/${deck.id}`);
   };
 
@@ -99,6 +100,17 @@ export function DeckDetail() {
       locked:
         mastered < MIN_WORDS.crossword
           ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.crossword} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
+          : undefined,
+    },
+    {
+      key: "wordle",
+      icon: IconWordle,
+      label: "Wordle",
+      desc: "ทายคำศัพท์จากคำที่จำแล้วภายใน 6 ครั้ง",
+      onStart: () => void playGame("wordle"),
+      locked:
+        mastered < MIN_WORDS.wordle
+          ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.wordle} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
           : undefined,
     },
   ];

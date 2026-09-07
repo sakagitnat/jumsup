@@ -20,6 +20,7 @@ interface Limits {
   communitySets: number;
   matchPerDay: number;
   crosswordPerDay: number;
+  wordlePerDay: number;
   translationsPerDay: number;
   maxFreeQuestions: number;
   maxFreeMockQuestions: number;
