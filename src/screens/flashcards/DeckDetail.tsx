@@ -19,7 +19,7 @@ import {
   IconFlashcard,
   IconMatch,
   IconCrossword,
-  IconWordle,
+  // IconWordle, -- re-add when the Wordle mode card below is restored
   IconSpeaker,
 } from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
@@ -102,17 +102,20 @@ export function DeckDetail() {
           ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.crossword} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
           : undefined,
     },
-    {
-      key: "wordle",
-      icon: IconWordle,
-      label: "Wordle",
-      desc: "ทายคำศัพท์จากคำที่จำแล้วภายใน 6 ครั้ง",
-      onStart: () => void playGame("wordle"),
-      locked:
-        mastered < MIN_WORDS.wordle
-          ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.wordle} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
-          : undefined,
-    },
+    // Wordle is built and working (WordleGame.tsx, /wordle/play route,
+    // migration 040) but pulled off the site for now at the user's request --
+    // re-add this card to bring it back.
+    // {
+    //   key: "wordle",
+    //   icon: IconWordle,
+    //   label: "Wordle",
+    //   desc: "ทายคำศัพท์จากคำที่จำแล้วภายใน 6 ครั้ง",
+    //   onStart: () => void playGame("wordle"),
+    //   locked:
+    //     mastered < MIN_WORDS.wordle
+    //       ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.wordle} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
+    //       : undefined,
+    // },
   ];
 
   return (
