@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { masteredWords, awardGameXp } from "../../actions/games";
 import { buildCrossword, type Entry } from "../../lib/crossword";
-import { PageHeader, Card, Button, EmptyState, cx, toast, IconArrowLeft } from "../../ui";
+import { PageHeader, Card, Button, Progress, Switch, EmptyState, cx, toast, IconArrowLeft } from "../../ui";
 
 const MAX_HINTS = 3;
 const DIFFICULTIES = [
@@ -11,6 +11,7 @@ const DIFFICULTIES = [
   { label: "ปกติ", maxWords: 10 },
 ] as const;
 const DIFFICULTY_KEY = "jumsup:crossword:maxWords";
+const LIVE_CHECK_KEY = "jumsup:crossword:liveCheck";
 
 export function CrosswordGame() {
   const { deckId = "" } = useParams();
@@ -22,6 +23,7 @@ export function CrosswordGame() {
     const saved = Number(localStorage.getItem(DIFFICULTY_KEY));
     return DIFFICULTIES.some((d) => d.maxWords === saved) ? saved : 10;
   });
+  const [liveCheck, setLiveCheck] = useState(() => localStorage.getItem(LIVE_CHECK_KEY) === "1");
 
   const puzzle = useMemo(
     () => buildCrossword(masteredWords(deckId), maxWords),
@@ -37,11 +39,35 @@ export function CrosswordGame() {
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const doneRef = useRef(false);
+  const clickWasFocused = useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // With live-check on, a puzzle can complete just by typing the last letter
+  // -- no separate "ตรวจคำตอบ" press to notice. Watch for that here instead.
+  useEffect(() => {
+    if (!liveCheck || doneRef.current || !puzzle) return;
+    let allRight = true;
+    outer: for (let r = 0; r < puzzle.rows; r++) {
+      for (let c = 0; c < puzzle.cols; c++) {
+        const cell = puzzle.grid.get(`${r},${c}`);
+        if (!cell) continue;
+        if ((values[`${r},${c}`] || "").toUpperCase() !== cell.letter) {
+          allRight = false;
+          break outer;
+        }
+      }
+    }
+    if (allRight) {
+      doneRef.current = true;
+      toast(`ถูกทั้งหมด · ใช้เวลา ${seconds} วินาที`);
+      void awardGameXp("crossword");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values, liveCheck, puzzle]);
 
   const changeDifficulty = (n: number) => {
     localStorage.setItem(DIFFICULTY_KEY, String(n));
@@ -51,6 +77,12 @@ export function CrosswordGame() {
     setHintsUsed(0);
     setSeconds(0);
     doneRef.current = false;
+  };
+
+  const toggleLiveCheck = (next: boolean) => {
+    setLiveCheck(next);
+    localStorage.setItem(LIVE_CHECK_KEY, next ? "1" : "0");
+    if (!next) setChecked({});
   };
 
   if (!deck && !contentLoaded) {
@@ -85,6 +117,7 @@ export function CrosswordGame() {
       if (puzzle.grid.get(`${r},${c}`)) cellKeys.push(`${r},${c}`);
     }
   }
+  const filledCount = cellKeys.filter((k) => values[k]).length;
 
   // Every entry (word) covering each cell -- most cells belong to one, cells
   // where an across and a down word cross belong to two.
@@ -204,26 +237,55 @@ export function CrosswordGame() {
         description="เติมคำแนวนอนและแนวตั้งที่ตัดกันจากคำใบ้ · แตะคำใบ้เพื่อไปที่ช่องนั้น"
         actions={<span className="tabular-nums text-sm text-muted">{clock}</span>}
       />
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-sm text-muted">ระดับ:</span>
-        {DIFFICULTIES.map((d) => (
-          <button
-            key={d.label}
-            type="button"
-            onClick={() => changeDifficulty(d.maxWords)}
-            className={cx(
-              "rounded-full border px-3 py-1 text-xs font-semibold",
-              maxWords === d.maxWords
-                ? "border-primary bg-primary-soft text-primary"
-                : "border-line text-muted hover:bg-surface-2",
-            )}
-          >
-            {d.label} ({d.maxWords} คำ)
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted">ระดับ:</span>
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d.label}
+              type="button"
+              onClick={() => changeDifficulty(d.maxWords)}
+              className={cx(
+                "rounded-full border px-3 py-1 text-xs font-semibold",
+                maxWords === d.maxWords
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-line text-muted hover:bg-surface-2",
+              )}
+            >
+              {d.label} ({d.maxWords} คำ)
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2">
+          <span className="text-sm text-muted">ตรวจทันทีที่พิมพ์</span>
+          <Switch checked={liveCheck} label="ตรวจทันทีที่พิมพ์" onChange={toggleLiveCheck} />
+        </label>
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
         <Card>
+          {/* Floating clue bar -- shows the clue for whatever word is being
+              filled right now, so the player doesn't have to look away from
+              the grid to the sidebar list to remember what they're solving. */}
+          <div className="mb-3 min-h-[2.75rem] rounded-xl border border-primary-border bg-primary-soft px-3 py-2 text-sm">
+            {activeEntry ? (
+              <>
+                <b>
+                  {activeEntry.number}
+                  {activeEntry.direction === "across" ? " แนวนอน" : " แนวตั้ง"}:
+                </b>{" "}
+                <span data-noi18n>{activeEntry.item.m}</span>{" "}
+                <small className="text-subtle">{`(${activeEntry.item.w.length} ตัวอักษร)`}</small>
+              </>
+            ) : (
+              <span className="text-subtle">แตะช่องหรือคำใบ้เพื่อเริ่ม</span>
+            )}
+          </div>
+          <div className="mb-3 flex items-center gap-2 text-xs text-muted">
+            <span className="tabular-nums">
+              {filledCount}/{cellKeys.length}
+            </span>
+            <Progress value={(filledCount / cellKeys.length) * 100} className="flex-1" />
+          </div>
           <div
             className="mx-auto grid w-max gap-1"
             style={{ gridTemplateColumns: `repeat(${puzzle.cols}, 2rem)` }}
@@ -245,6 +307,18 @@ export function CrosswordGame() {
                       }}
                       maxLength={1}
                       value={values[k] || ""}
+                      onMouseDown={() => {
+                        clickWasFocused.current = document.activeElement === inputs.current[k];
+                      }}
+                      onClick={() => {
+                        // Tapping an already-focused intersection cell again
+                        // switches which of its two words you're filling --
+                        // otherwise there'd be no way to reach the "other"
+                        // word through that cell without hunting for its clue.
+                        if (clickWasFocused.current && entryAt(k, "across") && entryAt(k, "down")) {
+                          setActiveDir((d) => (d === "across" ? "down" : "across"));
+                        }
+                      }}
                       onFocus={() => {
                         setFocusedKey(k);
                         // Keep the current typing direction if this cell is
@@ -260,6 +334,9 @@ export function CrosswordGame() {
                       onChange={(e) => {
                         const v = e.target.value.replace(/[^a-z]/gi, "").toUpperCase();
                         setValues((prev) => ({ ...prev, [k]: v }));
+                        if (liveCheck) {
+                          setChecked((prev) => ({ ...prev, [k]: v === has.letter }));
+                        }
                         if (v) focusCell(stepInEntry(k, activeDir, 1));
                       }}
                       onKeyDown={(e) => {
