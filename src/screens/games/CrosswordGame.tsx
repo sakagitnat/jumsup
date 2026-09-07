@@ -110,7 +110,7 @@ export function CrosswordGame() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
         <Card>
           <div
-            className="grid w-max gap-1"
+            className="mx-auto grid w-max gap-1"
             style={{ gridTemplateColumns: `repeat(${puzzle.cols}, 2rem)` }}
           >
             {Array.from({ length: puzzle.rows }).flatMap((_, r) =>
