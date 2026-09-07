@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { friendlyError } from "./errors";
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -158,7 +159,7 @@ export function useAsync() {
         await fn();
         after?.();
       } catch (e) {
-        toast((e as Error).message || "ทำรายการไม่สำเร็จ");
+        toast(friendlyError((e as Error).message) || "ทำรายการไม่สำเร็จ");
       }
     },
     [toast],

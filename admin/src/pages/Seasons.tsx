@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import { Card, Section, Btn, Field, Tag, Empty, useToast, useAsync } from "../ui";
+import { friendlyError } from "../errors";
 
 interface Tier {
   id?: number;
@@ -56,7 +57,7 @@ export function Seasons() {
         setTiers(d.tiers.map((t) => ({ ...t })));
         setFocus(d.detail?.week_start ?? null);
       })
-      .catch((e) => toast((e as Error).message))
+      .catch((e) => toast(friendlyError((e as Error).message)))
       .finally(() => setLoading(false));
   };
   useEffect(() => load(), []); // eslint-disable-line react-hooks/exhaustive-deps

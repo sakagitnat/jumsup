@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import { Card, Section, Btn, useToast, useAsync } from "../ui";
+import { friendlyError } from "../errors";
 
 interface Overview {
   users: number;
@@ -96,7 +97,7 @@ export function Overview() {
     setLoading(true);
     apiGet<Overview>("/api/admin/overview")
       .then(setG)
-      .catch((e) => toast((e as Error).message))
+      .catch((e) => toast(friendlyError((e as Error).message)))
       .finally(() => setLoading(false));
     apiGet<Funnel>("/api/admin/funnel?days=30")
       .then(setFunnel)
