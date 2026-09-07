@@ -22,6 +22,7 @@ import {
   Modal,
   toast,
   cx,
+  promptDialog,
   IconChat,
   IconExternal,
   IconDownload,
@@ -288,8 +289,10 @@ export function Community() {
                 <div className="ml-auto flex items-center gap-2 border-l border-line pl-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      const title = prompt("ตั้งชื่อใหม่", x.title)?.trim();
+                    onClick={async () => {
+                      const title = (
+                        await promptDialog({ title: "ตั้งชื่อใหม่", defaultValue: x.title })
+                      )?.trim();
                       if (title) setCommunityOverride(x, "rename", reload, title);
                     }}
                     className="text-xs font-semibold text-primary hover:underline"
