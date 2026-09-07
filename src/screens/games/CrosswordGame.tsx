@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../../store/useStore";
 import { masteredWords, awardGameXp } from "../../actions/games";
-import { buildCrossword } from "../../lib/crossword";
+import { buildCrossword, type Entry } from "../../lib/crossword";
 import { PageHeader, Card, Button, EmptyState, cx, toast, IconArrowLeft } from "../../ui";
+
+const MAX_HINTS = 3;
 
 export function CrosswordGame() {
   const { deckId = "" } = useParams();
@@ -20,6 +22,8 @@ export function CrosswordGame() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [seconds, setSeconds] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [activeDir, setActiveDir] = useState<"across" | "down">("across");
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const doneRef = useRef(false);
 
@@ -61,6 +65,43 @@ export function CrosswordGame() {
     }
   }
 
+  // Every entry (word) covering each cell -- most cells belong to one, cells
+  // where an across and a down word cross belong to two.
+  const cellEntries = new Map<string, Entry[]>();
+  for (const e of puzzle.entries) {
+    const dr = e.direction === "down" ? 1 : 0;
+    const dc = e.direction === "across" ? 1 : 0;
+    for (let i = 0; i < e.item.w.length; i++) {
+      const k = `${e.row + dr * i},${e.col + dc * i}`;
+      cellEntries.set(k, [...(cellEntries.get(k) || []), e]);
+    }
+  }
+
+  const entryAt = (k: string, dir: "across" | "down") =>
+    cellEntries.get(k)?.find((e) => e.direction === dir);
+
+  // The next/previous cell along a given word, in typing direction -- not the
+  // same as "the next cell in the grid", which is what made typing a down
+  // word jump sideways into an unrelated cell after every letter.
+  const stepInEntry = (k: string, dir: "across" | "down", delta: 1 | -1) => {
+    const e = entryAt(k, dir);
+    if (!e) return null;
+    const [r, c] = k.split(",").map(Number);
+    const nr = dir === "down" ? r + delta : r;
+    const nc = dir === "across" ? c + delta : c;
+    const withinWord =
+      dir === "down"
+        ? nr >= e.row && nr < e.row + e.item.w.length
+        : nc >= e.col && nc < e.col + e.item.w.length;
+    return withinWord ? `${nr},${nc}` : null;
+  };
+
+  const focusCell = (k: string | null | undefined, dir?: "across" | "down") => {
+    if (!k) return;
+    if (dir) setActiveDir(dir);
+    inputs.current[k]?.focus();
+  };
+
   const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
   const check = () => {
@@ -80,6 +121,20 @@ export function CrosswordGame() {
     }
   };
 
+  const useHint = () => {
+    if (hintsUsed >= MAX_HINTS) return;
+    const wrong = cellKeys.find((k) => {
+      const want = puzzle.grid.get(k)!.letter;
+      return (values[k] || "").toUpperCase() !== want;
+    });
+    if (!wrong) return;
+    const letter = puzzle.grid.get(wrong)!.letter;
+    setValues((prev) => ({ ...prev, [wrong]: letter }));
+    setChecked((prev) => ({ ...prev, [wrong]: true }));
+    setHintsUsed((n) => n + 1);
+    focusCell(wrong);
+  };
+
   const clues = (direction: "across" | "down") => {
     const list = puzzle.entries.filter((e) => e.direction === direction);
     if (!list.length) return <p className="text-sm text-muted">ไม่มีคำในแนวนี้</p>;
@@ -87,8 +142,14 @@ export function CrosswordGame() {
       <ul className="space-y-1 text-sm">
         {list.map((e) => (
           <li key={e.id}>
-            <b>{e.number}.</b> <span data-noi18n>{e.item.m}</span>{" "}
-            <small className="text-subtle">{`(${e.item.w.length} ตัวอักษร)`}</small>
+            <button
+              type="button"
+              onClick={() => focusCell(`${e.row},${e.col}`, e.direction)}
+              className="text-left hover:underline"
+            >
+              <b>{e.number}.</b> <span data-noi18n>{e.item.m}</span>{" "}
+              <small className="text-subtle">{`(${e.item.w.length} ตัวอักษร)`}</small>
+            </button>
           </li>
         ))}
       </ul>
@@ -104,7 +165,7 @@ export function CrosswordGame() {
       <PageHeader
         eyebrow="VOCABULARY GAME"
         title={`Crossword · ${deck.name}`}
-        description="เติมคำแนวนอนและแนวตั้งที่ตัดกันจากคำใบ้"
+        description="เติมคำแนวนอนและแนวตั้งที่ตัดกันจากคำใบ้ · แตะคำใบ้เพื่อไปที่ช่องนั้น"
         actions={<span className="tabular-nums text-sm text-muted">{clock}</span>}
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
@@ -130,18 +191,24 @@ export function CrosswordGame() {
                       }}
                       maxLength={1}
                       value={values[k] || ""}
+                      onFocus={() => {
+                        // Keep the current typing direction if this cell is
+                        // part of a word going that way; otherwise switch to
+                        // whichever direction it does support (e.g. clicking
+                        // a down-only cell while "across" was active).
+                        if (!entryAt(k, activeDir)) {
+                          const other = activeDir === "across" ? "down" : "across";
+                          if (entryAt(k, other)) setActiveDir(other);
+                        }
+                      }}
                       onChange={(e) => {
                         const v = e.target.value.replace(/[^a-z]/gi, "").toUpperCase();
                         setValues((prev) => ({ ...prev, [k]: v }));
-                        if (v) {
-                          const idx = cellKeys.indexOf(k);
-                          inputs.current[cellKeys[idx + 1]]?.focus();
-                        }
+                        if (v) focusCell(stepInEntry(k, activeDir, 1));
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Backspace" && !values[k]) {
-                          const idx = cellKeys.indexOf(k);
-                          inputs.current[cellKeys[idx - 1]]?.focus();
+                          focusCell(stepInEntry(k, activeDir, -1));
                         }
                       }}
                       className={cx(
@@ -156,7 +223,7 @@ export function CrosswordGame() {
               }),
             )}
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="primary" onClick={check}>
               ตรวจคำตอบ
             </Button>
@@ -167,6 +234,9 @@ export function CrosswordGame() {
               }}
             >
               ล้างคำตอบ
+            </Button>
+            <Button onClick={useHint} disabled={hintsUsed >= MAX_HINTS}>
+              💡 ขอคำใบ้ ({MAX_HINTS - hintsUsed} เหลือ)
             </Button>
           </div>
         </Card>
