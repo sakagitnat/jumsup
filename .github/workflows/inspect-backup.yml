@@ -16,6 +16,8 @@ on:
 jobs:
   inspect:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
     steps:
       - name: Install PostgreSQL 17 server + client
         run: |
