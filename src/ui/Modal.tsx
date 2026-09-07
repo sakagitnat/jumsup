@@ -18,10 +18,24 @@ const widths = { sm: "max-w-md", md: "max-w-xl", lg: "max-w-3xl" };
 export function Modal({ open, onClose, title, children, footer, size = "md" }: ModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // onClose is almost always passed as a fresh inline arrow (`onClose={() =>
+  // setOpen(false)}`), a new function identity on every render of whatever
+  // owns the modal. Keeping it out of the effect's own deps -- reading the
+  // latest version through a ref instead -- means the effect (and its
+  // cardRef.current?.focus() call) only runs when the modal actually opens
+  // or closes, not on every keystroke of a form inside it. It used to run on
+  // every re-render the moment a field's onChange caused a parent state
+  // update, yanking focus back to the modal container mid-type and making
+  // any input in a Modal look like it "locked" after the first character.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -31,7 +45,7 @@ export function Modal({ open, onClose, title, children, footer, size = "md" }: M
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
