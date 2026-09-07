@@ -58,6 +58,16 @@ export async function hydrateFromCloud(user: User) {
       // Review schedule is device-local (official starter decks have no server
       // progress row anyway) — keep it across sign-in instead of dropping it.
       srs: local.srs,
+      // Official/starter decks are seed data with no vocab_sets row, so
+      // markWordMastered() tracks their "mastered" list device-locally only
+      // (see actions/flashcards.ts) -- remote.progress never has an entry for
+      // them. Overwriting local.progress wholesale with remote.progress used
+      // to silently erase that local-only mastery every time this ran (every
+      // sign-in, and every cold boot on a session that's still signed in),
+      // which is why words already learned in an official deck could come
+      // back "unmastered" after the app reloaded. Merge instead: remote still
+      // wins per-deck for real, server-backed decks.
+      progress: { ...local.progress, ...remote.progress },
       backend: true,
       syncing: false,
     });
