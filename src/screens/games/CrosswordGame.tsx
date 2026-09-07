@@ -294,12 +294,17 @@ export function CrosswordGame() {
             </span>
             <Progress value={(filledCount / cellKeys.length) * 100} className="flex-1" />
           </div>
-          <div
-            className="mx-auto grid w-max gap-1"
-            style={{ gridTemplateColumns: `repeat(${puzzle.cols}, 2rem)` }}
-          >
-            {Array.from({ length: puzzle.rows }).flatMap((_, r) =>
-              Array.from({ length: puzzle.cols }).map((__, c) => {
+          {/* A puzzle with long interlocking words (e.g. SIGNIFICANT at 11
+              letters) can be wider than a phone screen -- scroll the grid
+              itself horizontally instead of letting it force the whole page
+              wider than the viewport. */}
+          <div className="overflow-x-auto">
+            <div
+              className="mx-auto grid w-max gap-1"
+              style={{ gridTemplateColumns: `repeat(${puzzle.cols}, 2rem)` }}
+            >
+              {Array.from({ length: puzzle.rows }).flatMap((_, r) =>
+                Array.from({ length: puzzle.cols }).map((__, c) => {
                 const k = `${r},${c}`;
                 const has = puzzle.grid.get(k);
                 if (!has) return <span key={k} className="h-8 w-8" aria-hidden />;
@@ -363,8 +368,9 @@ export function CrosswordGame() {
                     />
                   </label>
                 );
-              }),
-            )}
+                }),
+              )}
+            </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="primary" onClick={check}>
