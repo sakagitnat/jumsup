@@ -23,12 +23,27 @@ export async function awardGameXp(game: Game) {
   }
 }
 
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** All words mastered in this deck so far (every word the user has ever
+ *  marked "จำแล้ว", not just the current Loop-size selection -- that list
+ *  only resets via the "รีเซ็ตความจำ" button in flashcard settings). Shuffled
+ *  so a replay of Match/Crossword (which only use the first few) draws a
+ *  different sample each time instead of freezing on the first words ever
+ *  mastered. */
 export function masteredWords(deckId: string): Word[] {
   const s = store.get();
   const deck = s.decks.find((d) => d.id === deckId);
   if (!deck) return [];
   const mastered = s.progress[deckId]?.mastered ?? [];
-  return mastered.map((i) => deck.words[i]).filter(Boolean);
+  return shuffled(mastered.map((i) => deck.words[i]).filter(Boolean));
 }
 
 const minWords: Record<Game, number> = { match: 4, crossword: 3 };
