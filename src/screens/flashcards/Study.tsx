@@ -54,6 +54,9 @@ function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "
   );
 }
 
+// Matches flashSettings.loopSize's own default in store.js.
+const DEFAULT_LOOP_SIZE = 10;
+
 export function Study() {
   const { deckId = "" } = useParams();
   const navigate = useNavigate();
@@ -517,12 +520,12 @@ export function Study() {
           <label className="block">
             <span className="text-sm font-semibold">จำนวนคำใน Loop</span>
             <input
-              type="number"
-              min={1}
-              max={maxWords}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={poolSizeInput}
               onChange={(e) => {
-                const raw = e.target.value;
+                const raw = e.target.value.replace(/[^0-9]/g, "");
                 setPoolSizeInput(raw);
                 if (raw === "") return;
                 const parsed = Number(raw);
@@ -534,6 +537,20 @@ export function Study() {
                 store.set({ flashSettings: { ...flashSettings, loopSize: n } });
               }}
               onBlur={() => {
+                // Cleared the field entirely -- fall back to the app's
+                // default loop size instead of snapping back to whatever it
+                // was before (a native <input type="number"> used to make
+                // this field impossible to fully clear at all on some
+                // browsers, which read as the first digit being "locked").
+                if (poolSizeInput === "") {
+                  const n = Math.min(maxWords, DEFAULT_LOOP_SIZE);
+                  setPoolSizeInput(String(n));
+                  setPoolSize(n);
+                  setMastered((m) => m.filter((i) => i < n));
+                  setCursor(0);
+                  store.set({ flashSettings: { ...flashSettings, loopSize: n } });
+                  return;
+                }
                 if (poolSizeInput !== String(poolSize)) setPoolSizeInput(String(poolSize));
               }}
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2"
