@@ -10,6 +10,7 @@ export { Switch } from "./Switch";
 export { StarRating } from "./StarRating";
 export { Toaster, toast } from "./toast";
 export { UpgradeModalHost, openUpgradeModal } from "./upgradeModal";
+export { ConfirmDialogHost, confirmDialog, promptDialog } from "./confirmDialog";
 export { cx } from "./cx";
 export { Logo } from "./Logo";
 export * from "./icons";

@@ -14,6 +14,7 @@ import {
   EmptyState,
   toast,
   cx,
+  confirmDialog,
   IconArrowLeft,
   IconArrowRight,
   IconSettings,
@@ -333,8 +334,13 @@ export function Study() {
     : "";
 
   const resetMastery = async () => {
-    if (!confirm(`รีเซ็ตความจำทั้งหมดของ "${deck.name}"? คำที่จำแล้วทั้งหมดในชุดนี้จะกลับไปเป็นยังไม่ได้จำ`))
-      return;
+    const ok = await confirmDialog({
+      title: "รีเซ็ตความจำ Flashcard?",
+      message: `คำที่จำแล้วทั้งหมดใน "${deck.name}" จะกลับไปเป็นยังไม่ได้จำ การกระทำนี้ย้อนกลับไม่ได้`,
+      confirmLabel: "รีเซ็ต",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await resetDeckMastery(deckId);
     } catch (e) {
@@ -387,6 +393,11 @@ export function Study() {
                 </Button>
               )}
               <Button onClick={() => navigate(`/flash/deck/${deckId}`)}>กลับหน้าเลือกชุด</Button>
+              {!dueMode && (
+                <Button variant="danger" onClick={() => void resetMastery()}>
+                  รีเซ็ตความจำ Flashcard ชุดนี้
+                </Button>
+              )}
             </div>
           </Card>
         </>
