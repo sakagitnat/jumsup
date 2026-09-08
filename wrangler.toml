@@ -5,7 +5,12 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 APP_URL = "https://jumsup.sakagitnat.workers.dev"
-ALLOWED_ORIGINS = "https://jumsup-admin.sakagitnat.workers.dev"
+# jumsup.com is bound below as an additional custom domain for the same
+# Worker -- both URLs serve the identical app. Kept out of APP_URL itself
+# (used for Stripe return/cancel URLs etc.) until the custom domain has been
+# confirmed working end-to-end; both are listed here so /api/* CORS checks
+# (see functions/_lib/security.js) accept requests made from either origin.
+ALLOWED_ORIGINS = "https://jumsup-admin.sakagitnat.workers.dev,https://jumsup.com,https://www.jumsup.com"
 SUPABASE_URL = "https://vhzpmnirzgrzyaaotcep.supabase.co"
 STRIPE_PRICE_PRO_MONTHLY = "price_1U7z7E016c6XVEVtLurhwTki"
 STRIPE_PRICE_PRO_YEARLY = "price_1U7z7E016c6XVEVtn9BO1pE0"
@@ -38,3 +43,13 @@ directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
+
+# Custom domain, added on top of the default *.workers.dev URL (which keeps
+# working unchanged -- Stripe's webhook and APP_URL both still point at it).
+[[routes]]
+pattern = "jumsup.com"
+custom_domain = true
+
+[[routes]]
+pattern = "www.jumsup.com"
+custom_domain = true
