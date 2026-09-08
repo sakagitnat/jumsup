@@ -20,4 +20,4 @@ Disallow: /library
 Disallow: /stats
 Disallow: /onboarding
 
-Sitemap: https://jumsup.sakagitnat.workers.dev/sitemap.xml
+Sitemap: https://jumsup.com/sitemap.xml
