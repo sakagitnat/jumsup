@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://jumsup.sakagitnat.workers.dev/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/community</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/leaderboard</loc><changefreq>daily</changefreq><priority>0.5</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/terms/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/privacy/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/refund/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://jumsup.sakagitnat.workers.dev/community-guidelines/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://jumsup.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://jumsup.com/pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://jumsup.com/community</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jumsup.com/leaderboard</loc><changefreq>daily</changefreq><priority>0.5</priority></url>
+  <url><loc>https://jumsup.com/terms/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://jumsup.com/privacy/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://jumsup.com/refund/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://jumsup.com/community-guidelines/</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
 </urlset>
