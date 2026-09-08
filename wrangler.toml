@@ -2,6 +2,10 @@ name = "jumsup"
 main = "./worker/index.js"
 compatibility_date = "2026-08-18"
 compatibility_flags = ["nodejs_compat"]
+# Adding [[routes]] below makes wrangler disable the *.workers.dev URL by
+# default -- keep it explicitly on, since APP_URL, the Stripe webhook
+# endpoint, and Stripe's return/cancel URLs all still point at it.
+workers_dev = true
 
 [vars]
 APP_URL = "https://jumsup.sakagitnat.workers.dev"
@@ -44,8 +48,6 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
-# Custom domain, added on top of the default *.workers.dev URL (which keeps
-# working unchanged -- Stripe's webhook and APP_URL both still point at it).
 [[routes]]
 pattern = "jumsup.com"
 custom_domain = true
