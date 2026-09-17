@@ -59,8 +59,11 @@ function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "
 const DEFAULT_LOOP_SIZE = 10;
 
 // Every Nth card shown becomes a quiz check instead of a flip card, when
-// flashSettings.quizCheck is on.
-const QUIZ_INTERVAL = 5;
+// flashSettings.quizCheck is on. Matches flashSettings.quizInterval's own
+// default in store.js -- used as a fallback for a persisted flashSettings
+// object saved before this field existed.
+const DEFAULT_QUIZ_INTERVAL = 5;
+const QUIZ_INTERVAL_OPTIONS = [3, 5, 7, 10];
 
 /** Multiple-choice "do you actually remember this?" check, shown in place of
  *  the flip card. Reuses the same know()/miss() grading as a normal swipe --
@@ -251,11 +254,12 @@ export function Study() {
     () => new Set((deck?.words ?? []).map((w) => w.m)).size,
     [deck],
   );
+  const quizInterval = flashSettings.quizInterval || DEFAULT_QUIZ_INTERVAL;
   const showQuiz =
     flashSettings.quizCheck &&
     uniqueMeaningCount >= 4 &&
     cardsSeen > 0 &&
-    cardsSeen % QUIZ_INTERVAL === 0;
+    cardsSeen % quizInterval === 0;
 
   // Re-sync the loop-size text field to the real value whenever the settings
   // modal opens (covers poolSize changing elsewhere, e.g. the auto-continue
@@ -731,7 +735,7 @@ export function Study() {
             [
               ["autoSpeak", "อ่านเสียงอัตโนมัติ"],
               ["shuffle", "สุ่มลำดับคำ"],
-              ["quizCheck", `แบบทดสอบเช็คความจำ (ทุก ${QUIZ_INTERVAL} คำ)`],
+              ["quizCheck", "แบบทดสอบเช็คความจำระหว่างทวน"],
             ] as const
           ).map(([key, label]) => (
             <div key={key} className="flex items-center justify-between">
@@ -745,6 +749,27 @@ export function Study() {
               />
             </div>
           ))}
+
+          {flashSettings.quizCheck && (
+            <label className="block">
+              <span className="text-sm font-semibold">ทดสอบทุกกี่คำ</span>
+              <select
+                value={String(quizInterval)}
+                onChange={(e) =>
+                  store.set({
+                    flashSettings: { ...flashSettings, quizInterval: Number(e.target.value) },
+                  })
+                }
+                className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+              >
+                {QUIZ_INTERVAL_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    ทุก {n} คำ
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div className="border-t border-line pt-4">
             <Button variant="danger" block onClick={() => void resetMastery()}>
