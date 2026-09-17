@@ -24,7 +24,7 @@ const initial=()=>({
  srs:{},
  examTargets:[],
  practiceHistory:[],
- flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,voiceURI:"",rate:0.9},
+ flashSettings:{loopSize:10,autoSpeak:false,shuffle:false,quizCheck:false,voiceURI:"",rate:0.9},
  reading:[...official.reading],listening:[...official.listening],writing:[...official.writing],mocks:[...official.mocks],
  officialCatalog:official,
  community:[],communitySort:"popular",communityLikes:{},communityReviews:{},communityImportCounts:{},catalogOverrides:{}

@@ -4,6 +4,7 @@ import { speak, englishVoices } from "../../lib/utils.js";
 import { useStore, store } from "../../store/useStore";
 import { gradeWord, resetDeckMastery } from "../../actions/flashcards";
 import { isDue, nextReviewHint } from "../../lib/srs";
+import type { Word } from "../../store/types";
 import {
   PageHeader,
   Card,
@@ -56,6 +57,92 @@ function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "
 
 // Matches flashSettings.loopSize's own default in store.js.
 const DEFAULT_LOOP_SIZE = 10;
+
+// Every Nth card shown becomes a quiz check instead of a flip card, when
+// flashSettings.quizCheck is on.
+const QUIZ_INTERVAL = 5;
+
+/** Multiple-choice "do you actually remember this?" check, shown in place of
+ *  the flip card. Reuses the same know()/miss() grading as a normal swipe --
+ *  answering right/wrong just picks which one fires, after a beat to let the
+ *  reveal color register. */
+function QuizCheck({
+  word,
+  deckWords,
+  onAnswer,
+}: {
+  word: Word;
+  deckWords: Word[];
+  onAnswer: (correct: boolean) => void;
+}) {
+  const [picked, setPicked] = useState<string | null>(null);
+
+  const choices = useMemo(() => {
+    const seen = new Set([word.m]);
+    const distractors = deckWords.filter((w) => {
+      if (seen.has(w.m)) return false;
+      seen.add(w.m);
+      return true;
+    });
+    for (let i = distractors.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [distractors[i], distractors[j]] = [distractors[j], distractors[i]];
+    }
+    const options = [...distractors.slice(0, 3).map((w) => w.m), word.m];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return options;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [word.w]);
+
+  const pick = (choice: string) => {
+    if (picked) return;
+    setPicked(choice);
+    window.setTimeout(() => onAnswer(choice === word.m), 700);
+  };
+
+  return (
+    <div className="flex min-h-[320px] w-full flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card">
+      <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
+        แบบทดสอบด่วน
+      </span>
+      <h2 className="mt-3 text-3xl font-semibold" data-noi18n>
+        {word.w}
+      </h2>
+      {word.p && <div className="mt-1 text-sm text-subtle">{word.p}</div>}
+      <p className="mt-4 text-sm text-muted">คำนี้แปลว่าอะไร?</p>
+      <div className="mt-4 grid w-full max-w-sm gap-2">
+        {choices.map((c) => {
+          const isCorrect = c === word.m;
+          const revealed = picked !== null;
+          return (
+            <button
+              key={c}
+              type="button"
+              data-noi18n
+              disabled={revealed}
+              onClick={() => pick(c)}
+              className={cx(
+                "rounded-xl border px-4 py-3 text-sm font-semibold transition-colors",
+                !revealed && "border-line hover:bg-surface-2",
+                revealed && isCorrect && "border-success bg-success-soft text-success",
+                revealed &&
+                  !isCorrect &&
+                  c === picked &&
+                  "border-danger bg-danger-soft text-danger",
+                revealed && !isCorrect && c !== picked && "border-line opacity-50",
+              )}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function Study() {
   const { deckId = "" } = useParams();
@@ -150,6 +237,25 @@ export function Study() {
   useEffect(() => {
     setFlipped(false);
   }, [idx, duePos]);
+
+  // Counts every card shown this session, regardless of due/normal mode or
+  // know/miss outcome, so "every Nth card" lands on a fixed cadence instead
+  // of only advancing on a "จำได้".
+  const [cardsSeen, setCardsSeen] = useState(0);
+  useEffect(() => {
+    if (idx >= 0) setCardsSeen((n) => n + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, duePos]);
+
+  const uniqueMeaningCount = useMemo(
+    () => new Set((deck?.words ?? []).map((w) => w.m)).size,
+    [deck],
+  );
+  const showQuiz =
+    flashSettings.quizCheck &&
+    uniqueMeaningCount >= 4 &&
+    cardsSeen > 0 &&
+    cardsSeen % QUIZ_INTERVAL === 0;
 
   // Re-sync the loop-size text field to the real value whenever the settings
   // modal opens (covers poolSize changing elsewhere, e.g. the auto-continue
@@ -433,75 +539,89 @@ export function Study() {
             </div>
             <Progress value={(progressDone / progressTotal) * 100} className="mb-4" />
 
-            <div
-              ref={cardRef}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              className={cx(
-                "touch-pan-y select-none [perspective:1600px] [transform:translate3d(0,0,0)]",
-                pop && "animate-[card-flip-pop_0.45s_ease]",
-              )}
-            >
-              <div
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    toggleFlip();
-                  }
+            {showQuiz && word ? (
+              <QuizCheck
+                key={idx}
+                word={word}
+                deckWords={deck.words}
+                onAnswer={(correct) => {
+                  if (correct) void know();
+                  else miss();
                 }}
-                aria-label="พลิกการ์ด"
-                className="relative block min-h-[320px] w-full cursor-pointer rounded-3xl will-change-transform [transform-style:preserve-3d] transition-transform duration-500 [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)]"
-                style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
-              >
-                {/* front — term */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card [backface-visibility:hidden]">
-                  <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-subtle">
-                    คำศัพท์
-                  </span>
-                  <SpeakButton onSpeak={speakWord} />
-                  <h2 className="text-4xl font-semibold">{word?.w}</h2>
-                  {(word?.p || word?.stress) && (
-                    <div className="mt-2 text-sm text-subtle">{word?.p || word?.stress}</div>
+              />
+            ) : (
+              <>
+                <div
+                  ref={cardRef}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerUp}
+                  className={cx(
+                    "touch-pan-y select-none [perspective:1600px] [transform:translate3d(0,0,0)]",
+                    pop && "animate-[card-flip-pop_0.45s_ease]",
                   )}
-                  <span className="absolute bottom-5 text-xs text-subtle">แตะเพื่อพลิก</span>
+                >
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault();
+                        toggleFlip();
+                      }
+                    }}
+                    aria-label="พลิกการ์ด"
+                    className="relative block min-h-[320px] w-full cursor-pointer rounded-3xl will-change-transform [transform-style:preserve-3d] transition-transform duration-500 [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)]"
+                    style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+                  >
+                    {/* front — term */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card [backface-visibility:hidden]">
+                      <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-subtle">
+                        คำศัพท์
+                      </span>
+                      <SpeakButton onSpeak={speakWord} />
+                      <h2 className="text-4xl font-semibold">{word?.w}</h2>
+                      {(word?.p || word?.stress) && (
+                        <div className="mt-2 text-sm text-subtle">{word?.p || word?.stress}</div>
+                      )}
+                      <span className="absolute bottom-5 text-xs text-subtle">แตะเพื่อพลิก</span>
+                    </div>
+                    {/* back — definition */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-primary-border bg-primary-soft p-8 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                      <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-primary">
+                        ความหมาย
+                      </span>
+                      {word?.e && (
+                        <SpeakButton onSpeak={() => word?.e && say(word.e)} tone="primary" />
+                      )}
+                      <p className="text-2xl font-semibold" data-noi18n>
+                        {word?.m || "—"}
+                      </p>
+                      {word?.e && (
+                        <p
+                          className="mt-4 max-w-md text-sm leading-relaxed text-muted"
+                          data-noi18n
+                        >
+                          {word.e}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                {/* back — definition */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-primary-border bg-primary-soft p-8 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                  <span className="absolute left-5 top-5 text-xs font-semibold uppercase tracking-wide text-primary">
-                    ความหมาย
-                  </span>
-                  {word?.e && (
-                    <SpeakButton onSpeak={() => word?.e && say(word.e)} tone="primary" />
-                  )}
-                  <p className="text-2xl font-semibold" data-noi18n>
-                    {word?.m || "—"}
-                  </p>
-                  {word?.e && (
-                    <p
-                      className="mt-4 max-w-md text-sm leading-relaxed text-muted"
-                      data-noi18n
-                    >
-                      {word.e}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button variant="danger" size="lg" onClick={miss}>
-                <IconArrowLeft size={16} className="mr-1.5 inline align-[-2px]" />
-                ยังไม่จำ
-              </Button>
-              <Button variant="success" size="lg" onClick={know}>
-                จำได้
-                <IconArrowRight size={16} className="ml-1.5 inline align-[-2px]" />
-              </Button>
-            </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button variant="danger" size="lg" onClick={miss}>
+                    <IconArrowLeft size={16} className="mr-1.5 inline align-[-2px]" />
+                    ยังไม่จำ
+                  </Button>
+                  <Button variant="success" size="lg" onClick={know}>
+                    จำได้
+                    <IconArrowRight size={16} className="ml-1.5 inline align-[-2px]" />
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
@@ -611,6 +731,7 @@ export function Study() {
             [
               ["autoSpeak", "อ่านเสียงอัตโนมัติ"],
               ["shuffle", "สุ่มลำดับคำ"],
+              ["quizCheck", `แบบทดสอบเช็คความจำ (ทุก ${QUIZ_INTERVAL} คำ)`],
             ] as const
           ).map(([key, label]) => (
             <div key={key} className="flex items-center justify-between">

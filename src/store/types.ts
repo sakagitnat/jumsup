@@ -103,6 +103,7 @@ export interface FlashSettings {
   loopSize: number;
   autoSpeak: boolean;
   shuffle: boolean;
+  quizCheck: boolean;
   voiceURI: string;
   rate: number;
 }
