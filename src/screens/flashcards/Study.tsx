@@ -240,9 +240,15 @@ export function Study() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [word, flashSettings.autoSpeak]);
 
-  // a new card always starts on the term side
+  // Whether a quiz check offered for the current card has already been
+  // answered/dismissed (reset below whenever a new card comes up).
+  const [quizDismissed, setQuizDismissed] = useState(false);
+
+  // a new card always starts on the term side, and any quiz check queued for
+  // the previous card no longer applies to this one
   useEffect(() => {
     setFlipped(false);
+    setQuizDismissed(false);
   }, [idx, duePos]);
 
   // Counts every card shown this session, regardless of due/normal mode or
@@ -259,11 +265,22 @@ export function Study() {
     [deck],
   );
   const quizInterval = flashSettings.quizInterval || DEFAULT_QUIZ_INTERVAL;
+  // Quizzes only test words already marked "จำได้" -- not whatever card
+  // happens to be showing, which (outside due-review) is by definition one
+  // the learner hasn't mastered yet. Due-review is its own recall check by
+  // design, so quiz checks don't layer on top of it here.
+  const canQuiz =
+    !dueMode && flashSettings.quizCheck && mastered.length > 0 && uniqueMeaningCount >= 4;
   const showQuiz =
-    flashSettings.quizCheck &&
-    uniqueMeaningCount >= 4 &&
-    cardsSeen > 0 &&
-    cardsSeen % quizInterval === 0;
+    canQuiz && !quizDismissed && cardsSeen > 0 && cardsSeen % quizInterval === 0;
+  const quizWord = useMemo(() => {
+    if (!deck) return undefined;
+    const pick = mastered[Math.floor(Math.random() * mastered.length)];
+    return deck.words[pick];
+    // Re-pick once per quiz opportunity (cardsSeen ticks once per new card),
+    // not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardsSeen]);
 
   // Re-sync the loop-size text field to the real value whenever the settings
   // modal opens (covers poolSize changing elsewhere, e.g. the auto-continue
@@ -550,15 +567,12 @@ export function Study() {
             </div>
             <Progress value={(progressDone / progressTotal) * 100} className="mb-4" />
 
-            {showQuiz && word ? (
+            {showQuiz && quizWord ? (
               <QuizCheck
-                key={idx}
-                word={word}
+                key={cardsSeen}
+                word={quizWord}
                 deckWords={deck.words}
-                onAnswer={(correct) => {
-                  if (correct) void know();
-                  else miss();
-                }}
+                onAnswer={() => setQuizDismissed(true)}
               />
             ) : (
               <>
