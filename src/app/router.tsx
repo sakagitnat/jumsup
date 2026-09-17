@@ -7,6 +7,7 @@ import { Home } from "../screens/home/Home";
 import { Flashcards } from "../screens/flashcards/Flashcards";
 import { DeckDetail } from "../screens/flashcards/DeckDetail";
 import { Study } from "../screens/flashcards/Study";
+import { VocabTest } from "../screens/flashcards/VocabTest";
 import { PracticeList } from "../screens/practice/PracticeList";
 import { PracticePlay } from "../screens/practice/PracticePlay";
 import { Result } from "../screens/practice/Result";
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
               { path: "/flash", element: <Flashcards /> },
               { path: "/flash/deck/:deckId", element: <DeckDetail /> },
               { path: "/flash/study/:deckId", element: <Study /> },
+              { path: "/flash/test/:deckId", element: <VocabTest /> },
               { path: "/match/play/:deckId", element: <MatchGame /> },
               { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
               { path: "/wordle/play/:deckId", element: <WordleGame /> },
