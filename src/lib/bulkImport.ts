@@ -174,18 +174,26 @@ export function buildImportedContent(
         name: `Imported vocabulary ${today}`,
         visibility: "private",
         creator,
-        words: rows.map((x) => ({ w: x.word, m: x.meaning, e: x.example || "", stress: x.word })),
+        words: rows.map((x) => ({ w: x.word, m: x.meaning, e: x.example || "" })),
       },
     };
   }
 
-  const q = (x: Row) => ({
-    id: `q-${crypto.randomUUID()}`,
-    prompt: x.question,
-    choices: [x.choice_a, x.choice_b, x.choice_c, x.choice_d].filter(Boolean),
-    answer: "ABCD".indexOf(String(x.correct_answer).toUpperCase()),
-    explanation: x.explanation || "",
-  });
+  const q = (x: Row) => {
+    // Choices are compacted (blank optional slots like choice_c dropped), so the
+    // A/B/C/D letter's raw position doesn't necessarily match its index in the
+    // compacted array -- count only the non-blank slots up to and including the
+    // correct one to find where it actually lands.
+    const rawChoices = [x.choice_a, x.choice_b, x.choice_c, x.choice_d];
+    const rawCorrectIndex = "ABCD".indexOf(String(x.correct_answer).toUpperCase());
+    return {
+      id: `q-${crypto.randomUUID()}`,
+      prompt: x.question,
+      choices: rawChoices.filter(Boolean),
+      answer: rawChoices.slice(0, rawCorrectIndex + 1).filter(Boolean).length - 1,
+      explanation: x.explanation || "",
+    };
+  };
 
   if (type === "writing") {
     return {
