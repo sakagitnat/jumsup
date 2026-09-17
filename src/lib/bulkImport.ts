@@ -10,7 +10,7 @@ export interface ImportType {
 export const TYPES: Record<string, ImportType> = {
   vocab: {
     label: "ชุดคำศัพท์",
-    headers: ["word", "meaning", "example", "tags"],
+    headers: ["word", "pronunciation", "meaning", "example", "tags"],
     required: ["word", "meaning"],
   },
   reading: {
@@ -123,9 +123,9 @@ export function validateImport(
 // a second group, so both mechanics are visible in the downloaded file.
 const EXAMPLES: Record<string, string[][]> = {
   vocab: [
-    ["analyze", "วิเคราะห์", "We need to analyze the results.", "academic"],
-    ["consider", "พิจารณา", "Please consider all the options.", "academic"],
-    ["improve", "ปรับปรุง", "We should improve our study plan.", "general"],
+    ["analyze", "AN-uh-lyze", "วิเคราะห์", "We need to analyze the results.", "academic"],
+    ["consider", "kuhn-SID-er", "พิจารณา", "Please consider all the options.", "academic"],
+    ["improve", "im-PROOV", "ปรับปรุง", "We should improve our study plan.", "general"],
   ],
   reading: [
     [
@@ -214,7 +214,12 @@ export function buildImportedContent(
         name: `Imported vocabulary ${today}`,
         visibility: "private",
         creator,
-        words: rows.map((x) => ({ w: x.word, m: x.meaning, e: x.example || "" })),
+        words: rows.map((x) => ({
+          w: x.word,
+          p: x.pronunciation || "",
+          m: x.meaning,
+          e: x.example || "",
+        })),
       },
     };
   }
