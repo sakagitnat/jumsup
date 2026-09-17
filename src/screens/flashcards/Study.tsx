@@ -58,6 +58,12 @@ function SpeakButton({ onSpeak, tone = "line" }: { onSpeak: () => void; tone?: "
 // Matches flashSettings.loopSize's own default in store.js.
 const DEFAULT_LOOP_SIZE = 10;
 
+// A word that's been graded "again" this many times without ever being
+// mastered stops blocking the study pool from growing (see the pool-growth
+// effect below) -- it stays in rotation and can still be mastered later, it
+// just no longer holds the rest of the deck hostage.
+const STUCK_AFTER_MISSES = 5;
+
 // Every Nth card shown becomes a quiz check instead of a flip card, when
 // flashSettings.quizCheck is on. Matches flashSettings.quizInterval's own
 // default in store.js -- used as a fallback for a persisted flashSettings
@@ -217,6 +223,12 @@ export function Study() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, deckId, flashSettings.shuffle]);
   const remaining = activeIndices.filter((i) => !mastered.includes(i));
+  // Words still blocking pool growth: not yet mastered AND not yet "stuck"
+  // (repeatedly missed). A stuck word stays in `remaining`'s review rotation
+  // indefinitely, it just stops counting toward "the current pool is done".
+  const blockingGrowth = remaining.filter(
+    (i) => (deckSrs?.[i]?.lapses ?? 0) < STUCK_AFTER_MISSES,
+  );
 
   const idx = dueMode
     ? (dueQueue[duePos] ?? -1)
@@ -293,16 +305,21 @@ export function Study() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsOpen]);
 
-  // Once every word in the current pool is mastered, silently pull in the
-  // next batch instead of stopping at a manual "เพิ่มอีก 10 คำ" prompt --
-  // swiping should stay continuous until the whole deck is mastered, with
-  // the loop-size setting only shaping how the session starts, not gating
-  // how far it can go.
+  // Once every word in the current pool is either mastered or stuck (missed
+  // STUCK_AFTER_MISSES+ times), silently pull in the next batch instead of
+  // stopping at a manual "เพิ่มอีก 10 คำ" prompt -- swiping should stay
+  // continuous until the whole deck is mastered, with the loop-size setting
+  // only shaping how the session starts, not gating how far it can go. Without
+  // the "stuck" escape hatch, a single word the learner keeps missing would
+  // block every later word in the deck from ever entering rotation -- and
+  // since Match/Crossword/Wordle/the quiz-check/the two vocabulary tests all
+  // sample from mastered words only, those later words would never come up
+  // there either.
   useEffect(() => {
-    if (dueMode || !deck || remaining.length !== 0 || pool >= deck.words.length) return;
+    if (dueMode || !deck || blockingGrowth.length !== 0 || pool >= deck.words.length) return;
     setPoolSize((p) => Math.min(deck.words.length, p + 10));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dueMode, deck, remaining.length, pool]);
+  }, [dueMode, deck, blockingGrowth.length, pool]);
 
   const know = useCallback(async () => {
     if (idx < 0) return;
