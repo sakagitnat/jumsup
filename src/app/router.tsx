@@ -8,6 +8,7 @@ import { Flashcards } from "../screens/flashcards/Flashcards";
 import { DeckDetail } from "../screens/flashcards/DeckDetail";
 import { Study } from "../screens/flashcards/Study";
 import { VocabTest } from "../screens/flashcards/VocabTest";
+import { TypingDrill } from "../screens/flashcards/TypingDrill";
 import { PracticeList } from "../screens/practice/PracticeList";
 import { PracticePlay } from "../screens/practice/PracticePlay";
 import { Result } from "../screens/practice/Result";
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
               { path: "/flash/deck/:deckId", element: <DeckDetail /> },
               { path: "/flash/study/:deckId", element: <Study /> },
               { path: "/flash/test/:deckId", element: <VocabTest /> },
+              { path: "/flash/drill/:deckId", element: <TypingDrill /> },
               { path: "/match/play/:deckId", element: <MatchGame /> },
               { path: "/crossword/play/:deckId", element: <CrosswordGame /> },
               { path: "/wordle/play/:deckId", element: <WordleGame /> },
