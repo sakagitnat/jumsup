@@ -21,12 +21,13 @@ import {
   IconCrossword,
   // IconWordle, -- re-add when the Wordle mode card below is restored
   IconMock,
+  IconWriting,
   IconSpeaker,
 } from "../../ui";
 import { examLabel, levelLabel } from "../../lib/taxonomy";
 import { speak } from "../../lib/utils.js";
 
-const MIN_WORDS = { match: 4, crossword: 3, wordle: 1, test: 5 } as const;
+const MIN_WORDS = { match: 4, crossword: 3, wordle: 1, test: 5, drill: 5 } as const;
 
 export function DeckDetail() {
   const { deckId = "" } = useParams();
@@ -90,6 +91,17 @@ export function DeckDetail() {
       locked:
         mastered < MIN_WORDS.test
           ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.test} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
+          : undefined,
+    },
+    {
+      key: "drill",
+      icon: IconWriting,
+      label: "พิมพ์คำตอบ",
+      desc: "พิมพ์คำแปลของคำที่จำแล้วเอง เช็คคำตอบแบบยืดหยุ่น",
+      onStart: () => navigate(`/flash/drill/${deck.id}`),
+      locked:
+        mastered < MIN_WORDS.drill
+          ? `จำคำศัพท์ในชุดนี้ให้ครบ ${MIN_WORDS.drill} คำก่อน (ตอนนี้จำได้ ${mastered} คำ)`
           : undefined,
     },
     {
