@@ -104,6 +104,7 @@ export interface FlashSettings {
   autoSpeak: boolean;
   shuffle: boolean;
   quizCheck: boolean;
+  quizInterval: number;
   voiceURI: string;
   rate: number;
 }
