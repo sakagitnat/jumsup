@@ -116,31 +116,75 @@ export function validateImport(
   return { valid, errors };
 }
 
-const EXAMPLES: Record<string, string[]> = {
-  vocab: ["analyze", "วิเคราะห์", "We need to analyze the results.", "academic"],
+// Multiple example rows per type -- one row alone can't show how bulk import
+// actually works: rows sharing the same passage_id/audio_id/section_id become
+// questions on the *same* passage/audio/section, while a new id starts a new
+// one. Each example below includes a second question on the first group plus
+// a second group, so both mechanics are visible in the downloaded file.
+const EXAMPLES: Record<string, string[][]> = {
+  vocab: [
+    ["analyze", "วิเคราะห์", "We need to analyze the results.", "academic"],
+    ["consider", "พิจารณา", "Please consider all the options.", "academic"],
+    ["improve", "ปรับปรุง", "We should improve our study plan.", "general"],
+  ],
   reading: [
-    "R001", "Urban Green Spaces", "20", "Cities are investing in parks.",
-    "What is the main idea?", "Public parks", "City transport", "Online learning",
-    "Food prices", "A", "The passage focuses on parks.",
+    [
+      "R001", "Urban Green Spaces", "20", "Cities are investing in parks.",
+      "What is the main idea?", "Public parks", "City transport", "Online learning",
+      "Food prices", "A", "The passage focuses on parks.",
+    ],
+    [
+      "R001", "Urban Green Spaces", "20", "Cities are investing in parks.",
+      "Why are cities investing in parks?", "To reduce heat", "To increase traffic",
+      "To save money", "To build roads", "A", "Parks help cool cities.",
+    ],
+    [
+      "R002", "Home Recycling", "15", "Many households now sort waste at home.",
+      "What does the passage describe?", "A recycling habit", "A cooking method",
+      "A travel plan", "A sports event", "A", "The passage is about recycling at home.",
+    ],
   ],
   listening: [
-    "L001", "At the station", "15", "station.mp3",
-    "A: Which platform? B: Platform six.", "Which platform?", "3", "4", "5", "6", "D",
-    "The speaker says platform six.",
+    [
+      "L001", "At the station", "15", "station.mp3", "A: Which platform? B: Platform six.",
+      "Which platform?", "3", "4", "5", "6", "D", "The speaker says platform six.",
+    ],
+    [
+      "L001", "At the station", "15", "station.mp3", "A: Which platform? B: Platform six.",
+      "What does B say?", "A delay", "A platform number", "A ticket price", "A refund",
+      "B", "B answers with platform six.",
+    ],
+    [
+      "L002", "Ordering coffee", "10", "coffee.mp3", "A: What size? B: Medium please.",
+      "What size did B choose?", "Small", "Medium", "Large", "Extra large", "B",
+      "B says medium please.",
+    ],
   ],
   writing: [
-    "W001", "Email request", "Write an email requesting an extension.",
-    "Explain the reason and suggest a date.", "20",
+    [
+      "W001", "Email request", "Write an email requesting an extension.",
+      "Explain the reason and suggest a date.", "20",
+    ],
+    [
+      "W002", "Opinion paragraph", "Write a short paragraph about your favorite hobby.",
+      "Give at least two reasons.", "15",
+    ],
   ],
-  mock: ["S01", "Listening", "listening", "25", "Which platform?", "3", "4", "5", "6", "D", "1"],
+  mock: [
+    ["S01", "Listening", "listening", "25", "Which platform?", "3", "4", "5", "6", "D", "1"],
+    [
+      "S01", "Listening", "listening", "25", "What does the announcement mention?",
+      "A delay", "A gate change", "A price", "A refund", "B", "1",
+    ],
+    ["S02", "Reading", "reading", "30", "What is the passage about?", "Parks", "Traffic", "Recycling", "Sports", "A", "1"],
+  ],
 };
 
 export function downloadTemplate(type: string) {
   const t = TYPES[type] || TYPES.vocab;
   const esc = (v: unknown) => `"${String(v ?? "").replaceAll('"', '""')}"`;
-  const csv = `﻿${t.headers.map(esc).join(",")}\r\n${(EXAMPLES[type] || EXAMPLES.vocab)
-    .map(esc)
-    .join(",")}\r\n`;
+  const rows = EXAMPLES[type] || EXAMPLES.vocab;
+  const csv = `﻿${[t.headers, ...rows].map((r) => r.map(esc).join(",")).join("\r\n")}\r\n`;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `jumsup-${type}-template.csv`;
