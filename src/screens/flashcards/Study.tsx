@@ -63,7 +63,6 @@ const DEFAULT_LOOP_SIZE = 10;
 // default in store.js -- used as a fallback for a persisted flashSettings
 // object saved before this field existed.
 const DEFAULT_QUIZ_INTERVAL = 5;
-const QUIZ_INTERVAL_OPTIONS = [3, 5, 7, 10];
 
 /** Multiple-choice "do you actually remember this?" check, shown in place of
  *  the flip card. Reuses the same know()/miss() grading as a normal swipe --
@@ -168,6 +167,11 @@ export function Study() {
   // forced empty input back to 1 on every keystroke, making it impossible
   // to clear the field and type a different number.
   const [poolSizeInput, setPoolSizeInput] = useState(() => String(poolSize));
+  // Same clear-while-typing treatment as poolSizeInput above, for the
+  // quiz-check interval field further down.
+  const [quizIntervalInput, setQuizIntervalInput] = useState(() =>
+    String(flashSettings.quizInterval || DEFAULT_QUIZ_INTERVAL),
+  );
   const [mastered, setMastered] = useState<number[]>(() => [...storedMastered]);
   const [cursor, setCursor] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -265,7 +269,10 @@ export function Study() {
   // modal opens (covers poolSize changing elsewhere, e.g. the auto-continue
   // below).
   useEffect(() => {
-    if (settingsOpen) setPoolSizeInput(String(poolSize));
+    if (settingsOpen) {
+      setPoolSizeInput(String(poolSize));
+      setQuizIntervalInput(String(flashSettings.quizInterval || DEFAULT_QUIZ_INTERVAL));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsOpen]);
 
@@ -753,21 +760,34 @@ export function Study() {
           {flashSettings.quizCheck && (
             <label className="block">
               <span className="text-sm font-semibold">ทดสอบทุกกี่คำ</span>
-              <select
-                value={String(quizInterval)}
-                onChange={(e) =>
-                  store.set({
-                    flashSettings: { ...flashSettings, quizInterval: Number(e.target.value) },
-                  })
-                }
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={quizIntervalInput}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setQuizIntervalInput(raw);
+                  if (raw === "") return;
+                  const parsed = Number(raw);
+                  if (!Number.isFinite(parsed)) return;
+                  const n = Math.max(2, Math.min(50, Math.trunc(parsed)));
+                  store.set({ flashSettings: { ...flashSettings, quizInterval: n } });
+                }}
+                onBlur={() => {
+                  if (quizIntervalInput === "") {
+                    setQuizIntervalInput(String(DEFAULT_QUIZ_INTERVAL));
+                    store.set({
+                      flashSettings: { ...flashSettings, quizInterval: DEFAULT_QUIZ_INTERVAL },
+                    });
+                    return;
+                  }
+                  const n = Math.max(2, Math.min(50, Math.trunc(Number(quizIntervalInput)) || DEFAULT_QUIZ_INTERVAL));
+                  if (quizIntervalInput !== String(n)) setQuizIntervalInput(String(n));
+                }}
                 className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-              >
-                {QUIZ_INTERVAL_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    ทุก {n} คำ
-                  </option>
-                ))}
-              </select>
+              />
+              <span className="mt-1 block text-xs text-subtle">อย่างน้อย 2 คำ</span>
             </label>
           )}
 
