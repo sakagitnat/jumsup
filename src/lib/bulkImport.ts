@@ -35,10 +35,7 @@ export const TYPES: Record<string, ImportType> = {
   },
   writing: {
     label: "Writing",
-    headers: [
-      "task_id", "title", "prompt", "instructions", "time_minutes",
-      "min_words", "max_words", "rubric", "sample_answer",
-    ],
+    headers: ["task_id", "title", "prompt", "instructions", "time_minutes"],
     required: ["task_id", "title", "prompt"],
   },
   mock: {
@@ -133,8 +130,7 @@ const EXAMPLES: Record<string, string[]> = {
   ],
   writing: [
     "W001", "Email request", "Write an email requesting an extension.",
-    "Explain the reason and suggest a date.", "20", "120", "180",
-    "Content:4; Language:4; Organization:2", "",
+    "Explain the reason and suggest a date.", "20",
   ],
   mock: ["S01", "Listening", "listening", "25", "Which platform?", "3", "4", "5", "6", "D", "1"],
 };
