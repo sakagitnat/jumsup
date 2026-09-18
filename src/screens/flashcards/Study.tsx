@@ -277,17 +277,21 @@ export function Study() {
     [deck],
   );
   const quizInterval = flashSettings.quizInterval || DEFAULT_QUIZ_INTERVAL;
-  // Quizzes only test words already marked "จำได้" -- not whatever card
-  // happens to be showing, which (outside due-review) is by definition one
-  // the learner hasn't mastered yet. Due-review is its own recall check by
-  // design, so quiz checks don't layer on top of it here.
+  // Quizzes draw from any word in the current loop the learner has actually
+  // reached already -- mastered words, plus ones still being reviewed that
+  // already have an SRS card (meaning they've been swiped at least once) --
+  // never a word the learner hasn't been shown yet. Answering a quiz is a
+  // pure self-check with no know()/miss() side effects (see onAnswer below),
+  // so quizzing an unmastered word here can't wrongly grade it. Due-review is
+  // its own recall check by design, so quiz checks don't layer on top of it.
+  const quizPool = activeIndices.filter((i) => mastered.includes(i) || deckSrs?.[i]);
   const canQuiz =
-    !dueMode && flashSettings.quizCheck && mastered.length > 0 && uniqueMeaningCount >= 4;
+    !dueMode && flashSettings.quizCheck && quizPool.length > 0 && uniqueMeaningCount >= 4;
   const showQuiz =
     canQuiz && !quizDismissed && cardsSeen > 0 && cardsSeen % quizInterval === 0;
   const quizWord = useMemo(() => {
     if (!deck) return undefined;
-    const pick = mastered[Math.floor(Math.random() * mastered.length)];
+    const pick = quizPool[Math.floor(Math.random() * quizPool.length)];
     return deck.words[pick];
     // Re-pick once per quiz opportunity (cardsSeen ticks once per new card),
     // not on every render.
