@@ -211,6 +211,13 @@ export function Study() {
   }, []);
 
   const pool = Math.min(poolSize, deck?.words.length ?? 0);
+  // The saved "จำนวนคำใน Loop" preference, clamped the same way `poolSize`'s
+  // initial value is -- distinct from `poolSize` itself, which the
+  // auto-continue effect below grows silently as the session progresses.
+  // The settings field must always reflect this saved value, never the
+  // live, larger `poolSize`, or reopening settings mid-session would make it
+  // look like the saved setting changed itself.
+  const savedLoopSize = Math.min(flashSettings.loopSize, deck?.words.length ?? flashSettings.loopSize);
   const activeIndices = useMemo(() => {
     const arr = Array.from({ length: pool }, (_, i) => i);
     if (flashSettings.shuffle) {
@@ -298,12 +305,12 @@ export function Study() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardsSeen]);
 
-  // Re-sync the loop-size text field to the real value whenever the settings
-  // modal opens (covers poolSize changing elsewhere, e.g. the auto-continue
-  // below).
+  // Re-sync the loop-size text field to the saved preference whenever the
+  // settings modal opens -- NOT to the live `poolSize`, which the
+  // auto-continue effect below may have already grown past it this session.
   useEffect(() => {
     if (settingsOpen) {
-      setPoolSizeInput(String(poolSize));
+      setPoolSizeInput(String(savedLoopSize));
       setQuizIntervalInput(String(flashSettings.quizInterval || DEFAULT_QUIZ_INTERVAL));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -717,7 +724,7 @@ export function Study() {
                   store.set({ flashSettings: { ...flashSettings, loopSize: n } });
                   return;
                 }
-                if (poolSizeInput !== String(poolSize)) setPoolSizeInput(String(poolSize));
+                if (poolSizeInput !== String(savedLoopSize)) setPoolSizeInput(String(savedLoopSize));
               }}
               className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2"
             />
