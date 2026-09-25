@@ -71,16 +71,18 @@ const STUCK_AFTER_MISSES = 5;
 const DEFAULT_QUIZ_INTERVAL = 5;
 
 /** Multiple-choice "do you actually remember this?" check, shown in place of
- *  the flip card. Reuses the same know()/miss() grading as a normal swipe --
- *  answering right/wrong just picks which one fires, after a beat to let the
- *  reveal color register. */
+ *  the flip card. A pure self-check -- answering just reveals right/wrong
+ *  and reports it to the caller, with no effect on the word's own SRS/mastery
+ *  state. */
 function QuizCheck({
   word,
   deckWords,
+  onSpeak,
   onAnswer,
 }: {
   word: Word;
   deckWords: Word[];
+  onSpeak: () => void;
   onAnswer: (correct: boolean) => void;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
@@ -112,7 +114,8 @@ function QuizCheck({
   };
 
   return (
-    <div className="flex min-h-[320px] w-full flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card">
+    <div className="relative flex min-h-[320px] w-full flex-col items-center justify-center rounded-3xl border border-line bg-surface p-8 text-center shadow-card">
+      <SpeakButton onSpeak={onSpeak} />
       <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
         แบบทดสอบด่วน
       </span>
@@ -254,30 +257,33 @@ export function Study() {
   const say = (text: string) =>
     speak(text, "en-US", flashSettings.rate ?? 0.9, flashSettings.voiceURI || undefined);
 
-  useEffect(() => {
-    if (word && flashSettings.autoSpeak) say(word.w);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [word, flashSettings.autoSpeak]);
-
   // Whether a quiz check offered for the current card has already been
   // answered/dismissed (reset below whenever a new card comes up).
   const [quizDismissed, setQuizDismissed] = useState(false);
-
-  // a new card always starts on the term side, and any quiz check queued for
-  // the previous card no longer applies to this one
-  useEffect(() => {
-    setFlipped(false);
-    setQuizDismissed(false);
-  }, [idx, duePos]);
 
   // Counts every card shown this session, regardless of due/normal mode or
   // know/miss outcome, so "every Nth card" lands on a fixed cadence instead
   // of only advancing on a "จำได้".
   const [cardsSeen, setCardsSeen] = useState(0);
-  useEffect(() => {
-    if (idx >= 0) setCardsSeen((n) => n + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, duePos]);
+
+  // A new card always starts on the term side, and any quiz check queued for
+  // the previous card no longer applies to this one -- updated synchronously
+  // during render (React's documented "adjust state when a prop changes"
+  // pattern, comparing against a state value rather than a ref so it stays
+  // correct under StrictMode's double-render) rather than in a useEffect. An
+  // effect-based reset lands one render *after* idx actually changes, so on
+  // the render where idx changes showQuiz/cardsSeen would still reflect the
+  // previous card for that one frame -- exactly the window the auto-speak
+  // effect below reads from, which let it fire on words a quiz was about to
+  // replace.
+  const [prevCardKey, setPrevCardKey] = useState("");
+  const cardKey = `${idx}:${duePos}`;
+  if (idx >= 0 && cardKey !== prevCardKey) {
+    setPrevCardKey(cardKey);
+    setFlipped(false);
+    setQuizDismissed(false);
+    setCardsSeen((n) => n + 1);
+  }
 
   const uniqueMeaningCount = useMemo(
     () => new Set((deck?.words ?? []).map((w) => w.m)).size,
@@ -296,14 +302,36 @@ export function Study() {
     !dueMode && flashSettings.quizCheck && quizPool.length > 0 && uniqueMeaningCount >= 4;
   const showQuiz =
     canQuiz && !quizDismissed && cardsSeen > 0 && cardsSeen % quizInterval === 0;
-  const quizWord = useMemo(() => {
-    if (!deck) return undefined;
-    const pick = quizPool[Math.floor(Math.random() * quizPool.length)];
-    return deck.words[pick];
+
+  // Each quizzed word's most recent outcome this session (session-only, not
+  // persisted) -- a word never quizzed yet is always weighted above one
+  // that's already been asked, a word answered wrong last time is weighted
+  // above one answered right, so the same handful of words don't keep
+  // resurfacing while others never come up.
+  const [quizOutcomes, setQuizOutcomes] = useState<Record<number, boolean>>({});
+  const quizPick = useMemo(() => {
+    if (!deck || quizPool.length === 0) return undefined;
+    const weighted: number[] = [];
+    for (const i of quizPool) {
+      const weight = !(i in quizOutcomes) ? 4 : quizOutcomes[i] ? 1 : 3;
+      for (let n = 0; n < weight; n++) weighted.push(i);
+    }
+    const index = weighted[Math.floor(Math.random() * weighted.length)];
+    return { index, word: deck.words[index] };
     // Re-pick once per quiz opportunity (cardsSeen ticks once per new card),
-    // not on every render.
+    // not on every render or every time quizOutcomes changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardsSeen]);
+  const quizWord = quizPick?.word;
+
+  // The active flip card's word is hidden while a quiz check is showing in
+  // its place, so auto-speak must skip it here -- otherwise it narrates a
+  // word the learner can't see, which can be confused for the (different)
+  // word the quiz is actually asking about.
+  useEffect(() => {
+    if (word && flashSettings.autoSpeak && !showQuiz) say(word.w);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [word, flashSettings.autoSpeak, showQuiz]);
 
   // Re-sync the loop-size text field to the saved preference whenever the
   // settings modal opens -- NOT to the live `poolSize`, which the
@@ -600,7 +628,13 @@ export function Study() {
                 key={cardsSeen}
                 word={quizWord}
                 deckWords={deck.words}
-                onAnswer={() => setQuizDismissed(true)}
+                onSpeak={() => say(quizWord.w)}
+                onAnswer={(correct) => {
+                  if (quizPick) {
+                    setQuizOutcomes((prev) => ({ ...prev, [quizPick.index]: correct }));
+                  }
+                  setQuizDismissed(true);
+                }}
               />
             ) : (
               <>
