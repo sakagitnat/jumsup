@@ -1,5 +1,6 @@
 import { useStore } from "../../store/useStore";
 import { isPro } from "../../store/pro";
+import { MONETIZATION_ENABLED } from "../../lib/entitlements.js";
 import { PLANS, money } from "../../lib/plans.js";
 import { loginGoogle } from "../../actions/auth";
 import { startCheckout, openBillingPortal } from "../../actions/billing";
@@ -29,6 +30,32 @@ export function Pricing({ embedded = false }: { embedded?: boolean }) {
   const loggedIn = Boolean(user);
   const currency = lang === "th" ? "THB" : "USD";
   const { free, monthly, yearly } = PLANS;
+
+  if (!MONETIZATION_ENABLED) {
+    return (
+      <>
+        {!embedded && (
+          <PageHeader
+            eyebrow="MEMBERSHIP"
+            title="ตอนนี้ใช้งานฟรีทุกฟีเจอร์"
+            description="Jumsup ยังไม่เปิดระบบสมาชิกแบบเสียเงิน ทุกคนเข้าถึงได้ทุกฟีเจอร์แบบไม่จำกัด"
+          />
+        )}
+        <Card soft>
+          <Tag tone="success">ฟรี 100%</Tag>
+          <h2 className="mt-2 text-lg font-semibold">ไม่มีค่าใช้จ่าย ไม่มีข้อจำกัด</h2>
+          <p className="mt-1 text-sm text-muted">
+            Flashcard, Reading, Listening, Writing, Mock, มินิเกม และ Community ใช้ได้ครบทุกระบบ
+          </p>
+          {!loggedIn && (
+            <Button variant="primary" className="mt-4" onClick={loginGoogle}>
+              สมัครฟรีด้วย Google
+            </Button>
+          )}
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>

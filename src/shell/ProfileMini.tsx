@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { isPro } from "../store/pro";
+import { MONETIZATION_ENABLED } from "../lib/entitlements.js";
 
 export function ProfileMini() {
   const { user, profile, subscription } = useStore((s) => ({
@@ -36,7 +37,7 @@ export function ProfileMini() {
         {letter}
       </span>
     );
-  const pro = isPro({ profile, subscription }) || subscription?.status === "active";
+  const pro = MONETIZATION_ENABLED && (isPro({ profile, subscription }) || subscription?.status === "active");
 
   return (
     <Link

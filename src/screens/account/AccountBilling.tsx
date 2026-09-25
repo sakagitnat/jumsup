@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../../store/useStore";
 import { isPro, proSource } from "../../store/pro";
+import { MONETIZATION_ENABLED } from "../../lib/entitlements.js";
 import { openBillingPortal, submitRefundRequest } from "../../actions";
 import { AccountShell } from "./AccountShell";
 import { Pricing } from "../pricing/Pricing";
@@ -21,6 +22,26 @@ export function AccountBilling() {
   const lastPaid = (payments || []).find(
     (p) => (p as { status?: string }).status === "succeeded",
   ) as { amount?: number; currency?: string } | undefined;
+
+  if (!MONETIZATION_ENABLED) {
+    return (
+      <AccountShell title="แพ็กเกจและการชำระเงิน">
+        <Card>
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary">
+              <IconStar size={20} filled />
+            </span>
+            <div className="flex-1">
+              <b className="block text-sm">Jumsup Free</b>
+              <small className="text-xs text-muted">
+                ตอนนี้ใช้งานได้ฟรีทุกฟีเจอร์ ยังไม่เปิดระบบสมาชิกแบบเสียเงิน
+              </small>
+            </div>
+          </div>
+        </Card>
+      </AccountShell>
+    );
+  }
 
   return (
     <AccountShell title="แพ็กเกจและการชำระเงิน">

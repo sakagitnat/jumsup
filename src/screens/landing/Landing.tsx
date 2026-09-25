@@ -1,7 +1,5 @@
 import type { ComponentType } from "react";
-import { useNavigate } from "react-router-dom";
 import { useStore, store } from "../../store/useStore";
-import { PLANS, money } from "../../lib/plans.js";
 import { languages } from "../../store/useT";
 import { loginGoogle } from "../../actions/auth";
 import { COMMUNITY_URL } from "../../lib/community";
@@ -31,8 +29,6 @@ const steps = [
 
 export function Landing() {
   const lang = useStore((s) => s.lang);
-  const navigate = useNavigate();
-  const currency = lang === "th" ? "THB" : "USD";
 
   const enter = loginGoogle;
 
@@ -50,12 +46,6 @@ export function Landing() {
           >
             ฟีเจอร์
           </a>
-          <button
-            onClick={() => navigate("/pricing")}
-            className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-muted hover:text-text sm:block"
-          >
-            ราคา
-          </button>
           <select
             aria-label="ภาษาที่แสดง"
             value={lang}
@@ -186,24 +176,16 @@ export function Landing() {
       <section className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-12 sm:flex-row sm:items-center">
         <div>
           <span className="text-xs font-bold uppercase tracking-wide text-primary">
-            เริ่มต้นโดยไม่ต้องจ่าย
+            เปิดให้ใช้ฟรี
           </span>
           <h2 className="mt-1 text-2xl font-semibold sm:text-3xl">
-            Free ใช้งานได้จริง
-            <br />
-            Pro เมื่ออยากฝึกได้มากขึ้น
+            ตอนนี้ Jumsup ใช้ได้ฟรีทุกฟีเจอร์
           </h2>
-          <p className="mt-2 text-muted">
-            Pro เริ่ม {money(PLANS.monthly.prices[currency], currency)}/เดือน หรือรายปีเฉลี่ย{" "}
-            {money(PLANS.yearly.monthlyEquivalent?.[currency] ?? 0, currency)}/เดือน
-          </p>
+          <p className="mt-2 text-muted">ไม่มีข้อจำกัด ไม่ต้องใช้บัตร เข้าถึงได้ทุกระบบตั้งแต่วันแรก</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button size="lg" variant="primary" onClick={enter}>
             สมัครฟรี
-          </Button>
-          <Button size="lg" variant="secondary" onClick={() => navigate("/pricing")}>
-            ดูแพ็กเกจทั้งหมด
           </Button>
         </div>
       </section>
