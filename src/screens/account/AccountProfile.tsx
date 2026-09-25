@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../../store/useStore";
 import { isPro } from "../../store/pro";
+import { MONETIZATION_ENABLED } from "../../lib/entitlements.js";
 import { loginGoogle, logout } from "../../actions/auth";
 import {
   redeemGift,
@@ -210,7 +211,7 @@ export function AccountProfile() {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">{name}</h2>
-            <Tag tone={pro ? "success" : "info"}>{pro ? "PRO" : "FREE"}</Tag>
+            {MONETIZATION_ENABLED && <Tag tone={pro ? "success" : "info"}>{pro ? "PRO" : "FREE"}</Tag>}
           </div>
           {profile?.username && (
             <p className="text-sm text-subtle">@{profile.username}</p>
@@ -261,20 +262,22 @@ export function AccountProfile() {
         ))}
       </div>
 
-      <Card>
-        <h3 className="text-sm font-semibold">Gift Code</h3>
-        <p className="text-sm text-muted">แลกโค้ดเพื่อรับสิทธิ์ Pro</p>
-        <div className="mt-3 flex gap-2">
-          <input
-            ref={giftRef}
-            placeholder="กรอกโค้ด"
-            className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-          />
-          <Button onClick={() => redeemGift(giftRef.current?.value.trim() || "")}>
-            แลกโค้ด
-          </Button>
-        </div>
-      </Card>
+      {MONETIZATION_ENABLED && (
+        <Card>
+          <h3 className="text-sm font-semibold">Gift Code</h3>
+          <p className="text-sm text-muted">แลกโค้ดเพื่อรับสิทธิ์ Pro</p>
+          <div className="mt-3 flex gap-2">
+            <input
+              ref={giftRef}
+              placeholder="กรอกโค้ด"
+              className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+            />
+            <Button onClick={() => redeemGift(giftRef.current?.value.trim() || "")}>
+              แลกโค้ด
+            </Button>
+          </div>
+        </Card>
+      )}
     </AccountShell>
   );
 }
